@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+dist/
+*.egg
+*.pyc
+
+# Node
+node_modules/
+dist/
+
+# Keep .env files locally but DO NOT commit secrets to git
+# Uncomment these lines before pushing to GitHub:
+# backend/.env
+# frontend/.env
+
+# DB
+*.sqlite
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker
+*.log
