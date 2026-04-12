@@ -74,4 +74,8 @@ export const mfaApi = {
   disable: (otp_code) => api.post('/auth/2fa/disable', { otp_code }).then(r => r.data),
 }
 
+export const aiApi = {
+  chat: (prompt) => api.post('/ai/chat', { prompt }).then(r => r.data),
+}
+
 export default api
