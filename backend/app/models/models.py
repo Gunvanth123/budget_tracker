@@ -33,6 +33,10 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     master_password_hash = Column(String(255), nullable=True)
+    profile_picture = Column(Text, nullable=True)
+    last_email_change = Column(DateTime(timezone=True), nullable=True)
+    totp_secret = Column(String(255), nullable=True)
+    totp_enabled = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
@@ -40,6 +44,7 @@ class User(Base):
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     todo_lists = relationship("TodoList", back_populates="user", cascade="all, delete-orphan")
     passwords = relationship("PasswordEntry", back_populates="user", cascade="all, delete-orphan")
+    budget_goals = relationship("BudgetGoal", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -56,6 +61,7 @@ class Category(Base):
 
     user = relationship("User", back_populates="categories")
     transactions = relationship("Transaction", back_populates="category")
+    budget_goals = relationship("BudgetGoal", back_populates="category")
 
 
 class Account(Base):
@@ -135,3 +141,15 @@ class PasswordEntry(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="passwords")
+
+class BudgetGoal(Base):
+    __tablename__ = "budget_goals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+    amount = Column(Float, nullable=False)
+    month_year = Column(String(7), nullable=False) # e.g. "2024-05"
+    
+    user = relationship("User", back_populates="budget_goals")
+    category = relationship("Category", back_populates="budget_goals")

@@ -56,4 +56,22 @@ export const passwordsApi = {
   delete: (id) => api.delete(`/passwords/${id}`),
 }
 
+export const budgetsApi = {
+  getAll: (month_year) => api.get('/budgets/', { params: { month_year } }).then(r => r.data),
+  set: (data) => api.post('/budgets/', data).then(r => r.data)
+}
+
+export const usersApi = {
+  getMe: () => api.get('/users/me').then(r => r.data),
+  updateProfile: (data) => api.put('/users/profile', data).then(r => r.data),
+  updateEmail: (data) => api.put('/users/email', data).then(r => r.data),
+  updatePassword: (data) => api.put('/users/password', data).then(r => r.data),
+}
+
+export const mfaApi = {
+  generate: () => api.post('/auth/2fa/generate').then(r => r.data),
+  verify: (otp_code) => api.post('/auth/2fa/verify', { otp_code }).then(r => r.data),
+  disable: (otp_code) => api.post('/auth/2fa/disable', { otp_code }).then(r => r.data),
+}
+
 export default api

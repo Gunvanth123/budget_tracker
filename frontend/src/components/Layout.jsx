@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, Tags,
-  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon, Key
+  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon, Key, Target, Settings as SettingsIcon
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { clsx } from '../utils/helpers'
@@ -16,6 +16,8 @@ const NAV_ITEMS = [
   { to: '/calendar',     icon: Calendar,        label: 'Calendar'     },
   { to: '/todo',         icon: ListTodo,        label: 'To-Do'        },
   { to: '/passwords',    icon: Key,             label: 'Passwords'    },
+  { to: '/budgets',      icon: Target,          label: 'Budget Goals' },
+  { to: '/settings',     icon: SettingsIcon,    label: 'Settings'     },
 ]
 
 export default function Layout() {
@@ -84,8 +86,8 @@ export default function Layout() {
           <div className="flex items-center gap-2.5">
             <img src="/logo.png" alt="Budget Tracker" className="w-9 h-9 rounded-full object-cover" onError={e => { e.target.style.display='none' }} />
             <div>
-              <div className="font-semibold text-sm">Budget</div>
-              <div className="text-xs opacity-60">Tracker</div>
+              <div className="font-semibold text-sm">{user?.name || "Budget"}</div>
+              <div className="text-xs opacity-60">Tracker Pro</div>
             </div>
           </div>
 
@@ -117,29 +119,7 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="p-3 space-y-2" style={{ borderTop: '1px solid var(--border)' }}>
 
-          {/* ✅ THEME TOGGLE BUTTON */}
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium"
-            style={{ background: 'var(--primary)', color: '#fff' }}
-          >
-            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {darkMode ? 'Light Mode' : 'Dark Mode'}
-          </button>
-
-          {/* User */}
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl"
-            style={{ border: '1px solid var(--border)' }}
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </div>
       </aside>
 
       {/* Main */}
@@ -147,10 +127,68 @@ export default function Layout() {
 
         {/* Header */}
         <header
-          className="h-16 flex items-center justify-between px-4"
+          className="h-16 flex items-center justify-between px-4 lg:px-6 shadow-sm z-10 relative"
           style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
         >
-          <h1 className="font-semibold">{currentPage}</h1>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="font-semibold text-lg">{currentPage}</h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Custom Animated Theme Toggle */}
+            <div className="flex items-center justify-center gap-3 mr-4">
+              <span className={`text-sm font-bold transition-opacity duration-300 tracking-wide ${!darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Light</span>
+              
+              <button
+                onClick={toggleTheme}
+                className="w-14 h-7 rounded-full relative flex items-center transition-colors duration-500 focus:outline-none"
+                style={{ backgroundColor: !darkMode ? '#709BFD' : '#232D3F', border: darkMode ? '1px solid #334155' : 'none' }} 
+              >
+                {/* Deco Elements */}
+                <div className={`absolute inset-0 flex justify-end items-center px-2 transition-opacity duration-500 ${!darkMode ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className="flex gap-0.5">
+                    <div className="w-1 h-1 bg-white rounded-full opacity-80 mt-2"></div>
+                    <div className="w-1.5 h-1.5 bg-white rounded-full opacity-90"></div>
+                  </div>
+                </div>
+                <div className={`absolute inset-0 flex justify-start items-center px-1.5 transition-opacity duration-500 ${darkMode ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className="flex flex-col gap-0.5 mt-0.5">
+                    <div className="text-white opacity-80 text-[10px] leading-none ml-1">✧</div>
+                    <div className="w-0.5 h-0.5 bg-white rounded-full opacity-70 ml-2"></div>
+                  </div>
+                </div>
+
+                {/* The Handle */}
+                <div 
+                  className={`absolute rounded-full transition-all duration-500 flex items-center justify-center`}
+                  style={{ 
+                    width: '18px',
+                    height: '18px',
+                    left: '5px', 
+                    transform: darkMode ? 'translateX(28px)' : 'translateX(0)',
+                    backgroundColor: darkMode ? 'transparent' : '#ffffff',
+                    boxShadow: darkMode ? 'inset -5px -2px 0 0px #ffffff' : '0 1px 4px rgba(0,0,0,0.2)',
+                  }}
+                >
+                </div>
+              </button>
+              
+              <span className={`text-sm font-bold transition-opacity duration-300 tracking-wide ${darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Dark</span>
+            </div>
+            
+            <button
+              onClick={handleLogout}
+              className="p-2 sm:px-4 sm:py-2 flex items-center gap-2 rounded-full text-sm font-semibold transition-all hover:scale-105 hover:text-red-500 hover:border-red-200"
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 p-4 overflow-y-auto">
