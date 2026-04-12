@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
-import api from '../../api/client'
 
 export default function Login() {
+  const { login } = useAuth()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({ email: '', password: '', otp_code: '' })
   const [showPw, setShowPw] = useState(false)
@@ -15,17 +16,15 @@ export default function Login() {
     e.preventDefault()
     setIsLoading(true)
     try {
-      const res = await api.post('/auth/login', formData)
-      localStorage.setItem('token', res.data.access_token)
-      localStorage.setItem('user', JSON.stringify(res.data.user))
+      await login(formData.email, formData.password, formData.otp_code)
       toast.success('Sign in successful!')
       navigate('/')
     } catch (err) {
-      if (err.response?.data?.detail === '2FA_REQUIRED') {
+      if (err.message === '2FA_REQUIRED' || err.response?.data?.detail === '2FA_REQUIRED') {
         setNeeds2FA(true)
         toast.success('Authenticator code required')
       } else {
-        toast.error(err.response?.data?.detail || 'Sign in failed')
+        toast.error(err.response?.data?.detail || err.message || 'Sign in failed')
       }
     } finally {
       setIsLoading(false)
