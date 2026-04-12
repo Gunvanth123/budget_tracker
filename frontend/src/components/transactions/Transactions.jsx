@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { transactionsApi, categoriesApi, accountsApi } from '../../api/client'
 import { formatCurrency, formatDate } from '../../utils/helpers'
 import TransactionForm from './TransactionForm'
-import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import ExportModal from './ExportModal'
+import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Transactions() {
@@ -11,6 +12,7 @@ export default function Transactions() {
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
   const [editData, setEditData] = useState(null)
 
   // Filters
@@ -79,6 +81,13 @@ export default function Transactions() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1" />
+        <button
+          onClick={() => setExportModalOpen(true)}
+          className="btn-secondary flex items-center gap-2 self-start"
+        >
+          <Download className="w-4 h-4" />
+          Export
+        </button>
         <button
           onClick={() => { setEditData(null); setFormOpen(true) }}
           className="btn-primary flex items-center gap-2 self-start"
@@ -310,6 +319,11 @@ export default function Transactions() {
         onClose={() => setFormOpen(false)}
         onSaved={fetchAll}
         editData={editData}
+      />
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        transactions={filtered}
       />
     </div>
   )

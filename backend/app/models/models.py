@@ -32,12 +32,14 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    master_password_hash = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
     categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     todo_lists = relationship("TodoList", back_populates="user", cascade="all, delete-orphan")
+    passwords = relationship("PasswordEntry", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -118,3 +120,18 @@ class TodoTask(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     todo_list = relationship("TodoList", back_populates="tasks")
+
+
+class PasswordEntry(Base):
+    __tablename__ = "password_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    website = Column(String(255), nullable=False)
+    username = Column(String(255), nullable=False)
+    encrypted_password = Column(Text, nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", back_populates="passwords")

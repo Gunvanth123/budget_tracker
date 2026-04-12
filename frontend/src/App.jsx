@@ -9,6 +9,7 @@ import CalendarView from './components/calendar/CalendarView'
 import Todo from './components/todo/Todo'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
+import PasswordManager from './components/passwords/PasswordManager'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="categories" element={<Categories />} />
         <Route path="calendar" element={<CalendarView />} />
         <Route path="todo" element={<Todo />} />
+        <Route path="passwords" element={<PasswordManager />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
