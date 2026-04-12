@@ -64,7 +64,7 @@ export default function AIChatbot() {
       const context = await fetchContext()
       
       const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" })
 
       // Building prompt string (No passwords explicitly by scope of design)
       const prompt = `You are an expert, friendly AI financial advisor inside a Budget Tracker app. 
@@ -122,7 +122,7 @@ export default function AIChatbot() {
 
           {!apiKey ? (
             <div className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4">
-              <Bot className="w-16 h-16 text-indigo-400 mb-2" />
+              <img src="/logo.png" className="w-16 h-16 rounded-full mx-auto mb-4" alt="Logo" />
               <h4 className="font-bold text-gray-800 dark:text-white">Activate Your Free AI</h4>
               <p className="text-sm text-gray-500">
                 Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-500 underline">Google AI Studio</a> and paste it below to securely enable the chatbot.

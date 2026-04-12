@@ -18,7 +18,7 @@ export default function RecentTransactions() {
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display font-bold text-slate-800">Recent Transactions</h3>
+        <h3 className="font-display font-bold" style={{ color: 'var(--text)' }}>Recent Transactions</h3>
         <Link
           to="/transactions"
           className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
@@ -49,7 +49,12 @@ export default function RecentTransactions() {
       ) : (
         <div className="space-y-1">
           {transactions.map((txn) => (
-            <div key={txn.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
+            <div 
+              key={txn.id} 
+              className="flex items-center gap-3 p-2 rounded-xl transition-colors cursor-pointer"
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(51,65,85,0.15)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
                 txn.type === 'income' ? 'bg-emerald-50' : 'bg-red-50'
               }`}>
@@ -59,7 +64,7 @@ export default function RecentTransactions() {
                 }
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-700 truncate">
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>
                   {txn.notes || txn.category?.name || 'Transaction'}
                 </p>
                 <p className="text-xs text-slate-400">

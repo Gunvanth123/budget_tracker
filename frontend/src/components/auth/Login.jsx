@@ -47,7 +47,7 @@ export default function Login() {
         {/* ✅ LOGO */}
         <div className="text-center mb-8">
           <img
-            src="/assets/logo.png"
+            src="/logo.png"
             className="w-16 h-16 rounded-full mx-auto mb-4"
           />
           <h1 className="text-2xl font-semibold">Budget Tracker</h1>
