@@ -15,7 +15,6 @@
     "@radix-ui/react-select": "^2.0.0",
     "axios": "^1.7.2",
     "crypto-js": "^4.2.0",
-    "pyotp": "^2.8.0",
     "date-fns": "^3.6.0",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
