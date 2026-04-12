@@ -7,6 +7,21 @@ from app.database.db import engine, Base
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    
+    # Auto-migrate the existing users table to prevent crashes on Render
+    try:
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            if engine.dialect.name == "postgresql":
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS master_password_hash VARCHAR(255);"))
+            elif engine.dialect.name == "sqlite":
+                try:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN master_password_hash VARCHAR(255);"))
+                except Exception:
+                    pass # SQLite throws if it already exists
+    except Exception as e:
+        print(f"Auto-migration skipped or failed: {e}")
+        
     yield
 
 app = FastAPI(
