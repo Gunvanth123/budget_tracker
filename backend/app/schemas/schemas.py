@@ -146,3 +146,23 @@ class PasswordEntryOut(PasswordEntryBase):
 
     class Config:
         from_attributes = True
+
+# ─── Budget & Goals Schemas ───────────────────────────────────────────────────
+
+class BudgetGoalBase(BaseModel):
+    category_id: int
+    amount: float
+    month_year: str # Format: "YYYY-MM"
+
+class BudgetGoalCreate(BudgetGoalBase):
+    pass
+
+class BudgetGoalUpdate(BaseModel):
+    amount: float
+
+class BudgetGoalOut(BudgetGoalBase):
+    id: int
+    user_id: int
+
+    class Config:
+        from_attributes = True

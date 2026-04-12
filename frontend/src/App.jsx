@@ -10,6 +10,9 @@ import Todo from './components/todo/Todo'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import PasswordManager from './components/passwords/PasswordManager'
+import BudgetGoals from './components/budgets/BudgetGoals'
+import AIChatbot from './components/ai/AIChatbot'
+import Settings from './components/settings/Settings'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -45,6 +48,7 @@ function PublicRoute({ children }) {
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
@@ -57,8 +61,12 @@ export default function App() {
         <Route path="calendar" element={<CalendarView />} />
         <Route path="todo" element={<Todo />} />
         <Route path="passwords" element={<PasswordManager />} />
+        <Route path="budgets" element={<BudgetGoals />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    <AIChatbot />
+    </>
   )
 }

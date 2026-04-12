@@ -28,8 +28,11 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const login = useCallback(async (email, password) => {
-    const res = await api.post('/auth/login', { email, password })
+  const login = useCallback(async (email, password, otp_code = null) => {
+    const payload = { email, password }
+    if (otp_code) payload.otp_code = otp_code
+    
+    const res = await api.post('/auth/login', payload)
     setToken(res.data.access_token)
     setUser(res.data.user)
     api.defaults.headers.common['Authorization'] = `Bearer ${res.data.access_token}`

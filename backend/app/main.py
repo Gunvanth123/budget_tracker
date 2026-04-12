@@ -8,17 +8,26 @@ from app.database.db import engine, Base
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     
-    # Auto-migrate the existing users table to prevent crashes on Render
+    # Auto-migrate the existing users table
     try:
         from sqlalchemy import text
         with engine.begin() as conn:
+            columns = [
+                "master_password_hash VARCHAR(255)",
+                "profile_picture TEXT",
+                "last_email_change DATETIME",
+                "totp_secret VARCHAR(255)",
+                "totp_enabled BOOLEAN DEFAULT FALSE"
+            ]
             if engine.dialect.name == "postgresql":
-                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS master_password_hash VARCHAR(255);"))
+                for col in columns:
+                    conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col};"))
             elif engine.dialect.name == "sqlite":
-                try:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN master_password_hash VARCHAR(255);"))
-                except Exception:
-                    pass # SQLite throws if it already exists
+                for col in columns:
+                    try:
+                        conn.execute(text(f"ALTER TABLE users ADD COLUMN {col};"))
+                    except Exception:
+                        pass
     except Exception as e:
         print(f"Auto-migration skipped or failed: {e}")
         
@@ -44,15 +53,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords
+from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users
 
 app.include_router(auth.router,         prefix="/api/auth",         tags=["Auth"])
+app.include_router(users.router,        prefix="/api/users",        tags=["Users"])
 app.include_router(accounts.router,     prefix="/api/accounts",     tags=["Accounts"])
-app.include_router(transactions.router, prefix="/api/transactions",  tags=["Transactions"])
+app.include_router(transactions.router, prefix="/api/transactions", tags=["Transactions"])
 app.include_router(categories.router,   prefix="/api/categories",   tags=["Categories"])
 app.include_router(dashboard.router,    prefix="/api/dashboard",    tags=["Dashboard"])
 app.include_router(todo.router,         prefix="/api/todo",         tags=["Todo"])
 app.include_router(passwords.router,    prefix="/api/passwords",    tags=["Passwords"])
+app.include_router(budgets.router,      prefix="/api/budgets",      tags=["Budgets"])
 
 @app.get("/")
 def root():

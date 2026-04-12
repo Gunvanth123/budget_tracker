@@ -4,7 +4,7 @@ import { passwordsApi } from '../../api/client'
 import toast from 'react-hot-toast'
 import CryptoJS from 'crypto-js'
 import PasswordForm from './PasswordForm'
-import ExcelJS from 'exceljs'
+import XlsxPopulate from 'xlsx-populate/browser/xlsx-populate.js'
 import { saveAs } from 'file-saver'
 
 export default function PasswordManager() {
@@ -112,63 +112,41 @@ export default function PasswordManager() {
     }
 
     try {
-      const workbook = new ExcelJS.Workbook()
-      const worksheet = workbook.addWorksheet('Passwords')
+      // 1. Create a blank workbook
+      const workbook = await XlsxPopulate.fromBlankAsync()
+      const sheet = workbook.sheet(0)
+      sheet.name("Passwords")
 
-      // Fetch and Add Logo
-      try {
-        const response = await fetch('/logo.png')
-        if (response.ok) {
-          const arrayBuffer = await response.arrayBuffer()
-          const logoId = workbook.addImage({
-            buffer: arrayBuffer,
-            extension: 'png',
-          })
-          worksheet.addImage(logoId, {
-            tl: { col: 0, row: 0 },
-            ext: { width: 160, height: 80 }
-          })
-          
-          worksheet.getRow(1).height = 30
-          worksheet.getRow(2).height = 30
-          worksheet.getRow(3).height = 30
-        }
-      } catch (e) {
-        console.error('Failed to load logo', e)
-      }
+      // 2. Set up headers with styling
+      sheet.row(1).style("bold", true).style("fill", "00A19B").style("fontColor", "ffffff")
+      sheet.cell("A1").value("Website / App")
+      sheet.cell("B1").value("Username / Email")
+      sheet.cell("C1").value("Password")
+      sheet.cell("D1").value("Notes")
 
-      // Headers
-      const headerRow = worksheet.getRow(4)
-      headerRow.values = ['Website / App', 'Username / Email', 'Password', 'Notes']
-      headerRow.eachCell((cell) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00A19B' } }
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
-      })
+      // Column widths
+      sheet.column("A").width(25)
+      sheet.column("B").width(30)
+      sheet.column("C").width(25)
+      sheet.column("D").width(40)
 
-      // Data
-      let currentRow = 5
-      passwords.forEach(entry => {
-        const row = worksheet.getRow(currentRow)
+      // 3. Populate data
+      passwords.forEach((entry, idx) => {
+        const row = idx + 2
         const decPwd = getDecrypted(entry.encrypted_password)
-        row.values = [
-          entry.website,
-          entry.username,
-          decPwd,
-          entry.notes || ''
-        ]
-        currentRow++
+        sheet.cell(`A${row}`).value(entry.website)
+        sheet.cell(`B${row}`).value(entry.username)
+        sheet.cell(`C${row}`).value(decPwd)
+        sheet.cell(`D${row}`).value(entry.notes || '')
       })
 
-      worksheet.autoFilter = `A4:D${currentRow - 1}`
-      worksheet.columns = [{ width: 25 }, { width: 30 }, { width: 25 }, { width: 40 }]
-
-      const buffer = await workbook.xlsx.writeBuffer()
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      saveAs(blob, `passwords_export.xlsx`)
-      toast.success('Passwords exported successfully!')
+      // 4. Output with AES-256 password protection
+      const blob = await workbook.outputAsync({ password: masterPassword })
+      saveAs(blob, `secure_vault_export.xlsx`)
+      toast.success('Passwords securely exported and locked!')
     } catch (err) {
       console.error(err)
-      toast.error('Failed to generate Excel file')
+      toast.error('Failed to generate Encrypted Excel file')
     }
   }
 
