@@ -131,6 +131,7 @@ export default function AIChatbot() {
             </div>
           </div>
 
+          {!apiKey ? (
             <div className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4">
               <img src="/logo.png" className="w-16 h-16 rounded-full mx-auto mb-4" alt="Logo" />
               <h4 className="font-bold tracking-tight" style={{ color: 'var(--text)' }}>Enable Ultra-Fast AI (FREE)</h4>
