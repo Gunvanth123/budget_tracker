@@ -80,14 +80,11 @@ export const usersApi = {
 export const mfaApi = {
   generate: () => api.post('/auth/2fa/generate').then(r => r.data),
   verify: (otp_code) => api.post('/auth/2fa/verify', { otp_code }).then(r => r.data),
-  enableEmail: () => api.post('/auth/2fa/enable-email').then(r => r.data),
   disable: (otp_code) => api.post('/auth/2fa/disable', { otp_code }).then(r => r.data),
 }
 
 export const authApi = {
   register: (data) => api.post('/auth/register', data).then(r => r.data),
-  verifyEmail: (data) => api.post('/auth/verify-email', data).then(r => r.data),
-  resendVerification: (email) => api.post(`/auth/resend-verification?email=${email}`).then(r => r.data),
 }
 
 export const aiApi = {
