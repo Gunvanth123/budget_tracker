@@ -91,16 +91,16 @@ export default function Transactions() {
       {/* Summary strip */}
       <div className="grid grid-cols-3 gap-3">
         <div className="card p-3 text-center">
-          <p className="text-xs text-slate-400 mb-0.5">Showing</p>
-          <p className="font-display font-bold text-slate-700">{filtered.length}</p>
+          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Showing</p>
+          <p className="font-bold" style={{ color: 'var(--text)' }}>{filtered.length}</p>
         </div>
         <div className="card p-3 text-center">
-          <p className="text-xs text-slate-400 mb-0.5">Income</p>
-          <p className="font-display font-bold text-emerald-600 text-sm">{formatCurrency(totalIncome)}</p>
+          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Income</p>
+          <p className="font-bold text-sm" style={{ color: '#22C55E' }}>{formatCurrency(totalIncome)}</p>
         </div>
         <div className="card p-3 text-center">
-          <p className="text-xs text-slate-400 mb-0.5">Expense</p>
-          <p className="font-display font-bold text-red-500 text-sm">{formatCurrency(totalExpense)}</p>
+          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Expense</p>
+          <p className="font-bold text-sm" style={{ color: '#EF4444' }}>{formatCurrency(totalExpense)}</p>
         </div>
       </div>
 
@@ -108,7 +108,7 @@ export default function Transactions() {
       <div className="card p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="relative sm:col-span-2 lg:col-span-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
             <input
               type="text"
               placeholder="Search transactions…"
@@ -151,92 +151,153 @@ export default function Transactions() {
           <div className="p-6 space-y-4">
             {[1,2,3,4,5].map(i => (
               <div key={i} className="flex items-center gap-3 animate-pulse">
-                <div className="w-10 h-10 rounded-xl bg-slate-200" />
+                <div className="w-10 h-10 rounded-xl" style={{ background: 'var(--border)' }} />
                 <div className="flex-1">
-                  <div className="h-3.5 w-40 bg-slate-200 rounded mb-2" />
-                  <div className="h-3 w-24 bg-slate-100 rounded" />
+                  <div className="h-3.5 w-40 rounded mb-2" style={{ background: 'var(--border)' }} />
+                  <div className="h-3 w-24 rounded" style={{ background: 'var(--border)' }} />
                 </div>
-                <div className="h-4 w-24 bg-slate-200 rounded" />
+                <div className="h-4 w-24 rounded" style={{ background: 'var(--border)' }} />
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center text-slate-400">
+          <div className="py-16 text-center" style={{ color: 'var(--text-muted)' }}>
             <p className="text-4xl mb-3">📭</p>
             <p className="font-medium">No transactions found</p>
             <p className="text-sm mt-1">Try changing your filters or add a new transaction</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-50">
-            {/* Table header - desktop */}
-            <div className="hidden md:grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-4 px-5 py-3 bg-slate-50 text-xs font-bold text-slate-400 uppercase tracking-wide">
+          <div style={{ borderTop: '1px solid var(--border)' }}>
+            {/* Table header */}
+            <div
+              className="hidden md:grid items-center gap-0 px-5 py-3 text-xs font-bold uppercase tracking-wide"
+              style={{
+                gridTemplateColumns: '40px 1fr 130px 110px 110px 72px',
+                background: 'var(--bg)',
+                color: 'var(--text-muted)',
+                borderBottom: '1px solid var(--border)'
+              }}
+            >
               <div>Type</div>
-              <div>Details</div>
+              <div className="pl-3">Details</div>
               <div>Account</div>
               <div>Date</div>
               <div className="text-right">Amount</div>
-              <div>Actions</div>
+              <div className="text-right">Actions</div>
             </div>
 
             {filtered.map((txn) => (
               <div
                 key={txn.id}
-                className="flex md:grid md:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-3 md:gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors"
+                className="hidden md:grid items-center px-5 py-3 transition-colors"
+                style={{
+                  gridTemplateColumns: '40px 1fr 130px 110px 110px 72px',
+                  borderBottom: '1px solid var(--border)'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(51,65,85,0.25)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 {/* Icon */}
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  txn.type === 'income' ? 'bg-emerald-50' : 'bg-red-50'
-                }`}>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: txn.type === 'income' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)' }}
+                >
                   {txn.type === 'income'
-                    ? <ArrowUpRight className="w-4 h-4 text-emerald-600" />
-                    : <ArrowDownLeft className="w-4 h-4 text-red-500" />
+                    ? <ArrowUpRight className="w-4 h-4" style={{ color: '#22C55E' }} />
+                    : <ArrowDownLeft className="w-4 h-4" style={{ color: '#EF4444' }} />
                   }
                 </div>
 
                 {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-700 truncate">
+                <div className="min-w-0 pl-3">
+                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>
                     {txn.notes || txn.category?.name}
                   </p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={txn.type === 'income' ? 'badge-income' : 'badge-expense'}>
-                      {txn.category?.name}
-                    </span>
-                    <span className="md:hidden text-xs text-slate-400">· {txn.account?.name}</span>
-                  </div>
+                  <span className={txn.type === 'income' ? 'badge-income' : 'badge-expense'}>
+                    {txn.category?.name}
+                  </span>
                 </div>
 
                 {/* Account */}
-                <span className="hidden md:block text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                <span
+                  className="text-xs px-2 py-1 rounded-full w-fit"
+                  style={{ color: 'var(--text-muted)', background: 'var(--border)' }}
+                >
                   {txn.account?.name}
                 </span>
 
                 {/* Date */}
-                <span className="hidden md:block text-xs text-slate-400 whitespace-nowrap">
+                <span className="text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
                   {formatDate(txn.date)}
                 </span>
 
                 {/* Amount */}
-                <span className={`font-mono font-semibold text-sm whitespace-nowrap ${
-                  txn.type === 'income' ? 'text-emerald-600' : 'text-red-500'
-                }`}>
+                <span
+                  className="font-mono font-semibold text-sm whitespace-nowrap text-right"
+                  style={{ color: txn.type === 'income' ? '#22C55E' : '#EF4444' }}
+                >
                   {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
                 </span>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center justify-end gap-1">
                   <button
                     onClick={() => handleEdit(txn)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--border)'; e.currentTarget.style.color = 'var(--primary)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(txn.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Mobile rows (stacked layout — only visible on small screens) */}
+            {filtered.map((txn) => (
+              <div
+                key={`m-${txn.id}`}
+                className="flex md:hidden items-center gap-3 px-4 py-3 transition-colors"
+                style={{ borderBottom: '1px solid var(--border)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(51,65,85,0.25)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: txn.type === 'income' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)' }}
+                >
+                  {txn.type === 'income'
+                    ? <ArrowUpRight className="w-4 h-4" style={{ color: '#22C55E' }} />
+                    : <ArrowDownLeft className="w-4 h-4" style={{ color: '#EF4444' }} />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{txn.notes || txn.category?.name}</p>
+                  <span className={txn.type === 'income' ? 'badge-income' : 'badge-expense'}>{txn.category?.name}</span>
+                  <span className="text-xs ml-1.5" style={{ color: 'var(--text-muted)' }}>· {txn.account?.name}</span>
+                </div>
+                <span className="font-mono font-semibold text-sm" style={{ color: txn.type === 'income' ? '#22C55E' : '#EF4444' }}>
+                  {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
+                </span>
+                <div className="flex gap-1">
+                  <button onClick={() => handleEdit(txn)} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--border)'; e.currentTarget.style.color = 'var(--primary)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                  ><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(txn.id)} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                  ><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             ))}

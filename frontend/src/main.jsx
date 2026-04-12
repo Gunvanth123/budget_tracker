@@ -6,6 +6,9 @@ import { AuthProvider } from './context/AuthContext'
 import App from './App'
 import './index.css'
 
+// SET DEFAULT DARK
+document.documentElement.classList.add('dark')
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
@@ -15,13 +18,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           position="top-right"
           toastOptions={{
             style: {
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
+              fontFamily: 'Poppins, sans-serif',
               borderRadius: '12px',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-            },
-            success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
-            error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+            }
           }}
         />
       </AuthProvider>

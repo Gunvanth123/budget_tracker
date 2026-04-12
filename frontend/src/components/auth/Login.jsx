@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { TrendingUp, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Login() {
@@ -28,29 +28,30 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-brand-50 to-slate-100 flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-200 rounded-full opacity-20 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-violet-200 rounded-full opacity-20 blur-3xl" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4"
+         style={{ background: 'var(--bg)', color: 'var(--text)' }}>
 
-      <div className="w-full max-w-md relative">
-        {/* Logo */}
+      <div className="w-full max-w-md">
+
+        {/* ✅ LOGO */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-500 rounded-2xl shadow-lg shadow-brand-200 mb-4">
-            <TrendingUp className="w-7 h-7 text-white" />
-          </div>
-          <h1 className="font-display font-bold text-3xl text-slate-800">Budget Tracker</h1>
-          <p className="text-slate-500 mt-1 text-sm">Your smart financial companion</p>
+          <img
+            src="/assets/logo.png"
+            className="w-16 h-16 rounded-full mx-auto mb-4"
+          />
+          <h1 className="text-2xl font-semibold">Budget Tracker</h1>
+          <p className="opacity-60 text-sm">Your smart financial companion</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8">
-          <h2 className="font-display font-bold text-xl text-slate-800 mb-1">Sign in</h2>
-          <p className="text-slate-400 text-sm mb-6">Welcome back! Enter your details below.</p>
+        <div className="card p-8">
+          <h2 className="text-lg font-semibold mb-1">Sign in</h2>
+          <p className="opacity-60 text-sm mb-6">
+            Welcome back! Enter your details below.
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+
             <div>
               <label className="label">Email address</label>
               <input
@@ -60,7 +61,6 @@ export default function Login() {
                 className="input"
                 placeholder="you@example.com"
                 required
-                autoComplete="email"
               />
             </div>
 
@@ -74,12 +74,11 @@ export default function Login() {
                   className="input pr-10"
                   placeholder="••••••••"
                   required
-                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"
                 >
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -89,25 +88,24 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base mt-2"
+              className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-2"
             >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>Sign in <ArrowRight className="w-4 h-4" /></>
-              )}
+              {loading
+                ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <>Sign in <ArrowRight className="w-4 h-4" /></>
+              }
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500 mt-6">
+          <p className="text-center text-sm opacity-60 mt-6">
             Don't have an account?{' '}
-            <Link to="/register" className="text-brand-600 font-semibold hover:text-brand-700 transition-colors">
+            <Link to="/register" style={{ color: 'var(--primary)' }}>
               Create one
             </Link>
           </p>
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6">
+        <p className="text-center text-xs opacity-50 mt-6">
           Your data is private and secure.
         </p>
       </div>

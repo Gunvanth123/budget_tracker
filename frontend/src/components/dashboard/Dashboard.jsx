@@ -33,14 +33,10 @@ export default function Dashboard() {
       {/* Summary Cards */}
       <SummaryCards summary={data?.summary} />
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-1">
-          <ExpensePieChart data={data?.expense_by_category} />
-        </div>
-        <div className="lg:col-span-2">
-          <MonthlyBarChart data={data?.monthly_comparison} />
-        </div>
+      {/* Charts Row — equal width, equal height */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+        <ExpensePieChart data={data?.expense_by_category} />
+        <MonthlyBarChart data={data?.monthly_comparison} />
       </div>
 
       {/* Daily Line Chart */}

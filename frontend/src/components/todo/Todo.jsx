@@ -42,17 +42,20 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
   }
 
   return (
-    <div className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
-      task.completed ? 'bg-blue-50/60' : 'hover:bg-slate-50'
-    }`}>
+    <div
+      className="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150"
+      style={{ background: task.completed ? 'rgba(0,161,155,0.08)' : 'transparent' }}
+      onMouseEnter={e => { if (!task.completed) e.currentTarget.style.background = 'var(--border)' }}
+      onMouseLeave={e => { if (!task.completed) e.currentTarget.style.background = 'transparent' }}
+    >
       {/* Checkbox */}
       <button
         onClick={toggleComplete}
-        className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
-          task.completed
-            ? 'bg-blue-500 border-blue-500 shadow-sm'
-            : 'border-slate-300 hover:border-blue-400'
-        }`}
+        className="flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200"
+        style={task.completed
+          ? { background: 'var(--primary)', borderColor: 'var(--primary)' }
+          : { borderColor: 'var(--border)' }
+        }
       >
         {task.completed && <Check className="w-3 h-3 text-white stroke-[3]" />}
       </button>
@@ -65,16 +68,14 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
           onChange={e => setTitle(e.target.value)}
           onBlur={saveEdit}
           onKeyDown={handleKeyDown}
-          className="flex-1 text-sm bg-white border border-brand-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          className="flex-1 text-sm rounded-lg px-2 py-1 focus:outline-none"
+          style={{ background: 'var(--card)', border: '1px solid var(--primary)', color: 'var(--text)' }}
         />
       ) : (
         <span
           onDoubleClick={() => setEditing(true)}
-          className={`flex-1 text-sm select-none cursor-default transition-all duration-200 ${
-            task.completed
-              ? 'line-through text-blue-400 font-normal'
-              : 'text-slate-700'
-          }`}
+          className="flex-1 text-sm select-none cursor-default transition-all duration-200"
+          style={{ color: task.completed ? 'var(--text-muted)' : 'var(--text)', textDecoration: task.completed ? 'line-through' : 'none' }}
         >
           {task.title}
         </span>
@@ -83,13 +84,23 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
       {/* Actions */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         {!editing && (
-          <button onClick={() => setEditing(true)}
-            className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-brand-600 transition-colors">
+          <button
+            onClick={() => setEditing(true)}
+            className="p-1 rounded-lg transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--border)'; e.currentTarget.style.color = 'var(--primary)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
             <Pencil className="w-3 h-3" />
           </button>
         )}
-        <button onClick={handleDelete}
-          className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+        <button
+          onClick={handleDelete}
+          className="p-1 rounded-lg transition-colors"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+        >
           <Trash2 className="w-3 h-3" />
         </button>
       </div>
@@ -155,7 +166,10 @@ function TodoListCard({ list, onListUpdated, onListDeleted }) {
   return (
     <div className="card overflow-hidden">
       {/* List Header */}
-      <div className="flex items-center gap-2 p-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+      <div
+        className="flex items-center gap-2 p-4"
+        style={{ borderBottom: '1px solid var(--border)', background: 'var(--card)' }}
+      >
         <button onClick={() => setCollapsed(p => !p)}
           className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 transition-colors flex-shrink-0">
           {collapsed
@@ -171,12 +185,14 @@ function TodoListCard({ list, onListUpdated, onListDeleted }) {
             onChange={e => setListTitle(e.target.value)}
             onBlur={saveListTitle}
             onKeyDown={e => { if (e.key === 'Enter') saveListTitle(); if (e.key === 'Escape') { setListTitle(list.title); setEditingTitle(false) } }}
-            className="flex-1 font-display font-bold text-slate-800 bg-white border border-brand-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-200 text-base"
+            className="flex-1 font-bold rounded-lg px-2 py-1 focus:outline-none text-base"
+            style={{ background: 'var(--card)', border: '1px solid var(--primary)', color: 'var(--text)' }}
           />
         ) : (
           <h3
             onDoubleClick={() => setEditingTitle(true)}
-            className="flex-1 font-display font-bold text-slate-800 cursor-default select-none"
+            className="flex-1 font-bold cursor-default select-none"
+            style={{ color: 'var(--text)' }}
           >
             {list.title}
           </h3>
@@ -184,22 +200,34 @@ function TodoListCard({ list, onListUpdated, onListDeleted }) {
 
         {/* Progress badge */}
         {totalCount > 0 && (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            completedCount === totalCount
-              ? 'bg-blue-100 text-blue-600'
-              : 'bg-slate-100 text-slate-500'
-          }`}>
+          <span
+            className="text-xs font-semibold px-2 py-0.5 rounded-full"
+            style={completedCount === totalCount
+              ? { background: 'rgba(0,161,155,0.15)', color: 'var(--primary)' }
+              : { background: 'var(--border)', color: 'var(--text-muted)' }
+            }
+          >
             {completedCount}/{totalCount}
           </span>
         )}
 
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={() => setEditingTitle(true)}
-            className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-brand-600 transition-colors">
+          <button
+            onClick={() => setEditingTitle(true)}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--border)'; e.currentTarget.style.color = 'var(--primary)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
             <Pencil className="w-3.5 h-3.5" />
           </button>
-          <button onClick={deleteList}
-            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+          <button
+            onClick={deleteList}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -207,10 +235,10 @@ function TodoListCard({ list, onListUpdated, onListDeleted }) {
 
       {/* Progress bar */}
       {totalCount > 0 && (
-        <div className="h-1 bg-slate-100">
+        <div className="h-1" style={{ background: 'var(--border)' }}>
           <div
-            className="h-full bg-blue-400 transition-all duration-500"
-            style={{ width: `${(completedCount / totalCount) * 100}%` }}
+            className="h-full transition-all duration-500"
+            style={{ width: `${(completedCount / totalCount) * 100}%`, background: 'var(--primary)' }}
           />
         </div>
       )}
@@ -219,7 +247,7 @@ function TodoListCard({ list, onListUpdated, onListDeleted }) {
       {!collapsed && (
         <div className="p-3">
           {tasks.length === 0 && !addingTask ? (
-            <p className="text-center text-xs text-slate-400 py-4">No tasks yet. Add one below!</p>
+            <p className="text-center text-xs py-4" style={{ color: 'var(--text-muted)' }}>No tasks yet. Add one below!</p>
           ) : (
             <div className="space-y-0.5 mb-2">
               {tasks.map(task => (
@@ -236,23 +264,35 @@ function TodoListCard({ list, onListUpdated, onListDeleted }) {
 
           {/* Add task input */}
           {addingTask ? (
-            <div className="flex items-center gap-2 mt-1 px-3 py-2 bg-brand-50 rounded-xl border border-brand-200">
-              <div className="w-5 h-5 rounded-md border-2 border-slate-300 flex-shrink-0" />
+            <div
+              className="flex items-center gap-2 mt-1 px-3 py-2 rounded-xl"
+              style={{ background: 'rgba(0,161,155,0.08)', border: '1px solid var(--primary)' }}
+            >
+              <div className="w-5 h-5 rounded-md border-2 flex-shrink-0" style={{ borderColor: 'var(--border)' }} />
               <input
                 ref={addInputRef}
                 value={newTask}
                 onChange={e => setNewTask(e.target.value)}
                 onKeyDown={handleAddKeyDown}
                 placeholder="Task name…"
-                className="flex-1 text-sm bg-transparent focus:outline-none text-slate-700 placeholder-slate-400"
+                className="flex-1 text-sm bg-transparent focus:outline-none"
+                style={{ color: 'var(--text)' }}
               />
               <div className="flex gap-1">
-                <button onClick={addTask}
-                  className="p-1 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors">
+                <button
+                  onClick={addTask}
+                  className="p-1 rounded-lg text-white transition-colors"
+                  style={{ background: 'var(--primary)' }}
+                >
                   <Check className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => { setNewTask(''); setAddingTask(false) }}
-                  className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 transition-colors">
+                <button
+                  onClick={() => { setNewTask(''); setAddingTask(false) }}
+                  className="p-1 rounded-lg transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -260,9 +300,12 @@ function TodoListCard({ list, onListUpdated, onListDeleted }) {
           ) : (
             <button
               onClick={() => setAddingTask(true)}
-              className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-all duration-150 group"
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm transition-all duration-150"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,161,155,0.08)'; e.currentTarget.style.color = 'var(--primary)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
             >
-              <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <Plus className="w-4 h-4" />
               Add task
             </button>
           )}
@@ -310,16 +353,16 @@ export default function Todo() {
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4 text-center">
-          <p className="text-xs text-slate-400 mb-0.5">Lists</p>
-          <p className="font-display font-bold text-slate-700 text-xl">{lists.length}</p>
+          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Lists</p>
+          <p className="font-bold text-xl" style={{ color: 'var(--text)' }}>{lists.length}</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-xs text-slate-400 mb-0.5">Total Tasks</p>
-          <p className="font-display font-bold text-slate-700 text-xl">{totalTasks}</p>
+          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Total Tasks</p>
+          <p className="font-bold text-xl" style={{ color: 'var(--text)' }}>{totalTasks}</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-xs text-slate-400 mb-0.5">Completed</p>
-          <p className="font-display font-bold text-blue-600 text-xl">{completedTasks}</p>
+          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Completed</p>
+          <p className="font-bold text-xl" style={{ color: 'var(--primary)' }}>{completedTasks}</p>
         </div>
       </div>
 
@@ -343,10 +386,21 @@ export default function Todo() {
       ) : (
         <button
           onClick={() => setCreatingList(true)}
-          className="flex items-center gap-2 w-full p-4 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50/40 transition-all duration-200 group"
+          className="flex items-center gap-2 w-full p-4 rounded-2xl border-2 border-dashed transition-all duration-200"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = 'var(--primary)'
+            e.currentTarget.style.color = 'var(--primary)'
+            e.currentTarget.style.background = 'rgba(0,161,155,0.05)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'var(--border)'
+            e.currentTarget.style.color = 'var(--text-muted)'
+            e.currentTarget.style.background = 'transparent'
+          }}
         >
-          <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-brand-100 flex items-center justify-center transition-colors">
-            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors" style={{ background: 'var(--border)' }}>
+            <Plus className="w-4 h-4" />
           </div>
           <span className="font-semibold text-sm">Add new list</span>
         </button>
@@ -360,9 +414,9 @@ export default function Todo() {
           ))}
         </div>
       ) : lists.length === 0 ? (
-        <div className="card p-16 text-center text-slate-400">
+        <div className="card p-16 text-center" style={{ color: 'var(--text-muted)' }}>
           <ListTodo className="w-14 h-14 mx-auto mb-4 opacity-25" />
-          <p className="font-display font-bold text-slate-600 text-lg">No lists yet</p>
+          <p className="font-bold text-lg" style={{ color: 'var(--text)' }}>No lists yet</p>
           <p className="text-sm mt-1">Create your first list to start organizing your tasks</p>
         </div>
       ) : (

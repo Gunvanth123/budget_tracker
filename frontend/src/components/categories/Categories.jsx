@@ -31,16 +31,28 @@ function CategoryCard({ cat, onEdit, onDelete }) {
         {ICON_EMOJI_MAP[cat.icon] || '🏷️'}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-slate-700 truncate">{cat.name}</p>
-        <span className={`text-xs ${cat.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+        <p className="font-semibold text-sm truncate" style={{ color: 'var(--text)' }}>{cat.name}</p>
+        <span className="text-xs" style={{ color: cat.type === 'income' ? '#22C55E' : '#EF4444' }}>
           {cat.type}
         </span>
       </div>
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={() => onEdit(cat)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-brand-600 transition-colors">
+        <button
+          onClick={() => onEdit(cat)}
+          className="p-1.5 rounded-lg transition-colors"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--border)'; e.currentTarget.style.color = 'var(--primary)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+        >
           <Pencil className="w-3.5 h-3.5" />
         </button>
-        <button onClick={() => onDelete(cat.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+        <button
+          onClick={() => onDelete(cat.id)}
+          className="p-1.5 rounded-lg transition-colors"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+        >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -118,18 +130,20 @@ export default function Categories() {
     <div className="space-y-5">
       {/* Tabs + Add */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex bg-white border border-slate-200 rounded-xl p-1 gap-1">
+        <div
+          className="flex rounded-xl p-1 gap-1"
+          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+        >
           {['expense', 'income'].map(t => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${
+              className="px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all"
+              style={
                 activeTab === t
-                  ? t === 'income'
-                    ? 'bg-emerald-500 text-white shadow-sm'
-                    : 'bg-red-500 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
+                  ? { background: t === 'income' ? '#22C55E' : '#EF4444', color: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }
+                  : { color: 'var(--text-muted)' }
+              }
             >
               {t} ({t === 'expense' ? expenseCount : incomeCount})
             </button>
@@ -150,7 +164,7 @@ export default function Categories() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center text-slate-400">
+        <div className="card p-12 text-center" style={{ color: 'var(--text-muted)' }}>
           <Tags className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">No {activeTab} categories yet</p>
           <p className="text-sm mt-1">Click "New Category" to add one</p>
@@ -167,7 +181,7 @@ export default function Categories() {
       <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editData ? 'Edit Category' : 'New Category'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Preview */}
-          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+          <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--border)' }}>
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
               style={{ background: `${form.color}20`, border: `2px solid ${form.color}40` }}
@@ -175,8 +189,8 @@ export default function Categories() {
               {ICON_EMOJI_MAP[form.icon] || '🏷️'}
             </div>
             <div>
-              <p className="font-semibold text-slate-700">{form.name || 'Category Name'}</p>
-              <p className="text-xs text-slate-400 capitalize">{form.type}</p>
+              <p className="font-semibold" style={{ color: 'var(--text)' }}>{form.name || 'Category Name'}</p>
+              <p className="text-xs capitalize" style={{ color: 'var(--text-muted)' }}>{form.type}</p>
             </div>
           </div>
 
@@ -201,11 +215,12 @@ export default function Categories() {
                     key={t}
                     type="button"
                     onClick={() => set('type', t)}
-                    className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-all ${
+                    className="flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-all"
+                    style={
                       form.type === t
-                        ? t === 'income' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                    }`}
+                        ? { background: t === 'income' ? '#22C55E' : '#EF4444', color: '#fff' }
+                        : { background: 'var(--border)', color: 'var(--text-muted)' }
+                    }
                   >
                     {t}
                   </button>
@@ -223,8 +238,14 @@ export default function Categories() {
                   type="button"
                   onClick={() => set('icon', icon)}
                   className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition-all hover:scale-110 ${
-                    form.icon === icon ? 'ring-2 ring-brand-400 ring-offset-1 bg-brand-50' : 'hover:bg-slate-100'
+                    form.icon === icon ? 'ring-2 ring-offset-1' : ''
                   }`}
+                  style={form.icon === icon
+                    ? { ringColor: 'var(--primary)', background: 'var(--border)', outline: '2px solid var(--primary)' }
+                    : {}
+                  }
+                  onMouseEnter={e => { if (form.icon !== icon) e.currentTarget.style.background = 'var(--border)' }}
+                  onMouseLeave={e => { if (form.icon !== icon) e.currentTarget.style.background = 'transparent' }}
                 >
                   {ICON_EMOJI_MAP[icon] || '🏷️'}
                 </button>
@@ -240,7 +261,7 @@ export default function Categories() {
                   key={c}
                   type="button"
                   onClick={() => set('color', c)}
-                  className={`w-7 h-7 rounded-full transition-transform ${form.color === c ? 'scale-125 ring-2 ring-offset-1 ring-slate-400' : 'hover:scale-110'}`}
+                  className={`w-7 h-7 rounded-full transition-transform ${form.color === c ? 'scale-125 ring-2 ring-offset-2 ring-[var(--primary)]' : 'hover:scale-110'}`}
                   style={{ background: c }}
                 />
               ))}

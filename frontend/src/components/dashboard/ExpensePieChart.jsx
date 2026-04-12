@@ -1,14 +1,23 @@
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '../../utils/helpers'
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3">
-      <p className="font-semibold text-slate-700 text-sm">{d.category}</p>
-      <p className="text-brand-600 font-mono text-sm">{formatCurrency(d.amount)}</p>
-      <p className="text-slate-400 text-xs">{d.percentage}% of total</p>
+    <div className="chart-tooltip">
+      <p className="chart-tooltip-label">{d.category}</p>
+      <div className="chart-tooltip-row">
+        <span className="chart-tooltip-name">
+          <span className="chart-tooltip-dot" style={{ background: d.color }} />
+          Amount
+        </span>
+        <span className="chart-tooltip-value">{formatCurrency(d.amount)}</span>
+      </div>
+      <div className="chart-tooltip-row">
+        <span className="chart-tooltip-name">Share</span>
+        <span className="chart-tooltip-value">{d.percentage}%</span>
+      </div>
     </div>
   )
 }
@@ -29,35 +38,38 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
 export default function ExpensePieChart({ data }) {
   if (!data || data.length === 0) {
     return (
-      <div className="card p-5 h-80 flex flex-col items-center justify-center text-slate-400">
-        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+      <div className="card p-5 h-80 flex flex-col items-center justify-center">
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
+          style={{ background: 'var(--border)' }}
+        >
           <span className="text-2xl">🍕</span>
         </div>
-        <p className="font-medium text-sm">No expense data yet</p>
-        <p className="text-xs mt-1">Add some expense transactions to see breakdown</p>
+        <p className="font-medium text-sm" style={{ color: 'var(--text-muted)' }}>No expense data yet</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Add some expense transactions to see breakdown</p>
       </div>
     )
   }
 
   return (
-    <div className="card p-5">
-      <h3 className="font-display font-bold text-slate-800 mb-4">Expense by Category</h3>
-      <div className="h-56">
+    <div className="card p-5 flex flex-col h-full">
+      <h3 className="font-semibold mb-4" style={{ color: 'var(--text)' }}>Expense by Category</h3>
+      <div className="flex-1 min-h-[220px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              outerRadius={90}
-              innerRadius={40}
+              outerRadius="70%"
+              innerRadius="35%"
               dataKey="amount"
               nameKey="category"
               labelLine={false}
               label={renderCustomLabel}
             >
               {data.map((entry, i) => (
-                <Cell key={i} fill={entry.color} stroke="white" strokeWidth={2} />
+                <Cell key={i} fill={entry.color} stroke="transparent" strokeWidth={0} />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
@@ -71,13 +83,13 @@ export default function ExpensePieChart({ data }) {
           <div key={i} className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
-              <span className="text-slate-600 truncate max-w-[120px]">{item.category}</span>
+              <span className="truncate max-w-[120px]" style={{ color: 'var(--text-muted)' }}>{item.category}</span>
             </div>
-            <span className="font-mono font-medium text-slate-700">{formatCurrency(item.amount)}</span>
+            <span className="font-medium" style={{ color: 'var(--text)' }}>{formatCurrency(item.amount)}</span>
           </div>
         ))}
         {data.length > 6 && (
-          <p className="text-xs text-slate-400 pl-4">+{data.length - 6} more categories</p>
+          <p className="text-xs pl-4" style={{ color: 'var(--text-muted)' }}>+{data.length - 6} more categories</p>
         )}
       </div>
     </div>
