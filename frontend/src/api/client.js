@@ -46,4 +46,14 @@ export const todoApi = {
   deleteTask: (listId, taskId) => api.delete(`/todo/${listId}/tasks/${taskId}`),
 }
 
+export const passwordsApi = {
+  status: () => api.get('/passwords/status').then(r => r.data),
+  setup: (master_password) => api.post('/passwords/setup', { master_password }).then(r => r.data),
+  verify: (master_password) => api.post('/passwords/verify', { master_password }).then(r => r.data),
+  getAll: () => api.get('/passwords/').then(r => r.data),
+  create: (data) => api.post('/passwords/', data).then(r => r.data),
+  update: (id, data) => api.put(`/passwords/${id}`, data).then(r => r.data),
+  delete: (id) => api.delete(`/passwords/${id}`),
+}
+
 export default api

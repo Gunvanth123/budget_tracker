@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, Tags,
-  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon
+  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon, Key
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { clsx } from '../utils/helpers'
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { to: '/categories',   icon: Tags,            label: 'Categories'   },
   { to: '/calendar',     icon: Calendar,        label: 'Calendar'     },
   { to: '/todo',         icon: ListTodo,        label: 'To-Do'        },
+  { to: '/passwords',    icon: Key,             label: 'Passwords'    },
 ]
 
 export default function Layout() {
@@ -81,7 +82,7 @@ export default function Layout() {
              style={{ borderBottom: '1px solid var(--border)' }}>
 
           <div className="flex items-center gap-2.5">
-            <img src="/assets/logo.png" className="w-9 h-9 rounded-full object-cover" />
+            <img src="/logo.png" alt="Budget Tracker" className="w-9 h-9 rounded-full object-cover" onError={e => { e.target.style.display='none' }} />
             <div>
               <div className="font-semibold text-sm">Budget</div>
               <div className="text-xs opacity-60">Tracker</div>

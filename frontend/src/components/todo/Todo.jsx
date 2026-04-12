@@ -349,7 +349,7 @@ export default function Todo() {
   const completedTasks = lists.reduce((s, l) => s + (l.tasks?.filter(t => t.completed).length || 0), 0)
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5">
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4 text-center">
