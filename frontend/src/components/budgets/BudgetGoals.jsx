@@ -112,12 +112,12 @@ export default function BudgetGoals() {
                     <span>Spent: ₹{spent}</span>
                     <span>{percentage.toFixed(0)}%</span>
                   </div>
-                  <div className="w-full rounded-full h-2.5" style={{ backgroundColor: 'var(--border)' }}>
-                    <div className="h-2.5 rounded-full transition-all duration-500" style={{ width: `${percentage}%`, backgroundColor: color }}></div>
+                  <div className="w-full rounded-full h-2.5 shadow-inner" style={{ backgroundColor: 'var(--bg)' }}>
+                    <div className="h-2.5 rounded-full transition-all duration-500 shadow-sm" style={{ width: `${percentage}%`, backgroundColor: color }}></div>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 text-xs text-gray-400 italic">
+                <div className="flex items-center gap-1 text-xs italic" style={{ color: 'var(--text-muted)' }}>
                   <CheckCircle className="w-3 h-3" /> No limit set
                 </div>
               )}

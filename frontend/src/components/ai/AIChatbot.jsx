@@ -88,11 +88,11 @@ export default function AIChatbot() {
     } catch (err) {
       console.error("Gemini Error:", err)
       if (err.message.includes('API key')) {
-        toast.error('Invalid Gemini API Key or Quota Exceeded')
-        setApiKey('')
-        localStorage.removeItem('gemini_api_key')
+        toast.error('Invalid Gemini API Key')
+      } else if (err.status === 404 || err.message.includes('not found')) {
+        toast.error('Model Not Found. Please ensure "Generative Language API" is enabled in your Google Cloud Project.')
       } else {
-        toast.error('AI Request Failed. Try visiting Google Cloud Console to enable Generative Language API.')
+        toast.error('AI Request Failed. Check your Project Settings in Google AI Studio.')
       }
     } finally {
       setIsTyping(false)
