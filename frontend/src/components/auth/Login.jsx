@@ -3,38 +3,57 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
+import api from '../../api/client'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [formData, setFormData] = useState({ email: '', password: '', otp_code: '' })
   const [showPw, setShowPw] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [needs2FA, setNeeds2FA] = useState(false)
-  const [otpCode, setOtpCode] = useState('')
-
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    setIsLoading(true)
     try {
-      if (needs2FA) {
-         await login(form.email, form.password, otpCode)
-      } else {
-         await login(form.email, form.password)
-      }
-      toast.success('Welcome back!')
-      navigate('/dashboard')
+      const res = await api.post('/auth/login', formData)
+      localStorage.setItem('token', res.data.access_token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      toast.success('Sign in successful!')
+      navigate('/')
     } catch (err) {
       if (err.response?.data?.detail === '2FA_REQUIRED') {
-         setNeeds2FA(true)
-         toast.success('Please enter your Authenticator code')
+        setNeeds2FA(true)
+        toast.success('Security code required')
+      } else if (err.response?.data?.detail === 'EMAIL_NOT_VERIFIED') {
+        toast.error('Please verify your email first')
+        setIsVerifyingEmail(true)
       } else {
-         toast.error(err.response?.data?.detail || 'Invalid email or password')
+        toast.error(err.response?.data?.detail || 'Sign in failed')
       }
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerifySignUp = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      const res = await api.post('/auth/verify-email', { 
+        email: formData.email, 
+        otp_code: formData.otp_code 
+      })
+      toast.success('Verified! Signed in.')
+      localStorage.setItem('token', res.data.access_token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      navigate('/')
+    } catch (err) {
+      toast.error('Invalid code')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -56,69 +75,73 @@ export default function Login() {
 
         {/* Card */}
         <div className="card p-8">
-          <h2 className="text-lg font-semibold mb-1">Sign in</h2>
-          {needs2FA ? (
-            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-              <div>
-                <label className="label text-center block w-full mb-3">Google Authenticator Code</label>
-                <input
-                  type="text"
-                  value={otpCode}
-                  onChange={e => setOtpCode(e.target.value)}
-                  className="input tracking-widest text-center text-3xl font-mono py-4"
-                  placeholder="000 000"
-                  maxLength={6}
-                  required
-                  autoFocus
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading || otpCode.length < 6}
-                className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"
-              >
-                {loading
-                  ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <>Verify & Sign in <ArrowRight className="w-4 h-4" /></>
-                }
+          <h2 className="text-2xl font-semibold mb-1 text-center">Sign in</h2>
+          {isVerifyingEmail ? (
+            <form onSubmit={handleVerifySignUp} className="space-y-4 mt-6">
+              <p className="text-sm opacity-60 text-center">Enter the code sent to your email.</p>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                placeholder="000000"
+                className="input w-full text-center tracking-[0.5em] font-bold text-lg"
+                onChange={(e) => setFormData({ ...formData, otp_code: e.target.value })}
+              />
+              <button disabled={isLoading} className="btn-primary w-full py-2.5">
+                {isLoading ? 'Verifying...' : 'Verify & Sign In'}
               </button>
-              <button type="button" onClick={() => setNeeds2FA(false)} className="w-full text-center text-sm opacity-60 hover:opacity-100 py-2">
-                Back to password
+            </form>
+          ) : needs2FA ? (
+            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+              <p className="text-sm opacity-60 text-center">Security code required.</p>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                placeholder="OTP Code"
+                className="input w-full text-center tracking-[0.5em] font-bold text-lg"
+                onChange={(e) => setFormData({ ...formData, otp_code: e.target.value })}
+              />
+              <button disabled={isLoading} className="btn-primary w-full py-2.5">
+                {isLoading ? 'Verifying...' : 'Verify OTP'}
               </button>
             </form>
           ) : (
             <>
-              <p className="opacity-60 text-sm mb-6">
+              <p className="opacity-60 text-sm mb-6 text-center">
                 Welcome back! Enter your details below.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="label">Email address</label>
+                  <label className="text-sm font-medium mb-1.5 block">Email address</label>
                   <input
                     type="email"
-                    value={form.email}
-                    onChange={e => set('email', e.target.value)}
-                    className="input"
-                    placeholder="you@example.com"
                     required
+                    placeholder="name@company.com"
+                    className="input w-full"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
-
                 <div>
-                  <label className="label">Password</label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-sm font-medium block">Password</label>
+                    <Link to="/forgot-password" style={{ color: 'var(--primary)' }} className="text-xs hover:underline">
+                      Forgot password?
+                    </Link>
+                  </div>
                   <div className="relative">
                     <input
                       type={showPw ? 'text' : 'password'}
-                      value={form.password}
-                      onChange={e => set('password', e.target.value)}
-                      className="input pr-10"
-                      placeholder="••••••••"
                       required
+                      placeholder="••••••••"
+                      className="input w-full pr-10"
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPw(p => !p)}
+                      onClick={() => setShowPw(!showPw)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"
                     >
                       {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -128,13 +151,10 @@ export default function Login() {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-2"
+                  disabled={isLoading}
+                  className="btn-primary w-full py-2.5 mt-2"
                 >
-                  {loading
-                    ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    : <>Sign in <ArrowRight className="w-4 h-4" /></>
-                  }
+                  {isLoading ? 'Signing in...' : 'Sign in'}
                 </button>
               </form>
             </>

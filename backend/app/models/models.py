@@ -37,6 +37,13 @@ class User(Base):
     last_email_change = Column(DateTime(timezone=True), nullable=True)
     totp_secret = Column(String(255), nullable=True)
     totp_enabled = Column(Boolean, default=False, nullable=False)
+    
+    # New Security Fields
+    is_verified = Column(Boolean, default=False, nullable=False)
+    verification_otp = Column(String(10), nullable=True)
+    otp_expires_at = Column(DateTime(timezone=True), nullable=True)
+    mfa_preference = Column(String(20), default="none", nullable=False) # none, app, email
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
@@ -45,6 +52,7 @@ class User(Base):
     todo_lists = relationship("TodoList", back_populates="user", cascade="all, delete-orphan")
     passwords = relationship("PasswordEntry", back_populates="user", cascade="all, delete-orphan")
     budget_goals = relationship("BudgetGoal", back_populates="user", cascade="all, delete-orphan")
+    secure_files = relationship("SecureFile", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -153,3 +161,16 @@ class BudgetGoal(Base):
     
     user = relationship("User", back_populates="budget_goals")
     category = relationship("Category", back_populates="budget_goals")
+
+class SecureFile(Base):
+    __tablename__ = "secure_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    filename = Column(String(255), nullable=False)
+    encrypted_content = Column(Text, nullable=False) # AES-256 encrypted base64 payload
+    mimetype = Column(String(100), nullable=True)
+    size = Column(Integer, nullable=True) # size in bytes
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="secure_files")
