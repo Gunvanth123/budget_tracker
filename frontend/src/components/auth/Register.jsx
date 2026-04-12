@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { authApi } from '../../api/client'
+import { useAuth } from '../../context/AuthContext'
 import { Eye, EyeOff, ArrowRight, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Register() {
+  const { register } = useAuth()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({ name: '', email: '', password: '' })
   const [isLoading, setIsLoading] = useState(false)
@@ -14,13 +15,11 @@ export default function Register() {
     e.preventDefault()
     setIsLoading(true)
     try {
-      const res = await authApi.register(formData)
+      await register(formData.name, formData.email, formData.password)
       toast.success('Account created successfully!')
-      localStorage.setItem('token', res.access_token)
-      localStorage.setItem('user', JSON.stringify(res.user))
       navigate('/')
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Registration failed')
+      toast.error(err.response?.data?.detail || err.message || 'Registration failed')
     } finally {
       setIsLoading(false)
     }

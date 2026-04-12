@@ -60,14 +60,17 @@ def register(req: RegisterRequest, background_tasks: BackgroundTasks, db: Sessio
     # Seed default categories
     seed_default_categories_for_user(db, user.id)
 
-    # Seed default categories
-    seed_default_categories_for_user(db, user.id)
-
     # Revert to immediate token issuance
     token = create_access_token({"sub": str(user.id)})
     return AuthResponse(
         access_token=token,
-        user={"id": user.id, "name": user.name, "email": user.email},
+        user={
+            "id": user.id, 
+            "name": user.name, 
+            "email": user.email,
+            "mfa_preference": user.mfa_preference,
+            "totp_enabled": user.totp_enabled
+        },
     )
 
 
@@ -79,8 +82,8 @@ def login(req: LoginRequest, background_tasks: BackgroundTasks, db: Session = De
     if not user or not verify_password(req.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    # MFA Check (App-only now)
-    if user.mfa_preference == "app":
+    # MFA Check (Check both flag and preference for safety)
+    if user.mfa_preference == "app" or user.totp_enabled:
         if not req.otp_code:
             raise HTTPException(status_code=403, detail="2FA_REQUIRED")
         totp = pyotp.TOTP(user.totp_secret)
@@ -90,13 +93,25 @@ def login(req: LoginRequest, background_tasks: BackgroundTasks, db: Session = De
     token = create_access_token({"sub": str(user.id)})
     return AuthResponse(
         access_token=token,
-        user={"id": user.id, "name": user.name, "email": user.email},
+        user={
+            "id": user.id, 
+            "name": user.name, 
+            "email": user.email,
+            "mfa_preference": user.mfa_preference,
+            "totp_enabled": user.totp_enabled
+        },
     )
 
 
 @router.get("/me")
 def get_me(current_user: User = Depends(get_current_user)):
-    return {"id": current_user.id, "name": current_user.name, "email": current_user.email}
+    return {
+        "id": current_user.id, 
+        "name": current_user.name, 
+        "email": current_user.email,
+        "mfa_preference": current_user.mfa_preference,
+        "totp_enabled": current_user.totp_enabled
+    }
 
 @router.post("/2fa/generate")
 def generate_2fa(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -119,23 +134,52 @@ def verify_2fa(req: Verify2FARequest, user: User = Depends(get_current_user), db
     user.totp_enabled = True
     user.mfa_preference = "app"
     db.commit()
-    return {"message": "App-based 2FA successfully enabled"}
+    db.refresh(user)
+    
+    return {
+        "message": "App-based 2FA successfully enabled",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "mfa_preference": user.mfa_preference,
+            "totp_enabled": user.totp_enabled
+        }
+    }
 
 
 
 @router.post("/2fa/disable")
 def disable_2fa(req: Verify2FARequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if user.mfa_preference == "none":
+    # Force fresh read
+    db.refresh(user)
+    
+    # Check if anything is actually enabled
+    if user.mfa_preference == "none" and not user.totp_enabled:
         return {"message": "Already disabled"}
 
-    # Verification required to disable
-    if user.mfa_preference == "app":
+    # Verification required to disable (if a secret exists)
+    if user.totp_secret:
         totp = pyotp.TOTP(user.totp_secret)
         if not totp.verify(req.otp_code):
             raise HTTPException(status_code=400, detail="Invalid authentication code")
     
+    # Force reset all security flags
     user.mfa_preference = "none"
     user.totp_enabled = False
     user.totp_secret = None
+    user.is_verified = True 
+    
     db.commit()
-    return {"message": "2FA successfully disabled"}
+    db.refresh(user) # <--- CRITICAL: Refresh after commit
+    
+    return {
+        "message": "2FA successfully disabled",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "mfa_preference": user.mfa_preference,
+            "totp_enabled": user.totp_enabled
+        }
+    }

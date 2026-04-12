@@ -71,7 +71,7 @@ export const vaultApi = {
 }
 
 export const usersApi = {
-  getMe: () => api.get('/users/me').then(r => r.data),
+  getMe: () => api.get(`/auth/me?t=${Date.now()}`).then(r => r.data),
   updateProfile: (data) => api.put('/users/profile', data).then(r => r.data),
   updateEmail: (data) => api.put('/users/email', data).then(r => r.data),
   updatePassword: (data) => api.put('/users/password', data).then(r => r.data),
