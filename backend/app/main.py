@@ -60,7 +60,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users
+from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users, ai
 
 app.include_router(auth.router,         prefix="/api/auth",         tags=["Auth"])
 app.include_router(users.router,        prefix="/api/users",        tags=["Users"])
@@ -71,6 +71,7 @@ app.include_router(dashboard.router,    prefix="/api/dashboard",    tags=["Dashb
 app.include_router(todo.router,         prefix="/api/todo",         tags=["Todo"])
 app.include_router(passwords.router,    prefix="/api/passwords",    tags=["Passwords"])
 app.include_router(budgets.router,      prefix="/api/budgets",      tags=["Budgets"])
+app.include_router(ai.router,           prefix="/api/ai",           tags=["AI"])
 
 @app.get("/")
 def root():
