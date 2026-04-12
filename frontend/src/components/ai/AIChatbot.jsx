@@ -30,17 +30,19 @@ export default function AIChatbot() {
   const fetchContext = async () => {
     const currentMonth = new Date().toISOString().slice(0, 7)
     try {
-      const [summary, budgets] = await Promise.all([
-        dashboardApi.getSummary(currentMonth),
+      const [dashboard, budgets] = await Promise.all([
+        dashboardApi.get(),
         budgetsApi.getAll(currentMonth)
       ])
+      
+      const summary = dashboard.summary
       
       return JSON.stringify({
         current_month: currentMonth,
         total_income: summary.total_income,
         total_expense: summary.total_expense,
-        balance: summary.balance,
-        expense_breakdown: summary.expense_by_category,
+        balance: summary.total_balance,
+        expense_breakdown: dashboard.expense_by_category,
         budget_limits: budgets,
         context: "The user uses this app to track budget. Help them cut costs based strictly on these provided generic aggregates."
       })
@@ -62,7 +64,7 @@ export default function AIChatbot() {
       const context = await fetchContext()
       
       const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
       // Building prompt string (No passwords explicitly by scope of design)
       const prompt = `You are an expert, friendly AI financial advisor inside a Budget Tracker app. 
