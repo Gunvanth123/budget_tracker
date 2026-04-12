@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field
 import pyotp
@@ -39,7 +39,7 @@ class AuthResponse(BaseModel):
 
 
 @router.post("/register", status_code=201)
-def register(req: RegisterRequest, db: Session = Depends(get_db)):
+def register(req: RegisterRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == req.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -60,87 +60,32 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     # Seed default categories
     seed_default_categories_for_user(db, user.id)
 
-    # Send verification email
-    sent = send_verification_otp(user.email, otp)
-    
-    return {
-        "message": "Registration successful! Please verify your email.",
-        "email": user.email,
-        "email_sent": sent
-    }
+    # Seed default categories
+    seed_default_categories_for_user(db, user.id)
 
-@router.post("/verify-email")
-def verify_email(req: VerifyEmailRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == req.email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if user.verification_otp != req.otp_code:
-        raise HTTPException(status_code=400, detail="Invalid verification code")
-    
-    if user.otp_expires_at and user.otp_expires_at < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Code expired")
-    
-    user.is_verified = True
-    user.verification_otp = None
-    db.commit()
-    
+    # Revert to immediate token issuance
     token = create_access_token({"sub": str(user.id)})
     return AuthResponse(
         access_token=token,
         user={"id": user.id, "name": user.name, "email": user.email},
     )
 
-@router.post("/resend-verification")
-def resend_verification(email: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    otp = generate_otp()
-    user.verification_otp = otp
-    user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
-    db.commit()
-    
-    send_verification_otp(user.email, otp)
-    return {"message": "New verification code sent"}
+
 
 
 @router.post("/login")
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+def login(req: LoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == req.email).first()
     if not user or not verify_password(req.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    if not user.is_verified:
-        raise HTTPException(status_code=403, detail="EMAIL_NOT_VERIFIED")
-
-    # MFA Check
+    # MFA Check (App-only now)
     if user.mfa_preference == "app":
         if not req.otp_code:
             raise HTTPException(status_code=403, detail="2FA_REQUIRED")
         totp = pyotp.TOTP(user.totp_secret)
         if not totp.verify(req.otp_code):
             raise HTTPException(status_code=401, detail="Invalid 2FA code")
-    
-    elif user.mfa_preference == "email":
-        if not req.otp_code:
-            # Generate and send Email OTP
-            otp = generate_otp()
-            user.verification_otp = otp
-            user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
-            db.commit()
-            send_mfa_otp(user.email, otp)
-            raise HTTPException(status_code=403, detail="2FA_REQUIRED")
-        
-        if user.verification_otp != req.otp_code:
-            raise HTTPException(status_code=401, detail="Invalid security code")
-        if user.otp_expires_at and user.otp_expires_at < datetime.utcnow():
-            raise HTTPException(status_code=401, detail="Security code expired")
-        
-        # Clear code after use
-        user.verification_otp = None
-        db.commit()
 
     token = create_access_token({"sub": str(user.id)})
     return AuthResponse(
@@ -176,11 +121,7 @@ def verify_2fa(req: Verify2FARequest, user: User = Depends(get_current_user), db
     db.commit()
     return {"message": "App-based 2FA successfully enabled"}
 
-@router.post("/2fa/enable-email")
-def enable_email_2fa(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    user.mfa_preference = "email"
-    db.commit()
-    return {"message": "Email-based 2FA successfully enabled"}
+
 
 @router.post("/2fa/disable")
 def disable_2fa(req: Verify2FARequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):

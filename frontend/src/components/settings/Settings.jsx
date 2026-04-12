@@ -11,7 +11,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(false)
 
   // Profile data
-  const [profile, setProfile] = useState({ name: '', email: '', profile_picture: '', totp_enabled: false, mfa_preference: 'none' })
+  const [profile, setProfile] = useState({ name: '', email: '', profile_picture: '', totp_enabled: false })
   const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '' })
   
   // 2FA state
@@ -107,18 +107,8 @@ export default function Settings() {
     }
   }
 
-  const enableEmail2FA = async () => {
-    try {
-      await mfaApi.enableEmail()
-      toast.success('Email-based 2FA Enabled!')
-      loadProfile()
-    } catch {
-      toast.error('Failed to enable Email 2FA')
-    }
-  }
-
   const disable2FA = async () => {
-    const code = prompt('Enter your current Security Code (Authentictor or Email) to disable 2FA:')
+    const code = prompt('Enter your current Authenticator code to disable 2FA:')
     if (!code) return
     try {
       await mfaApi.disable(code)
@@ -216,12 +206,10 @@ export default function Settings() {
             
             <h3 className="font-semibold text-lg border-b pb-2 mb-4">Two-Factor Authentication</h3>
             
-            {profile.mfa_preference !== 'none' ? (
+            {profile.totp_enabled ? (
               <div className="bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400 p-4 rounded-xl">
                 <p className="font-semibold flex items-center gap-2 mb-1"><Shield className="w-4 h-4" /> MFA is Currently Active</p>
-                <p className="text-sm opacity-80 mb-4">
-                  Mode: <b>{profile.mfa_preference === 'app' ? 'Google Authenticator' : 'Email Codes'}</b>
-                </p>
+                <p className="text-sm opacity-80 mb-4">Your account is heavily secured using Google Authenticator.</p>
                 <button onClick={disable2FA} className="btn-secondary text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full">
                   Disable 2FA
                 </button>
@@ -240,18 +228,11 @@ export default function Settings() {
                 <button onClick={() => setMfaData(null)} className="text-sm opacity-50 underline mt-2">Cancel Setup</button>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="p-4 border border-[var(--border)] rounded-xl space-y-3">
-                    <h4 className="font-bold text-sm">Option A: Authenticator App</h4>
-                    <p className="text-xs opacity-70 leading-relaxed">Most secure. Works offline using Google Authenticator or Authy.</p>
-                    <button onClick={generate2FA} className="btn-secondary w-full text-xs font-bold py-2">Enable App 2FA</button>
-                </div>
-
-                <div className="p-4 border border-[var(--border)] rounded-xl space-y-3">
-                    <h4 className="font-bold text-sm">Option B: Email Codes</h4>
-                    <p className="text-xs opacity-70 leading-relaxed">Convenient. We'll send a 6-digit code to your email on every login.</p>
-                    <button onClick={enableEmail2FA} className="btn-primary w-full text-xs font-bold py-2">Enable Email 2FA</button>
-                </div>
+              <div className="space-y-4">
+                <p className="text-sm opacity-80">Add an extra layer of security to your account with a Google Authenticator TOTP token.</p>
+                <button onClick={generate2FA} className="btn-primary w-full flex items-center justify-center gap-2">
+                  <Shield className="w-4 h-4" /> Setup Google Authenticator
+                </button>
               </div>
             )}
             

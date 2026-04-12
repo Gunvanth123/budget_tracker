@@ -24,7 +24,8 @@ def send_email(to_email: str, subject: str, body: str):
     msg.attach(MIMEText(body, 'html'))
 
     try:
-        server = smtplib.SMTP(smtp_host, smtp_port)
+        # Added 10 second timeout to prevent hanging
+        server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
         server.starttls()
         server.login(smtp_user, smtp_password)
         server.send_message(msg)

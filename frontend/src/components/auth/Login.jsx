@@ -1,18 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
 
 export default function Login() {
-  const { login } = useAuth()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({ email: '', password: '', otp_code: '' })
   const [showPw, setShowPw] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [needs2FA, setNeeds2FA] = useState(false)
-  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -26,32 +23,10 @@ export default function Login() {
     } catch (err) {
       if (err.response?.data?.detail === '2FA_REQUIRED') {
         setNeeds2FA(true)
-        toast.success('Security code required')
-      } else if (err.response?.data?.detail === 'EMAIL_NOT_VERIFIED') {
-        toast.error('Please verify your email first')
-        setIsVerifyingEmail(true)
+        toast.success('Authenticator code required')
       } else {
         toast.error(err.response?.data?.detail || 'Sign in failed')
       }
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleVerifySignUp = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    try {
-      const res = await api.post('/auth/verify-email', { 
-        email: formData.email, 
-        otp_code: formData.otp_code 
-      })
-      toast.success('Verified! Signed in.')
-      localStorage.setItem('token', res.data.access_token)
-      localStorage.setItem('user', JSON.stringify(res.data.user))
-      navigate('/')
-    } catch (err) {
-      toast.error('Invalid code')
     } finally {
       setIsLoading(false)
     }
@@ -63,7 +38,7 @@ export default function Login() {
 
       <div className="w-full max-w-md">
 
-        {/* ✅ LOGO */}
+        {/* LOGO */}
         <div className="text-center mb-8">
           <img
             src="/logo.png"
@@ -76,34 +51,19 @@ export default function Login() {
         {/* Card */}
         <div className="card p-8">
           <h2 className="text-2xl font-semibold mb-1 text-center">Sign in</h2>
-          {isVerifyingEmail ? (
-            <form onSubmit={handleVerifySignUp} className="space-y-4 mt-6">
-              <p className="text-sm opacity-60 text-center">Enter the code sent to your email.</p>
+          {needs2FA ? (
+            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+              <p className="text-sm opacity-60 text-center">Enter your Google Authenticator code.</p>
               <input
                 type="text"
                 required
                 maxLength={6}
-                placeholder="000000"
+                placeholder="000 000"
                 className="input w-full text-center tracking-[0.5em] font-bold text-lg"
                 onChange={(e) => setFormData({ ...formData, otp_code: e.target.value })}
               />
               <button disabled={isLoading} className="btn-primary w-full py-2.5">
                 {isLoading ? 'Verifying...' : 'Verify & Sign In'}
-              </button>
-            </form>
-          ) : needs2FA ? (
-            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-              <p className="text-sm opacity-60 text-center">Security code required.</p>
-              <input
-                type="text"
-                required
-                maxLength={6}
-                placeholder="OTP Code"
-                className="input w-full text-center tracking-[0.5em] font-bold text-lg"
-                onChange={(e) => setFormData({ ...formData, otp_code: e.target.value })}
-              />
-              <button disabled={isLoading} className="btn-primary w-full py-2.5">
-                {isLoading ? 'Verifying...' : 'Verify OTP'}
               </button>
             </form>
           ) : (
@@ -152,20 +112,20 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="btn-primary w-full py-2.5 mt-2"
+                  className="btn-primary w-full py-2.5 mt-2 shadow-lg shadow-[var(--primary)]/20"
                 >
                   {isLoading ? 'Signing in...' : 'Sign in'}
                 </button>
               </form>
+
+              <p className="text-center text-sm opacity-60 mt-6">
+                Don't have an account?{' '}
+                <Link to="/register" style={{ color: 'var(--primary)' }}>
+                  Sign up
+                </Link>
+              </p>
             </>
           )}
-
-          <p className="text-center text-sm opacity-60 mt-6">
-            Don't have an account?{' '}
-            <Link to="/register" style={{ color: 'var(--primary)' }}>
-              Create one
-            </Link>
-          </p>
         </div>
 
         <p className="text-center text-xs opacity-50 mt-6">
