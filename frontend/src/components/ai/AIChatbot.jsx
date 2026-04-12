@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { MessageSquare, X, Send, Bot, User, Trash2 } from 'lucide-react'
 import { dashboardApi, budgetsApi } from '../../api/client'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import toast from 'react-hot-toast'
@@ -11,7 +11,7 @@ export default function AIChatbot() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '')
+  const [apiKey, setApiKey] = useState(localStorage.getItem('groq_api_key') || '')
   
   const endRef = useRef(null)
 
@@ -20,9 +20,9 @@ export default function AIChatbot() {
   }, [messages])
 
   const saveApiKey = (key) => {
-    localStorage.setItem('gemini_api_key', key)
+    localStorage.setItem('groq_api_key', key)
     setApiKey(key)
-    toast.success('API Key saved locally!')
+    toast.success('Groq API Key saved locally!')
   }
 
   const clearChat = () => setMessages([])
@@ -62,7 +62,6 @@ export default function AIChatbot() {
 
     try {
       const context = await fetchContext()
-      const genAI = new GoogleGenerativeAI(apiKey)
       
       const prompt = `You are an expert, friendly AI financial advisor inside a Budget Tracker app. 
       You MUST NOT ask for explicit user details or passwords. 
@@ -71,28 +70,33 @@ export default function AIChatbot() {
       The user says: "${userMsg.content}".
       Give a concise, actionable, and encouraging response, formatting numbers clearly. Use markdown.`
 
-      let result;
-      try {
-        // Try the modern flash model first
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-        result = await model.generateContent(prompt)
-      } catch (err) {
-        console.warn("Gemini 1.5-flash failed, falling back to gemini-pro", err)
-        // Fallback to the classic model name
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" })
-        result = await model.generateContent(prompt)
-      }
+      const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+        messages: [
+          { role: 'system', content: 'You are a helpful financial advisor.' },
+          { role: 'user', content: prompt }
+        ],
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.7,
+        max_tokens: 1024
+      }, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      })
 
-      const text = result.response.text()
+      const text = response.data.choices[0].message.content
       setMessages(prev => [...prev, { role: 'assistant', content: text }])
     } catch (err) {
-      console.error("Gemini Error:", err)
-      if (err.message.includes('API key')) {
-        toast.error('Invalid Gemini API Key')
-      } else if (err.status === 404 || err.message.includes('not found')) {
-        toast.error('Model Not Found. Please ensure "Generative Language API" is enabled in your Google Cloud Project.')
+      console.error("Groq Error:", err)
+      if (err.response?.status === 401) {
+        toast.error('Invalid Groq API Key')
+        setApiKey('')
+        localStorage.removeItem('groq_api_key')
+      } else if (err.response?.status === 429) {
+        toast.error('Rate limit reached. Try again later.')
       } else {
-        toast.error('AI Request Failed. Check your Project Settings in Google AI Studio.')
+        toast.error('AI Request Failed. Check your connection or Groq key.')
       }
     } finally {
       setIsTyping(false)
@@ -127,16 +131,16 @@ export default function AIChatbot() {
             </div>
           </div>
 
-          {!apiKey ? (
             <div className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4">
               <img src="/logo.png" className="w-16 h-16 rounded-full mx-auto mb-4" alt="Logo" />
-              <h4 className="font-bold text-gray-800 dark:text-white">Activate Your Free AI</h4>
-              <p className="text-sm text-gray-500">
-                Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-500 underline">Google AI Studio</a> and paste it below to securely enable the chatbot.
+              <h4 className="font-bold tracking-tight" style={{ color: 'var(--text)' }}>Enable Ultra-Fast AI (FREE)</h4>
+              <p className="text-sm opacity-60">
+                Google Gemini has region issues. We've switched to <b>Groq</b> for instant responses. 
+                Get your free key from <a href="https://console.groq.com/" target="_blank" rel="noreferrer" className="text-indigo-400 underline">Groq Console</a> and paste it below.
               </p>
               <input
                 type="password"
-                placeholder="AIzaSy..."
+                placeholder="gsk_..."
                 className="input text-center font-mono text-sm"
                 onKeyDown={e => {
                   if (e.key === 'Enter') saveApiKey(e.target.value)
