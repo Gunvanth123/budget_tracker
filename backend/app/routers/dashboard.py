@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from collections import defaultdict
+import calendar
 
 from app.database.db import get_db
 from app.models.models import Transaction, Account, Category, TransactionType, User
@@ -17,7 +18,10 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
     now = datetime.utcnow()
     uid = current_user.id
 
+    # ── Summary: use real account balances (includes opening balance) ──────────
     total_balance = db.query(func.sum(Account.balance)).filter(Account.user_id == uid).scalar() or 0.0
+
+    # All-time income and expense from ALL transactions (no date filter)
     total_income = db.query(func.sum(Transaction.amount)).filter(
         Transaction.user_id == uid, Transaction.type == TransactionType.income
     ).scalar() or 0.0
@@ -29,9 +33,10 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
         total_balance=round(total_balance, 2),
         total_income=round(total_income, 2),
         total_expense=round(total_expense, 2),
-        net=round(total_income - total_expense, 2),
+        net=round(total_balance, 2),   # Net = actual current balance (opening + all in - all out)
     )
 
+    # ── Expense by category (all time) ─────────────────────────────────────────
     cat_data = (
         db.query(Category.name, Category.color, func.sum(Transaction.amount).label("total"))
         .join(Transaction, Transaction.category_id == Category.id)
@@ -50,14 +55,29 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
         ) for r in cat_data
     ]
 
+    # ── Monthly comparison: proper calendar months (last 6 months) ─────────────
     monthly: dict = {}
-    for i in range(2, -1, -1):
-        month_date = now - timedelta(days=i * 30)
-        key = month_date.strftime("%b %Y")
+    # Build proper calendar months going back 5 months from current month
+    year, month = now.year, now.month
+    month_keys = []
+    for i in range(5, -1, -1):
+        m = month - i
+        y = year
+        while m <= 0:
+            m += 12
+            y -= 1
+        month_keys.append((y, m))
+
+    for (y, m) in month_keys:
+        key = datetime(y, m, 1).strftime("%b %Y")
         monthly[key] = {"income": 0.0, "expense": 0.0}
 
-    start_3m = now - timedelta(days=90)
-    for txn in db.query(Transaction).filter(Transaction.user_id == uid, Transaction.date >= start_3m).all():
+    # Start of 6 months ago
+    start_y, start_m = month_keys[0]
+    start_6m = datetime(start_y, start_m, 1)
+    for txn in db.query(Transaction).filter(
+        Transaction.user_id == uid, Transaction.date >= start_6m
+    ).all():
         key = txn.date.strftime("%b %Y")
         if key in monthly:
             monthly[key][txn.type.value] += txn.amount
@@ -67,6 +87,7 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
         for k, v in monthly.items()
     ]
 
+    # ── Daily trends (last 30 days) ────────────────────────────────────────────
     daily: dict = {}
     for i in range(29, -1, -1):
         day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
@@ -89,6 +110,7 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
         monthly_comparison=monthly_comparison,
         daily_trends=daily_trends,
     )
+
 
 
 @router.get("/calendar")
