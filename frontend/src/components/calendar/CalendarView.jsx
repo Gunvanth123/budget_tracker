@@ -58,16 +58,16 @@ export default function CalendarView() {
       {/* Month summary */}
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4 text-center">
-          <p className="text-xs text-slate-400 mb-1">Month Income</p>
-          <p className="font-display font-bold text-emerald-600">{formatCurrency(monthlyTotals.income)}</p>
+          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Month Income</p>
+          <p className="font-bold" style={{ color: '#22C55E' }}>{formatCurrency(monthlyTotals.income)}</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-xs text-slate-400 mb-1">Month Expense</p>
-          <p className="font-display font-bold text-red-500">{formatCurrency(monthlyTotals.expense)}</p>
+          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Month Expense</p>
+          <p className="font-bold" style={{ color: '#EF4444' }}>{formatCurrency(monthlyTotals.expense)}</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-xs text-slate-400 mb-1">Net</p>
-          <p className={`font-display font-bold ${monthlyTotals.income - monthlyTotals.expense >= 0 ? 'text-brand-600' : 'text-red-500'}`}>
+          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Net</p>
+          <p className="font-bold" style={{ color: monthlyTotals.income - monthlyTotals.expense >= 0 ? 'var(--primary)' : '#EF4444' }}>
             {formatCurrency(monthlyTotals.income - monthlyTotals.expense)}
           </p>
         </div>
@@ -77,13 +77,25 @@ export default function CalendarView() {
       <div className="card p-5">
         {/* Navigation */}
         <div className="flex items-center justify-between mb-5">
-          <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors">
+          <button
+            onClick={prevMonth}
+            className="p-2 rounded-xl transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h2 className="font-display font-bold text-slate-800 text-xl">
+          <h2 className="font-bold text-xl" style={{ color: 'var(--text)' }}>
             {format(currentDate, 'MMMM yyyy')}
           </h2>
-          <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors">
+          <button
+            onClick={nextMonth}
+            className="p-2 rounded-xl transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
@@ -91,7 +103,7 @@ export default function CalendarView() {
         {/* Weekday headers */}
         <div className="grid grid-cols-7 mb-2">
           {WEEKDAYS.map(day => (
-            <div key={day} className="text-center text-xs font-bold text-slate-400 uppercase tracking-wide py-2">
+            <div key={day} className="text-center text-xs font-bold uppercase tracking-wide py-2" style={{ color: 'var(--text-muted)' }}>
               {day}
             </div>
           ))}
@@ -101,7 +113,7 @@ export default function CalendarView() {
         {loading ? (
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="h-20 rounded-xl bg-slate-100 animate-pulse" />
+              <div key={i} className="h-20 rounded-xl animate-pulse" style={{ background: 'var(--border)' }} />
             ))}
           </div>
         ) : (
@@ -118,31 +130,40 @@ export default function CalendarView() {
                 <div
                   key={key}
                   onClick={() => handleDayClick(day)}
-                  className={`
-                    min-h-[80px] p-1.5 rounded-xl border transition-all cursor-pointer
-                    ${inMonth ? 'bg-white' : 'bg-slate-50'}
-                    ${today ? 'border-brand-400 bg-brand-50' : 'border-transparent hover:border-slate-200'}
-                    ${isSelected ? 'ring-2 ring-brand-400' : ''}
-                    ${hasData && inMonth ? 'hover:shadow-md' : ''}
-                  `}
+                  className={`min-h-[80px] p-1.5 rounded-xl border transition-all cursor-pointer ${
+                    isSelected ? 'ring-2' : ''
+                  } ${hasData && inMonth ? 'hover:shadow-md' : ''}`}
+                  style={{
+                    background: today
+                      ? 'rgba(0,161,155,0.1)'
+                      : inMonth ? 'var(--card)' : 'var(--bg)',
+                    borderColor: today
+                      ? 'var(--primary)'
+                      : isSelected ? 'var(--secondary)'
+                      : 'var(--border)',
+                    opacity: inMonth ? 1 : 0.45,
+                    outline: isSelected ? '2px solid var(--primary)' : 'none',
+                  }}
                 >
-                  <div className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-1 ${
-                    today
-                      ? 'bg-brand-500 text-white'
-                      : inMonth ? 'text-slate-700' : 'text-slate-300'
-                  }`}>
+                  <div
+                    className="text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-1"
+                    style={today
+                      ? { background: 'var(--primary)', color: '#fff' }
+                      : { color: inMonth ? 'var(--text)' : 'var(--text-muted)' }
+                    }
+                  >
                     {format(day, 'd')}
                   </div>
 
                   {hasData && inMonth && (
                     <div className="space-y-0.5">
                       {data.income > 0 && (
-                        <div className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 rounded px-1 truncate">
+                        <div className="text-[10px] font-semibold rounded px-1 truncate" style={{ color: '#22C55E', background: 'rgba(34,197,94,0.12)' }}>
                           +{formatCurrency(data.income)}
                         </div>
                       )}
                       {data.expense > 0 && (
-                        <div className="text-[10px] font-semibold text-red-500 bg-red-50 rounded px-1 truncate">
+                        <div className="text-[10px] font-semibold rounded px-1 truncate" style={{ color: '#EF4444', background: 'rgba(239,68,68,0.12)' }}>
                           -{formatCurrency(data.expense)}
                         </div>
                       )}
@@ -159,43 +180,48 @@ export default function CalendarView() {
       {selectedDay && selectedData && (
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-bold text-slate-800">
+            <h3 className="font-bold" style={{ color: 'var(--text)' }}>
               {format(parseISO(selectedDay), 'EEEE, d MMMM yyyy')}
             </h3>
-            <button onClick={() => { setSelectedDay(null); setSelectedData(null) }}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
+            <button
+              onClick={() => { setSelectedDay(null); setSelectedData(null) }}
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           <div className="flex gap-4 mb-4">
-            <div className="flex-1 bg-emerald-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-emerald-600 font-semibold">Income</p>
-              <p className="font-display font-bold text-emerald-700">{formatCurrency(selectedData.income)}</p>
+            <div className="flex-1 rounded-xl p-3 text-center" style={{ background: 'rgba(34,197,94,0.1)' }}>
+              <p className="text-xs font-semibold" style={{ color: '#22C55E' }}>Income</p>
+              <p className="font-bold" style={{ color: '#22C55E' }}>{formatCurrency(selectedData.income)}</p>
             </div>
-            <div className="flex-1 bg-red-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-red-500 font-semibold">Expense</p>
-              <p className="font-display font-bold text-red-600">{formatCurrency(selectedData.expense)}</p>
+            <div className="flex-1 rounded-xl p-3 text-center" style={{ background: 'rgba(239,68,68,0.1)' }}>
+              <p className="text-xs font-semibold" style={{ color: '#EF4444' }}>Expense</p>
+              <p className="font-bold" style={{ color: '#EF4444' }}>{formatCurrency(selectedData.expense)}</p>
             </div>
           </div>
 
           {selectedData.transactions?.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Transactions</p>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Transactions</p>
               {selectedData.transactions.map((txn, i) => (
-                <div key={i} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+                <div key={i} className="flex items-center justify-between p-2.5 rounded-xl" style={{ background: 'var(--border)' }}>
                   <div>
-                    <p className="text-sm font-medium text-slate-700">{txn.notes || txn.category}</p>
-                    <p className="text-xs text-slate-400">{txn.category} · {txn.account}</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{txn.notes || txn.category}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{txn.category} · {txn.account}</p>
                   </div>
-                  <span className={`font-mono font-semibold text-sm ${txn.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <span className="font-mono font-semibold text-sm" style={{ color: txn.type === 'income' ? '#22C55E' : '#EF4444' }}>
                     {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-400 text-center py-4">No transactions for this day</p>
+            <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>No transactions for this day</p>
           )}
         </div>
       )}

@@ -18,15 +18,33 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`modal-content ${sizes[size]} w-full`}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h2 className="font-display font-bold text-slate-800 text-lg">{title}</h2>
+
+        {/* Header */}
+        <div
+          className="flex items-center justify-between p-5"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <h2 className="font-semibold text-base" style={{ color: 'var(--text)' }}>
+            {title}
+          </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'var(--border)'
+              e.currentTarget.style.color = 'var(--text)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = 'var(--text-muted)'
+            }}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Body */}
         <div className="p-5">{children}</div>
       </div>
     </div>

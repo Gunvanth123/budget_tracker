@@ -74,15 +74,18 @@ export default function Accounts() {
   return (
     <div className="space-y-5">
       {/* Total balance banner */}
-      <div className="card p-5 bg-gradient-to-br from-brand-500 to-brand-700 text-white border-0">
-        <p className="text-sm font-semibold text-brand-100">Total Balance Across All Accounts</p>
-        <p className="font-display font-bold text-3xl mt-1">{formatCurrency(totalBalance)}</p>
-        <p className="text-xs text-brand-200 mt-1">{accounts.length} account{accounts.length !== 1 ? 's' : ''}</p>
+      <div
+        className="card p-5 text-white border-0"
+        style={{ background: 'linear-gradient(135deg, #00A19B 0%, #007A75 100%)' }}
+      >
+        <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>Total Balance Across All Accounts</p>
+        <p className="font-bold text-3xl mt-1">{formatCurrency(totalBalance)}</p>
+        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{accounts.length} account{accounts.length !== 1 ? 's' : ''}</p>
       </div>
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-slate-700">Your Accounts</h2>
+        <h2 className="font-semibold" style={{ color: 'var(--text)' }}>Your Accounts</h2>
         <button onClick={openCreate} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" />
           New Account
@@ -97,7 +100,7 @@ export default function Accounts() {
           ))}
         </div>
       ) : accounts.length === 0 ? (
-        <div className="card p-12 text-center text-slate-400">
+        <div className="card p-12 text-center" style={{ color: 'var(--text-muted)' }}>
           <Wallet className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">No accounts yet</p>
           <p className="text-sm mt-1">Create your first account to start tracking</p>
@@ -115,29 +118,44 @@ export default function Accounts() {
                     {ACCOUNT_TYPE_ICONS[acc.type] || '💼'}
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-800 text-sm">{acc.name}</p>
-                    <p className="text-xs text-slate-400 capitalize">{acc.type.replace('_', ' ')}</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>{acc.name}</p>
+                    <p className="text-xs capitalize" style={{ color: 'var(--text-muted)' }}>{acc.type.replace('_', ' ')}</p>
                   </div>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => openEdit(acc)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-brand-600 transition-colors">
+                  <button
+                    onClick={() => openEdit(acc)}
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--border)'; e.currentTarget.style.color = 'var(--primary)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                  >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => handleDelete(acc.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+                  <button
+                    onClick={() => handleDelete(acc.id)}
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                  >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">Balance</p>
-                <p className={`font-display font-bold text-2xl ${acc.balance < 0 ? 'text-red-500' : 'text-slate-800'}`}>
+                <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Balance</p>
+                <p
+                  className="font-bold text-2xl"
+                  style={{ color: acc.balance < 0 ? '#EF4444' : 'var(--text)' }}
+                >
                   {formatCurrency(acc.balance)}
                 </p>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-100">
-                <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -146,7 +164,7 @@ export default function Accounts() {
                     }}
                   />
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                   {totalBalance > 0 ? ((acc.balance / totalBalance) * 100).toFixed(1) : 0}% of total
                 </p>
               </div>
@@ -180,7 +198,7 @@ export default function Accounts() {
           <div>
             <label className="label">Opening Balance (₹)</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono">₹</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono" style={{ color: 'var(--text-muted)' }}>₹</span>
               <input
                 type="number"
                 step="0.01"
@@ -199,7 +217,7 @@ export default function Accounts() {
                   key={c}
                   type="button"
                   onClick={() => set('color', c)}
-                  className={`w-7 h-7 rounded-full transition-transform ${form.color === c ? 'scale-125 ring-2 ring-offset-1 ring-slate-400' : 'hover:scale-110'}`}
+                  className={`w-7 h-7 rounded-full transition-transform ${form.color === c ? 'scale-125 ring-2 ring-offset-2 ring-[var(--primary)]' : 'hover:scale-110'}`}
                   style={{ background: c }}
                 />
               ))}
