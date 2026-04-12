@@ -18,7 +18,11 @@ async def lifespan(app: FastAPI):
                     "profile_picture TEXT",
                     "last_email_change TIMESTAMP",
                     "totp_secret VARCHAR(255)",
-                    "totp_enabled BOOLEAN DEFAULT FALSE"
+                    "totp_enabled BOOLEAN DEFAULT FALSE",
+                    "is_verified BOOLEAN DEFAULT FALSE",
+                    "verification_otp VARCHAR(10)",
+                    "otp_expires_at TIMESTAMP",
+                    "mfa_preference VARCHAR(20) DEFAULT 'none'"
                 ]
                 for col in columns:
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col};"))
@@ -28,7 +32,11 @@ async def lifespan(app: FastAPI):
                     "profile_picture TEXT",
                     "last_email_change DATETIME",
                     "totp_secret VARCHAR(255)",
-                    "totp_enabled BOOLEAN DEFAULT FALSE"
+                    "totp_enabled BOOLEAN DEFAULT FALSE",
+                    "is_verified BOOLEAN DEFAULT FALSE",
+                    "verification_otp VARCHAR(10)",
+                    "otp_expires_at DATETIME",
+                    "mfa_preference VARCHAR(20) DEFAULT 'none'"
                 ]
                 for col in columns:
                     try:
@@ -60,7 +68,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users, ai
+from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users, ai, vault
 
 app.include_router(auth.router,         prefix="/api/auth",         tags=["Auth"])
 app.include_router(users.router,        prefix="/api/users",        tags=["Users"])
@@ -71,6 +79,7 @@ app.include_router(dashboard.router,    prefix="/api/dashboard",    tags=["Dashb
 app.include_router(todo.router,         prefix="/api/todo",         tags=["Todo"])
 app.include_router(passwords.router,    prefix="/api/passwords",    tags=["Passwords"])
 app.include_router(budgets.router,      prefix="/api/budgets",      tags=["Budgets"])
+app.include_router(vault.router,        prefix="/api/vault",        tags=["Vault"])
 app.include_router(ai.router,           prefix="/api/ai",           tags=["AI"])
 
 @app.get("/")

@@ -13,6 +13,7 @@ import PasswordManager from './components/passwords/PasswordManager'
 import BudgetGoals from './components/budgets/BudgetGoals'
 import AIChatbot from './components/ai/AIChatbot'
 import Settings from './components/settings/Settings'
+import SecureVault from './components/vault/SecureVault'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -24,7 +25,7 @@ function PrivateRoute({ children }) {
           {/* LOGO */}
           <div className="relative w-20 h-20">
             <img
-              src="/assets/logo.png"
+              src="/logo.png"
               className="w-20 h-20 rounded-full object-cover"
             />
 
@@ -62,6 +63,7 @@ export default function App() {
         <Route path="todo" element={<Todo />} />
         <Route path="passwords" element={<PasswordManager />} />
         <Route path="budgets" element={<BudgetGoals />} />
+        <Route path="vault" element={<SecureVault />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

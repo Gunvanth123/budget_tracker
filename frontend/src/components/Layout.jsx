@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Shield, Key, Target, Settings as SettingsIcon } from 'lucide-react'
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, Tags,
-  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon, Key, Target, Settings as SettingsIcon
+  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { clsx } from '../utils/helpers'
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { to: '/calendar',     icon: Calendar,        label: 'Calendar'     },
   { to: '/todo',         icon: ListTodo,        label: 'To-Do'        },
   { to: '/passwords',    icon: Key,             label: 'Passwords'    },
+  { to: '/vault',        icon: Shield,          label: 'Secure Vault' },
   { to: '/budgets',      icon: Target,          label: 'Budget Goals' },
   { to: '/settings',     icon: SettingsIcon,    label: 'Settings'     },
 ]

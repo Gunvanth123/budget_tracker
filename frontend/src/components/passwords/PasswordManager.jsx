@@ -225,7 +225,7 @@ export default function PasswordManager() {
             <Download className="w-4 h-4" /> Export
           </button>
           <button onClick={() => { setEditData(null); setFormOpen(true) }} className="btn-primary flex items-center gap-2 px-4 shadow-lg shadow-[var(--primary)]/20">
-            <Plus className="w-4 h-4" /> Add Login
+            <Plus className="w-4 h-4" /> Add Password
           </button>
           <button onClick={() => { setStatus('locked'); setMasterPassword(''); setPasswords([]); setRevealed(new Set()); }} className="ml-2 p-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-colors" title="Lock vault">
             <Lock className="w-5 h-5" />

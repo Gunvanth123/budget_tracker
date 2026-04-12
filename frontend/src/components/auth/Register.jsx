@@ -1,49 +1,58 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { authApi } from '../../api/client'
 import { Eye, EyeOff, ArrowRight, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Register() {
-  const { register } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' })
+  const [isLoading, setIsLoading] = useState(false)
+  const [step, setStep] = useState('form') // 'form' or 'verify'
+  const [otp, setOtp] = useState('')
+  const [registeredEmail, setRegisteredEmail] = useState('')
   const [showPw, setShowPw] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
-
-  const pwStrength = (() => {
-    const p = form.password
-    if (!p) return 0
-    let s = 0
-    if (p.length >= 6) s++
-    if (p.length >= 10) s++
-    if (/[A-Z]/.test(p)) s++
-    if (/[0-9]/.test(p)) s++
-    if (/[^A-Za-z0-9]/.test(p)) s++
-    return s
-  })()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (form.password !== form.confirm) {
-      toast.error('Passwords do not match')
-      return
-    }
-    if (form.password.length < 6) {
-      toast.error('Password must be at least 6 characters')
-      return
-    }
-    setLoading(true)
+    setIsLoading(true)
     try {
-      await register(form.name, form.email, form.password)
-      toast.success('Account created!')
-      navigate('/dashboard')
+      const res = await authApi.register(formData)
+      toast.success(res.message)
+      setRegisteredEmail(formData.email)
+      setStep('verify')
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Registration failed')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerify = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      const res = await authApi.verifyEmail({ 
+        email: registeredEmail, 
+        otp_code: otp 
+      })
+      toast.success('Email verified successfully!')
+      localStorage.setItem('token', res.access_token)
+      localStorage.setItem('user', JSON.stringify(res.user))
+      navigate('/')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Verification failed')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    try {
+      await authApi.resendVerification(registeredEmail)
+      toast.success('New code sent to your email')
+    } catch (err) {
+      toast.error('Failed to resend code')
     }
   }
 
@@ -52,22 +61,22 @@ export default function Register() {
          style={{ background: 'var(--bg)', color: 'var(--text)' }}>
 
       <div className="w-full max-w-md">
-
-        {/* ✅ LOGO */}
+        {/* LOGO */}
         <div className="text-center mb-8">
           <img
-            src="/assets/logo.png"
-            className="w-16 h-16 rounded-full mx-auto mb-4"
+            src="/logo.png"
+            className="w-16 h-16 rounded-full mx-auto mb-2"
+            alt="Logo"
           />
           <h1 className="text-2xl font-semibold">Budget Tracker</h1>
-          <p className="opacity-60 text-sm">Start your financial journey</p>
+          <p className="opacity-60 text-sm">Join the Elite Privacy Circle</p>
         </div>
 
         {/* Perks */}
         <div className="flex justify-center gap-4 mb-6 flex-wrap text-xs opacity-60">
-          {['Free forever', 'Private data', 'Secure'].map(p => (
+          {['Free forever', 'End-to-End Encrypted', 'Secure'].map(p => (
             <div key={p} className="flex items-center gap-1">
-              <Check className="w-3 h-3" />
+              <Check className="w-3 h-3 text-green-500" />
               {p}
             </div>
           ))}
@@ -75,74 +84,102 @@ export default function Register() {
 
         {/* Card */}
         <div className="card p-8">
-          <h2 className="text-lg font-semibold mb-1">Create account</h2>
-          <p className="opacity-60 text-sm mb-6">Get started in seconds</p>
+          {step === 'form' ? (
+            <>
+              <h2 className="text-2xl font-semibold mb-1 text-center">Create account</h2>
+              <p className="opacity-60 text-sm mb-6 text-center">Get started in seconds</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input
+                  type="text"
+                  required
+                  placeholder="Full Name"
+                  className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+                
+                <input
+                  type="email"
+                  required
+                  placeholder="Email"
+                  className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
 
-            <input
-              type="text"
-              value={form.name}
-              onChange={e => set('name', e.target.value)}
-              className="input"
-              placeholder="Full Name"
-              required
-            />
+                <div className="relative">
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    required
+                    placeholder="Password"
+                    className="input w-full pr-10"
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"
+                  >
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
 
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => set('email', e.target.value)}
-              className="input"
-              placeholder="Email"
-              required
-            />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-2"
+                >
+                  {isLoading 
+                    ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : <>Register <ArrowRight className="w-4 h-4" /></>
+                  }
+                </button>
+              </form>
 
-            <div className="relative">
-              <input
-                type={showPw ? 'text' : 'password'}
-                value={form.password}
-                onChange={e => set('password', e.target.value)}
-                className="input pr-10"
-                placeholder="Password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw(p => !p)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"
-              >
-                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+              <p className="text-center text-sm opacity-60 mt-6">
+                Already have an account?{' '}
+                <Link to="/login" style={{ color: 'var(--primary)' }}>
+                  Sign in
+                </Link>
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-semibold mb-1 text-center">Verify Email</h2>
+              <p className="opacity-60 text-sm mb-6 text-center">
+                We've sent an OTP to <b>{registeredEmail}</b>
+              </p>
 
-            <input
-              type="password"
-              value={form.confirm}
-              onChange={e => set('confirm', e.target.value)}
-              className="input"
-              placeholder="Confirm Password"
-              required
-            />
+              <form onSubmit={handleVerify} className="space-y-4">
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  placeholder="000000"
+                  className="input w-full text-center tracking-[0.5em] font-bold text-xl"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-2"
-            >
-              {loading
-                ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <>Create account <ArrowRight className="w-4 h-4" /></>
-              }
-            </button>
-          </form>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn-primary w-full py-3"
+                >
+                  {isLoading ? 'Verifying...' : 'Verify & Sign In'}
+                </button>
 
-          <p className="text-center text-sm opacity-60 mt-6">
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--primary)' }}>
-              Sign in
-            </Link>
-          </p>
+                <div className="text-center mt-4">
+                  <button 
+                    type="button" 
+                    onClick={handleResend}
+                    className="text-xs text-indigo-500 hover:underline"
+                  >
+                    Didn't receive a code? Resend
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>
