@@ -62,11 +62,8 @@ export default function AIChatbot() {
 
     try {
       const context = await fetchContext()
-      
       const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" })
-
-      // Building prompt string (No passwords explicitly by scope of design)
+      
       const prompt = `You are an expert, friendly AI financial advisor inside a Budget Tracker app. 
       You MUST NOT ask for explicit user details or passwords. 
       Here is the user's aggregated tracking data for this month: 
@@ -74,18 +71,28 @@ export default function AIChatbot() {
       The user says: "${userMsg.content}".
       Give a concise, actionable, and encouraging response, formatting numbers clearly. Use markdown.`
 
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
+      let result;
+      try {
+        // Try the modern flash model first
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+        result = await model.generateContent(prompt)
+      } catch (err) {
+        console.warn("Gemini 1.5-flash failed, falling back to gemini-pro", err)
+        // Fallback to the classic model name
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+        result = await model.generateContent(prompt)
+      }
 
+      const text = result.response.text()
       setMessages(prev => [...prev, { role: 'assistant', content: text }])
     } catch (err) {
-      console.error(err)
+      console.error("Gemini Error:", err)
       if (err.message.includes('API key')) {
         toast.error('Invalid Gemini API Key or Quota Exceeded')
         setApiKey('')
         localStorage.removeItem('gemini_api_key')
       } else {
-        toast.error('AI Request Failed. Try again later.')
+        toast.error('AI Request Failed. Try visiting Google Cloud Console to enable Generative Language API.')
       }
     } finally {
       setIsTyping(false)
@@ -155,8 +162,10 @@ export default function AIChatbot() {
                     <div className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm ${
                       m.role === 'user' 
                         ? 'bg-indigo-500 text-white rounded-br-none' 
-                        : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'
-                    }`}>
+                        : 'text-gray-800 rounded-bl-none border border-gray-100'
+                    }`}
+                    style={m.role === 'assistant' ? { backgroundColor: 'var(--card)', color: 'var(--text)', borderColor: 'var(--border)' } : {}}
+                    >
                       {m.role === 'user' ? (
                         m.content
                       ) : (
@@ -170,7 +179,8 @@ export default function AIChatbot() {
                 
                 {isTyping && (
                   <div className="flex justify-start">
-                    <div className="bg-white rounded-2xl rounded-bl-none p-3 shadow-sm border border-gray-100 flex gap-1">
+                    <div className="rounded-2xl rounded-bl-none p-3 shadow-sm border border-gray-100 flex gap-1"
+                         style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
                       <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                       <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
