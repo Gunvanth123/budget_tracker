@@ -29,11 +29,17 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
         Transaction.user_id == uid, Transaction.type == TransactionType.expense
     ).scalar() or 0.0
 
+    # opening_balance = money in accounts before any transactions
+    # Formula: total_balance = opening + income - expense
+    # So: opening = total_balance - income + expense
+    opening_balance = round(total_balance - total_income + total_expense, 2)
+
     summary = SummaryOut(
         total_balance=round(total_balance, 2),
         total_income=round(total_income, 2),
         total_expense=round(total_expense, 2),
-        net=round(total_balance, 2),   # Net = actual current balance (opening + all in - all out)
+        net=round(total_balance, 2),
+        opening_balance=opening_balance,
     )
 
     # ── Expense by category (all time) ─────────────────────────────────────────

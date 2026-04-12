@@ -92,6 +92,7 @@ class SummaryOut(BaseModel):
     total_income: float
     total_expense: float
     net: float
+    opening_balance: float  # Computed: money put in before any transactions
 
 class CategoryBreakdown(BaseModel):
     category: str

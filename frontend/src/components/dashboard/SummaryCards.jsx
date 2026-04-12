@@ -24,8 +24,8 @@ const cards = [
     bg: '#EF4444',
   },
   {
-    key: 'net',
-    label: 'Net Balance',
+    key: 'opening_balance',
+    label: 'Initial Deposits',
     icon: Activity,
     gradient: 'from-[#F59E0B] to-[#D97706]',
     bg: '#F59E0B',
