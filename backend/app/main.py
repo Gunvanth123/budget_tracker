@@ -12,17 +12,24 @@ async def lifespan(app: FastAPI):
     try:
         from sqlalchemy import text
         with engine.begin() as conn:
-            columns = [
-                "master_password_hash VARCHAR(255)",
-                "profile_picture TEXT",
-                "last_email_change DATETIME",
-                "totp_secret VARCHAR(255)",
-                "totp_enabled BOOLEAN DEFAULT FALSE"
-            ]
             if engine.dialect.name == "postgresql":
+                columns = [
+                    "master_password_hash VARCHAR(255)",
+                    "profile_picture TEXT",
+                    "last_email_change TIMESTAMP",
+                    "totp_secret VARCHAR(255)",
+                    "totp_enabled BOOLEAN DEFAULT FALSE"
+                ]
                 for col in columns:
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col};"))
             elif engine.dialect.name == "sqlite":
+                columns = [
+                    "master_password_hash VARCHAR(255)",
+                    "profile_picture TEXT",
+                    "last_email_change DATETIME",
+                    "totp_secret VARCHAR(255)",
+                    "totp_enabled BOOLEAN DEFAULT FALSE"
+                ]
                 for col in columns:
                     try:
                         conn.execute(text(f"ALTER TABLE users ADD COLUMN {col};"))
