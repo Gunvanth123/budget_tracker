@@ -64,7 +64,7 @@ export default function AIChatbot() {
       const context = await fetchContext()
       
       const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" })
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" })
 
       // Building prompt string (No passwords explicitly by scope of design)
       const prompt = `You are an expert, friendly AI financial advisor inside a Budget Tracker app. 

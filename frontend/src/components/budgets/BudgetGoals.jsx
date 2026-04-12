@@ -17,10 +17,10 @@ export default function BudgetGoals() {
 
   const fetchData = async () => {
     try {
-      const [catsRes, budgetsRes, summaryRes] = await Promise.all([
+      const [catsRes, budgetsRes, dashboardRes] = await Promise.all([
         categoriesApi.getAll(),
         budgetsApi.getAll(currentMonth),
-        dashboardApi.getSummary(currentMonth)
+        dashboardApi.get()
       ])
       
       const expCats = catsRes.filter(c => c.type === 'expense')
@@ -28,8 +28,8 @@ export default function BudgetGoals() {
       setBudgets(budgetsRes)
 
       const expMap = {}
-      summaryRes.expense_by_category?.forEach(item => {
-        expMap[item.category] = item.total
+      dashboardRes.expense_by_category?.forEach(item => {
+        expMap[item.category] = item.amount
       })
       setExpenses(expMap)
     } catch {
