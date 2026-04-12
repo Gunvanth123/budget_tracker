@@ -98,10 +98,11 @@ export default function Settings() {
 
   const verify2FA = async () => {
     try {
-      await mfaApi.verify(otpCode)
+      const res = await mfaApi.verify(otpCode)
       toast.success('Google Authenticator Enabled!')
       setMfaData(null)
-      loadProfile()
+      if (res.user) setProfile(p => ({ ...p, ...res.user }))
+      else loadProfile()
     } catch {
       toast.error('Invalid code. Try again.')
     }
@@ -111,9 +112,10 @@ export default function Settings() {
     const code = prompt('Enter your current Authenticator code to disable 2FA:')
     if (!code) return
     try {
-      await mfaApi.disable(code)
+      const res = await mfaApi.disable(code)
       toast.success('2FA Disabled')
-      loadProfile()
+      if (res.user) setProfile(p => ({ ...p, ...res.user }))
+      else loadProfile()
     } catch {
       toast.error('Invalid code. Access Denied.')
     }
