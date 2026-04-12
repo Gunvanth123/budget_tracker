@@ -29,7 +29,8 @@ export default function BudgetGoals() {
 
       const expMap = {}
       dashboardRes.expense_by_category?.forEach(item => {
-        expMap[item.category] = item.amount
+        // Map category NAME (lowercase) to its AMOUNT spent for robust matching
+        expMap[item.category.toLowerCase().trim()] = item.amount
       })
       setExpenses(expMap)
     } catch {
@@ -70,7 +71,8 @@ export default function BudgetGoals() {
         {categories.map(cat => {
           const budget = budgets.find(b => b.category_id === cat.id)
           const limit = budget ? budget.amount : 0
-          const spent = expenses[cat.name] || 0
+          // Use Case-Insensitive matching for Spent amounts
+          const spent = expenses[cat.name.toLowerCase().trim()] || 0
           const percentage = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0
           
           let color = '#22C55E' // green
@@ -84,15 +86,21 @@ export default function BudgetGoals() {
                   <div className="w-8 h-8 rounded flex items-center justify-center text-white" style={{ backgroundColor: cat.color }}>
                     <TrendingDown className="w-4 h-4" />
                   </div>
-                  <h3 className="font-semibold text-gray-800">{cat.name}</h3>
+                  <h3 className="font-semibold" style={{ color: 'var(--text)' }}>{cat.name}</h3>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500 font-medium tracking-wide">SET LIMIT</p>
+                  <p className="text-xs font-medium tracking-wide" style={{ color: 'var(--text-muted)' }}>SET LIMIT</p>
                   <input
                     type="number"
                     defaultValue={limit}
                     onBlur={(e) => handleBudgetChange(cat.id, e.target.value)}
-                    className="w-24 text-right border-b-2 border-gray-200 focus:border-teal-500 outline-none font-bold text-gray-700 mt-1 pl-1"
+                    className="w-24 text-right border-b-2 outline-none font-bold mt-1 pl-1"
+                    style={{ 
+                      backgroundColor: 'transparent', 
+                      color: 'var(--text)', 
+                      borderBottomColor: 'var(--border)',
+                      caretColor: 'var(--primary)'
+                    }}
                     placeholder="0.00"
                   />
                 </div>
@@ -100,11 +108,11 @@ export default function BudgetGoals() {
 
               {limit > 0 ? (
                 <div>
-                  <div className="flex justify-between text-xs mb-1 font-medium text-gray-600">
+                  <div className="flex justify-between text-xs mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>
                     <span>Spent: ₹{spent}</span>
                     <span>{percentage.toFixed(0)}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="w-full rounded-full h-2.5" style={{ backgroundColor: 'var(--border)' }}>
                     <div className="h-2.5 rounded-full transition-all duration-500" style={{ width: `${percentage}%`, backgroundColor: color }}></div>
                   </div>
                 </div>
