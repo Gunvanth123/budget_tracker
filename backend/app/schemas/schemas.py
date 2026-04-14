@@ -36,6 +36,7 @@ class AccountBase(BaseModel):
     balance: float = 0.0
     currency: str = "INR"
     color: Optional[str] = "#6366f1"
+    is_default: bool = False
 
 class AccountCreate(AccountBase):
     pass
@@ -45,6 +46,7 @@ class AccountUpdate(BaseModel):
     type: Optional[AccountType] = None
     balance: Optional[float] = None
     color: Optional[str] = None
+    is_default: Optional[bool] = None
 
 class AccountOut(AccountBase):
     id: int

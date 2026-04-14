@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, X, Send, Bot, Trash2 } from 'lucide-react'
-import { dashboardApi, budgetsApi, aiApi } from '../../api/client'
+import { MessageSquare, X, Send, Bot, Trash2, Mic, MicOff, Volume2 } from 'lucide-react'
+import { dashboardApi, budgetsApi, aiApi, categoriesApi, accountsApi, transactionsApi } from '../../api/client'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import toast from 'react-hot-toast'
@@ -10,6 +10,7 @@ export default function AIChatbot() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [isListening, setIsListening] = useState(false)
   
   const endRef = useRef(null)
 
@@ -24,9 +25,11 @@ export default function AIChatbot() {
   const fetchContext = async () => {
     const currentMonth = new Date().toISOString().slice(0, 7)
     try {
-      const [dashboard, budgets] = await Promise.all([
+      const [dashboard, budgets, categories, accounts] = await Promise.all([
         dashboardApi.get(),
-        budgetsApi.getAll(currentMonth)
+        budgetsApi.getAll(currentMonth),
+        categoriesApi.getAll(),
+        accountsApi.getAll()
       ])
       
       const summary = dashboard.summary
@@ -38,18 +41,55 @@ export default function AIChatbot() {
         balance: summary.total_balance,
         expense_breakdown: dashboard.expense_by_category,
         budget_limits: budgets,
-        context: "The user uses this app to track budget. Help them cut costs based strictly on these provided generic aggregates."
+        available_categories: categories.map(c => ({ id: c.id, name: c.name, type: c.type })),
+        available_accounts: accounts.map(a => ({ id: a.id, name: a.name, type: a.type, is_default: a.is_default })),
+        context: "The user uses this app to track budget. Help them cut costs. You can also add transactions automatically if requested."
       })
     } catch {
       return "{ error: 'No financial context available right now' }"
     }
   }
 
-  const handleSend = async (e) => {
-    if (e) e.preventDefault()
-    if (!input.trim() || isTyping) return
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      toast.error("Voice recognition not supported in this browser.")
+      return
+    }
 
-    const userMsg = { role: 'user', content: input }
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-IN'
+    recognition.interimResults = false
+
+    recognition.onstart = () => setIsListening(true)
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+    
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      setInput(transcript)
+      // Auto-send if it's a clear command
+      setTimeout(() => handleSend(null, transcript), 500)
+    }
+
+    recognition.start()
+  }
+
+  const speak = (text) => {
+    // Strip markdown and action blocks for cleaner audio
+    const cleanText = text.replace(/\[ACTION\].*?\[\/ACTION\]/gs, '').replace(/[*#`_~]/g, '')
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    utterance.rate = 1.0
+    utterance.pitch = 1.0
+    window.speechSynthesis.speak(utterance)
+  }
+
+  const handleSend = async (e, directInput = null) => {
+    if (e) e.preventDefault()
+    const content = directInput || input
+    if (!content.trim() || isTyping) return
+
+    const userMsg = { role: 'user', content: content }
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setIsTyping(true)
@@ -61,10 +101,27 @@ export default function AIChatbot() {
       Here is the user's aggregated tracking data for this month: 
       \n\n${context}\n\n
       The user says: "${userMsg.content}".
-      Give a concise, actionable, and encouraging response, formatting numbers clearly. Use markdown.`
+      Give a concise, actionable, and encouraging response, formatting numbers clearly in Indian Rupees (INR / ₹). Do not use US Dollars. Use markdown.`
 
       const response = await aiApi.chat(prompt)
-      setMessages(prev => [...prev, { role: 'assistant', content: response.content }])
+      let aiContent = response.content
+
+      // Check for actions
+      const actionMatch = aiContent.match(/\[ACTION\](.*?)\[\/ACTION\]/s)
+      if (actionMatch) {
+        try {
+          const action = JSON.parse(actionMatch[1])
+          if (action.type === 'add_transaction') {
+            await transactionsApi.create(action.data)
+            toast.success(`Transaction Added: ₹${action.data.amount}`)
+          }
+        } catch (err) {
+          console.error("Action Parsing Failed:", err)
+        }
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: aiContent }])
+      speak(aiContent)
     } catch (err) {
       console.error("AI Proxy Error:", err)
       const errorDetail = err.response?.data?.detail || 'AI Advisor is temporarily offline.'
@@ -157,6 +214,14 @@ export default function AIChatbot() {
                 className="flex-1 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 ring-indigo-500"
                 style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}
               />
+              <button 
+                type="button"
+                onClick={isListening ? () => {} : startListening}
+                className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                title="Voice Input"
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
               <button 
                 type="submit" 
                 disabled={isTyping || !input.trim()} 

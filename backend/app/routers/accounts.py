@@ -17,6 +17,9 @@ def get_accounts(db: Session = Depends(get_db), current_user: User = Depends(get
 
 @router.post("/", response_model=AccountOut, status_code=201)
 def create_account(account: AccountCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if account.is_default:
+        db.query(Account).filter(Account.user_id == current_user.id).update({"is_default": False})
+
     db_account = Account(**account.model_dump(), user_id=current_user.id)
     db.add(db_account)
     db.commit()
@@ -37,7 +40,11 @@ def update_account(account_id: int, update: AccountUpdate, db: Session = Depends
     account = db.query(Account).filter(Account.id == account_id, Account.user_id == current_user.id).first()
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
-    for field, value in update.model_dump(exclude_unset=True).items():
+    data = update.model_dump(exclude_unset=True)
+    if data.get("is_default"):
+        db.query(Account).filter(Account.user_id == current_user.id).update({"is_default": False})
+
+    for field, value in data.items():
         setattr(account, field, value)
     db.commit()
     db.refresh(account)
