@@ -213,6 +213,7 @@ export default function Accounts() {
                 placeholder="0.00"
               />
             </div>
+          </div>
           <div>
             <label className="label">Color</label>
             <div className="flex flex-wrap gap-2">
