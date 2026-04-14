@@ -5,7 +5,7 @@ import Modal from '../Modal'
 import { Plus, Pencil, Trash2, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const EMPTY = { name: '', type: 'bank', balance: '', color: '#6366f1', currency: 'INR' }
+const EMPTY = { name: '', type: 'bank', balance: '', color: '#6366f1', currency: 'INR', is_default: false }
 
 export default function Accounts() {
   const [accounts, setAccounts] = useState([])
@@ -31,7 +31,7 @@ export default function Accounts() {
   const openCreate = () => { setEditData(null); setForm(EMPTY); setFormOpen(true) }
   const openEdit = (acc) => {
     setEditData(acc)
-    setForm({ name: acc.name, type: acc.type, balance: acc.balance, color: acc.color, currency: acc.currency })
+    setForm({ name: acc.name, type: acc.type, balance: acc.balance, color: acc.color, currency: acc.currency, is_default: acc.is_default || false })
     setFormOpen(true)
   }
 
@@ -111,6 +111,11 @@ export default function Accounts() {
             <div key={acc.id} className="card p-5 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-2.5">
+                  {acc.is_default && (
+                    <div className="absolute -top-2 -right-2 bg-yellow-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 flex items-center gap-1">
+                      ⭐ Default
+                    </div>
+                  )}
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm"
                     style={{ background: `${acc.color}20`, border: `1.5px solid ${acc.color}40` }}
@@ -208,7 +213,6 @@ export default function Accounts() {
                 placeholder="0.00"
               />
             </div>
-          </div>
           <div>
             <label className="label">Color</label>
             <div className="flex flex-wrap gap-2">
@@ -222,6 +226,18 @@ export default function Accounts() {
                 />
               ))}
             </div>
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <input 
+              type="checkbox" 
+              id="is_default" 
+              checked={form.is_default} 
+              onChange={e => set('is_default', e.target.checked)}
+              className="w-4 h-4 text-[var(--primary)] focus:ring-[var(--primary)] border-gray-300 rounded"
+            />
+            <label htmlFor="is_default" className="text-sm font-medium cursor-pointer" style={{ color: 'var(--text)' }}>
+              Set as Default Account
+            </label>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={() => setFormOpen(false)} className="btn-secondary flex-1">Cancel</button>

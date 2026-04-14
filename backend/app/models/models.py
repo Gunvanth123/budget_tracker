@@ -81,6 +81,7 @@ class Account(Base):
     balance = Column(Float, nullable=False, default=0.0)
     currency = Column(String(10), nullable=False, default="INR")
     color = Column(String(20), nullable=True, default="#6366f1")
+    is_default = Column(Boolean, default=False, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
