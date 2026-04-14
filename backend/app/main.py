@@ -66,13 +66,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex="https://.*-gunvanth123.*\.vercel\.app|https://budget-tracker-.*\.onrender\.com",
     allow_origins=[
         "http://localhost:3000",
-        "http://127.0.0.1:3000",
         "http://localhost:5173",
+        "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
