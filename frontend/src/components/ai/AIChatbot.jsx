@@ -96,12 +96,12 @@ export default function AIChatbot() {
 
     try {
       const context = await fetchContext()
-      const prompt = `You are an expert, friendly AI financial advisor inside a Budget Tracker app. 
-      You MUST NOT ask for explicit user details or passwords. 
-      Here is the user's aggregated tracking data for this month: 
-      \n\n${context}\n\n
-      The user says: "${userMsg.content}".
-      Give a concise, actionable, and encouraging response, formatting numbers clearly in Indian Rupees (INR / ₹). Do not use US Dollars. Use markdown.`
+      const prompt = `You are a friendly AI financial advisor. 
+      CONTEXT: ${context}
+      USER SAYS: "${userMsg.content}"
+      
+      TASK: Provide a VERY CONCISE response (MAX 2 SENTENCES). 
+      Format numbers in Indian Rupees (INR / ₹). Do not use US Dollars. Use markdown.`
 
       const response = await aiApi.chat(prompt)
       let aiContent = response.content
