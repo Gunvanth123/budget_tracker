@@ -26,7 +26,12 @@ async def lifespan(app: FastAPI):
                 ]
                 for col in columns:
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col};"))
+
+                # Migrate accounts table
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT FALSE;"))
+
             elif engine.dialect.name == "sqlite":
+                # Migrate users table
                 columns = [
                     "master_password_hash VARCHAR(255)",
                     "profile_picture TEXT",
@@ -43,6 +48,12 @@ async def lifespan(app: FastAPI):
                         conn.execute(text(f"ALTER TABLE users ADD COLUMN {col};"))
                     except Exception:
                         pass
+                
+                # Migrate accounts table
+                try:
+                    conn.execute(text("ALTER TABLE accounts ADD COLUMN is_default BOOLEAN DEFAULT FALSE;"))
+                except Exception:
+                    pass
     except Exception as e:
         print(f"Auto-migration skipped or failed: {e}")
         
@@ -57,6 +68,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+    allow_origin_regex="https://.*-gunvanth123.*\.vercel\.app|https://budget-tracker-.*\.onrender\.com",
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
