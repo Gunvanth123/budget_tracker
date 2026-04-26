@@ -69,6 +69,10 @@ export const vaultApi = {
   }).then(r => r.data),
   download: (id) => api.get(`/vault/${id}`).then(r => r.data),
   delete: (id) => api.delete(`/vault/${id}`).then(r => r.data),
+  status: () => api.get('/vault/status').then(r => r.data),
+  getAuthUrl: () => api.get('/vault/gdrive/auth-url').then(r => r.data),
+  connectGDrive: (code) => api.post(`/vault/gdrive/connect?code=${code}`).then(r => r.data),
+  getConfigStatus: () => api.get('/vault/gdrive/config-status').then(r => r.data),
 }
 
 export const usersApi = {

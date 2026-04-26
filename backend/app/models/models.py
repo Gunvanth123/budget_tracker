@@ -46,6 +46,10 @@ class User(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # Google Drive Integration
+    gdrive_token = Column(Text, nullable=True) # JSON string of credentials
+    gdrive_folder_id = Column(String(255), nullable=True)
+
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
     categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
@@ -169,7 +173,9 @@ class SecureFile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     filename = Column(String(255), nullable=False)
-    encrypted_content = Column(Text, nullable=False) # AES-256 encrypted base64 payload
+    encrypted_content = Column(Text, nullable=True) # AES-256 encrypted base64 payload (nullable for GDrive storage)
+    gdrive_file_id = Column(String(255), nullable=True)
+    storage_location = Column(String(20), default="database") # 'database' or 'gdrive'
     mimetype = Column(String(100), nullable=True)
     size = Column(Integer, nullable=True) # size in bytes
     created_at = Column(DateTime(timezone=True), server_default=func.now())

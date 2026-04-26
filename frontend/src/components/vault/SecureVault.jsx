@@ -1,37 +1,65 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { 
   Shield, Lock, Unlock, Upload, Download, Trash2, 
-  File, FileText, FileImage, MoreVertical, 
-  Loader2, Plus, Search, Filter
+  File, FileText, FileImage,
+  Loader2, Search,
+  CheckCircle2, Settings, ExternalLink, Info
 } from 'lucide-react'
 import { vaultApi, passwordsApi } from '../../api/client'
 import toast from 'react-hot-toast'
 import CryptoJS from 'crypto-js'
 
 export default function SecureVault() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [status, setStatus] = useState('loading') // loading, locked, unlocked
+  const [vaultStatus, setVaultStatus] = useState({ is_gdrive_connected: false })
+  const [gdriveConfigured, setGdriveConfigured] = useState(null) // null = loading, true/false = result
   const [masterPassword, setMasterPassword] = useState('')
   const [files, setFiles] = useState([])
   const [isUploading, setIsUploading] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
   const checkVaultStatus = useCallback(async () => {
     try {
-      const res = await passwordsApi.status()
-      if (!res.is_setup) {
-        // Vault follows the same master password setup as password manager
-        setStatus('locked')
-      } else {
-        setStatus('locked')
-      }
+      const [pStatus, vStatus, configStatus] = await Promise.all([
+        passwordsApi.status(),
+        vaultApi.status(),
+        vaultApi.getConfigStatus()
+      ])
+      setVaultStatus(vStatus)
+      setGdriveConfigured(configStatus.is_configured)
+      setStatus('locked')
     } catch (e) {
       toast.error("Security system unreachable")
     }
   }, [])
 
+  const handleGDriveCallback = useCallback(async (code) => {
+    setIsConnecting(true)
+    const tid = toast.loading("Finalizing Google Drive connection...")
+    try {
+      await vaultApi.connectGDrive(code)
+      toast.success("Google Drive linked successfully!", { id: tid })
+      // Clear the code from URL
+      setSearchParams({})
+      const vStatus = await vaultApi.status()
+      setVaultStatus(vStatus)
+    } catch (err) {
+      toast.error("Failed to link Google Drive", { id: tid })
+    } finally {
+      setIsConnecting(false)
+    }
+  }, [setSearchParams])
+
   useEffect(() => {
+    const code = searchParams.get('code')
+    if (code) {
+      handleGDriveCallback(code)
+    }
     checkVaultStatus()
-  }, [checkVaultStatus])
+  }, [checkVaultStatus, searchParams, handleGDriveCallback])
 
   const fetchFiles = async () => {
     try {
@@ -52,6 +80,16 @@ export default function SecureVault() {
     } catch {
       toast.error("Incorrect Master Password")
       setMasterPassword('')
+    }
+  }
+
+  const handleConnectGDrive = async () => {
+    if (!gdriveConfigured) return
+    try {
+      const { url } = await vaultApi.getAuthUrl()
+      window.location.href = url
+    } catch (err) {
+      toast.error("Could not initiate Google Drive connection")
     }
   }
 
@@ -93,7 +131,6 @@ export default function SecureVault() {
       const res = await vaultApi.download(fileInfo.id)
       const decrypted = CryptoJS.AES.decrypt(res.encrypted_content, masterPassword)
       
-      // Convert WordArray to Uint8Array/Blob
       const typedArray = new Uint8Array(decrypted.sigBytes)
       const words = decrypted.words
       for (let i = 0; i < decrypted.sigBytes; i++) {
@@ -133,8 +170,11 @@ export default function SecureVault() {
     f.filename.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  if (status === 'loading') {
-    return <div className="p-12 text-center opacity-50 flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Initiating security protocols...</div>
+  if (status === 'loading' || isConnecting) {
+    return <div className="p-12 text-center opacity-50 flex flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin w-8 h-8 text-indigo-500"/>
+      <p className="font-medium">Securing connection to storage protocols...</p>
+    </div>
   }
 
   if (status === 'locked') {
@@ -167,6 +207,57 @@ export default function SecureVault() {
 
   return (
     <div className="space-y-6">
+      {/* Google Drive Connection Banner */}
+      {!vaultStatus.is_gdrive_connected && (
+        <div className={`border p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500 ${
+          gdriveConfigured === false
+            ? 'bg-amber-500/5 border-amber-500/20'
+            : 'bg-gradient-to-r from-indigo-500/10 to-blue-500/10 border-indigo-500/20'
+        }`}>
+          <div className="flex items-start gap-5">
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-md shrink-0">
+              {gdriveConfigured === false
+                ? <Settings className="w-8 h-8 text-amber-500" />
+                : <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-8 h-8" alt="GDrive" />}
+            </div>
+            <div>
+              {gdriveConfigured === false ? (
+                <>
+                  <h2 className="text-base font-bold text-amber-600 dark:text-amber-400">Google Drive Setup Required</h2>
+                  <p className="text-sm opacity-70 mt-1">The server isn't configured with Google API credentials yet. Add these to your backend <code className="bg-black/10 dark:bg-white/10 px-1 rounded text-xs font-mono">.env</code> file to enable cloud storage:</p>
+                  <div className="mt-3 bg-black/5 dark:bg-white/5 rounded-lg p-3 font-mono text-xs space-y-1">
+                    <p><span className="text-emerald-500">GOOGLE_CLIENT_ID</span>=your-client-id</p>
+                    <p><span className="text-emerald-500">GOOGLE_CLIENT_SECRET</span>=your-client-secret</p>
+                    <p><span className="text-emerald-500">GOOGLE_REDIRECT_URI</span>=http://localhost:5173/vault</p>
+                  </div>
+                  <a
+                    href="https://console.cloud.google.com/apis/credentials"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Get credentials from Google Cloud Console
+                  </a>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-lg font-bold">Upgrade to Cloud Storage</h2>
+                  <p className="text-sm opacity-70">Link your Google Drive to store files in structured folders with military-grade encryption.</p>
+                </>
+              )}
+            </div>
+          </div>
+          {gdriveConfigured !== false && (
+            <button
+              onClick={handleConnectGDrive}
+              className="btn-primary px-8 py-3 flex items-center gap-2 shadow-xl shadow-indigo-500/20 hover:scale-105 transition-all shrink-0"
+            >
+              <ExternalLink className="w-4 h-4" /> Connect My Drive
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--card)] p-5 rounded-2xl border border-[var(--border)] shadow-sm">
         <div className="flex items-center gap-4">
@@ -174,8 +265,13 @@ export default function SecureVault() {
             <Shield className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Elite Privacy Vault</h1>
-            <p className="text-xs opacity-60">Military-grade AES-256 Encryption active</p>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+                Elite Privacy Vault
+                {vaultStatus.is_gdrive_connected && <CheckCircle2 className="w-4 h-4 text-emerald-500" title="Connected to Google Drive" />}
+            </h1>
+            <p className="text-xs opacity-60">
+                {vaultStatus.is_gdrive_connected ? "Synced with Google Drive" : "Local database storage active"}
+            </p>
           </div>
         </div>
 
@@ -218,10 +314,15 @@ export default function SecureVault() {
                     <div className="w-10 h-10 rounded-xl bg-[var(--bg)] flex items-center justify-center border border-[var(--border)] group-hover:scale-110 transition-transform">
                         {getFileIcon(file.mimetype)}
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleDelete(file.id)} className="p-1.5 hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-colors" title="Delete">
-                            <Trash2 className="w-4 h-4" />
-                        </button>
+                    <div className="flex items-center gap-2">
+                        {file.storage_location === 'gdrive' && (
+                             <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4 opacity-60" alt="GDrive" title="Stored in Google Drive" />
+                        )}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => handleDelete(file.id)} className="p-1.5 hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-colors" title="Delete">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -248,7 +349,7 @@ export default function SecureVault() {
       <div className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-xl flex gap-3 items-center">
          <Shield className="w-5 h-5 text-amber-500 flex-shrink-0" />
          <p className="text-xs text-amber-600 dark:text-amber-400 opacity-90">
-             <b>Privacy Warning:</b> Your files are encrypted locally. If you lose your Master Password, these files cannot be recovered. We do not store your password on our servers.
+             <b>Privacy Warning:</b> Your files are encrypted locally {vaultStatus.is_gdrive_connected ? "before uploading to Google Drive" : "locally"}. If you lose your Master Password, these files cannot be recovered.
          </p>
       </div>
     </div>
