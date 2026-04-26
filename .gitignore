@@ -12,9 +12,9 @@ node_modules/
 dist/
 
 # Keep .env files locally but DO NOT commit secrets to git
-# Uncomment these lines before pushing to GitHub:
-# backend/.env
-# frontend/.env
+backend/.env
+frontend/.env
+
 
 # DB
 *.sqlite
