@@ -57,6 +57,7 @@ class User(Base):
     passwords = relationship("PasswordEntry", back_populates="user", cascade="all, delete-orphan")
     budget_goals = relationship("BudgetGoal", back_populates="user", cascade="all, delete-orphan")
     secure_files = relationship("SecureFile", back_populates="user", cascade="all, delete-orphan")
+    chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -181,3 +182,15 @@ class SecureFile(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="secure_files")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(String(20), nullable=False) # 'user' or 'assistant'
+    content = Column(Text, nullable=False)
+    month_year = Column(String(7), nullable=False) # e.g. "2024-05"
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="chat_messages")

@@ -168,3 +168,20 @@ class BudgetGoalOut(BudgetGoalBase):
 
     class Config:
         from_attributes = True
+
+# ─── AI Chat Schemas ──────────────────────────────────────────────────────────
+
+class ChatMessageBase(BaseModel):
+    role: str
+    content: str
+    month_year: str # Format: "YYYY-MM"
+
+class ChatMessageCreate(ChatMessageBase):
+    pass
+
+class ChatMessageOut(ChatMessageBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

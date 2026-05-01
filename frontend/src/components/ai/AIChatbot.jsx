@@ -11,6 +11,7 @@ export default function AIChatbot() {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isListening, setIsListening] = useState(false)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   
   const endRef = useRef(null)
 
@@ -20,14 +21,38 @@ export default function AIChatbot() {
     }
   }, [messages, isOpen])
 
-  const clearChat = () => setMessages([])
+  useEffect(() => {
+    if (isOpen) {
+      fetchHistory()
+    }
+  }, [selectedMonth, isOpen])
+
+  const fetchHistory = async () => {
+    try {
+      const history = await aiApi.getHistory(selectedMonth)
+      setMessages(history)
+    } catch (err) {
+      console.error("Failed to fetch history:", err)
+    }
+  }
+
+  const clearChat = async () => {
+    if (window.confirm(`Clear chat history for ${selectedMonth}?`)) {
+      try {
+        await aiApi.clearHistory(selectedMonth)
+        setMessages([])
+        toast.success("Chat history cleared")
+      } catch (err) {
+        toast.error("Failed to clear chat")
+      }
+    }
+  }
 
   const fetchContext = async () => {
-    const currentMonth = new Date().toISOString().slice(0, 7)
     try {
       const [dashboard, budgets, categories, accounts] = await Promise.all([
         dashboardApi.get(),
-        budgetsApi.getAll(currentMonth),
+        budgetsApi.getAll(selectedMonth),
         categoriesApi.getAll(),
         accountsApi.getAll()
       ])
@@ -35,7 +60,7 @@ export default function AIChatbot() {
       const summary = dashboard.summary
       
       return JSON.stringify({
-        current_month: currentMonth,
+        current_month: selectedMonth,
         total_income: summary.total_income,
         total_expense: summary.total_expense,
         balance: summary.total_balance,
@@ -76,7 +101,6 @@ export default function AIChatbot() {
   }
 
   const speak = (text) => {
-    // Strip markdown and action blocks for cleaner audio
     const cleanText = text.replace(/\[ACTION\].*?\[\/ACTION\]/gs, '').replace(/[*#`_~]/g, '')
     const utterance = new SpeechSynthesisUtterance(cleanText)
     utterance.rate = 1.0
@@ -103,10 +127,9 @@ export default function AIChatbot() {
       TASK: Provide a VERY CONCISE response (MAX 2 SENTENCES). 
       Format numbers in Indian Rupees (INR / ₹). Do not use US Dollars. Use markdown.`
 
-      const response = await aiApi.chat(prompt)
+      const response = await aiApi.chat(prompt, selectedMonth)
       let aiContent = response.content
 
-      // Check for actions
       const actionMatch = aiContent.match(/\[ACTION\](.*?)\[\/ACTION\]/s)
       if (actionMatch) {
         try {
@@ -131,6 +154,13 @@ export default function AIChatbot() {
     }
   }
 
+  const months = []
+  for (let i = 0; i < 12; i++) {
+    const d = new Date()
+    d.setMonth(d.getMonth() - i)
+    months.push(d.toISOString().slice(0, 7))
+  }
+
   return (
     <>
       {/* Floating Button */}
@@ -147,9 +177,22 @@ export default function AIChatbot() {
         <div className="fixed bottom-6 right-6 w-96 h-[32rem] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-100" style={{ backgroundColor: 'var(--card)' }}>
           {/* Header */}
           <div className="p-4 text-white flex justify-between items-center" style={{ background: 'var(--primary)' }}>
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5" />
-              <h3 className="font-bold">AI Financial Advisor</h3>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5" />
+                <h3 className="font-bold">AI Financial Advisor</h3>
+              </div>
+              <select 
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-white/10 text-[10px] rounded px-1 mt-1 outline-none border border-white/20"
+              >
+                {months.map(m => (
+                  <option key={m} value={m} style={{ color: '#000' }}>
+                    {new Date(m).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex gap-2">
               <button onClick={clearChat} className="p-1 hover:bg-white/20 rounded text-xs" title="Clear Chat">
@@ -165,7 +208,7 @@ export default function AIChatbot() {
           <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50" style={{ backgroundColor: 'var(--bg)' }}>
             {messages.length === 0 && (
               <div className="text-center text-sm text-gray-500 mt-10">
-                <p>👋 Hi! I'm your strictly-confidential AI coach.</p>
+                <p>👋 Hi! I'm your AI financial coach for {new Date(selectedMonth).toLocaleString('default', { month: 'long' })}.</p>
                 <p className="mt-2 text-xs">Ask me how to lower your grocery spending, or analyze your budget limits!</p>
               </div>
             )}
