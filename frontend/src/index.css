@@ -70,6 +70,15 @@
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     will-change: background-color, color;
+    
+    /* MOBILE FONT SIZE BOOST */
+    font-size: 16px; 
+  }
+
+  @media (min-width: 1024px) {
+    body {
+      font-size: 14px; /* Slightly smaller on desktop for more content density */
+    }
   }
 
   /* Scrollbar */

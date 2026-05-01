@@ -5,7 +5,7 @@ import {
   File, FileText, FileImage,
   Loader2, Search,
   CheckCircle2, Settings, ExternalLink, Info,
-  FolderOpen, ChevronDown, ChevronRight, Plus
+  FolderOpen, ChevronDown, ChevronRight, Plus, Eye
 } from 'lucide-react'
 import { vaultApi, passwordsApi } from '../../api/client'
 import toast from 'react-hot-toast'
@@ -156,6 +156,27 @@ export default function SecureVault() {
       toast.success("Downloaded & Decrypted", { id: 'dec' })
     } catch (err) {
       toast.error("Decryption failed. Wrong key?", { id: 'dec' })
+    }
+  }
+
+  const handlePreview = async (fileInfo) => {
+    const tid = toast.loading(`Preparing preview for ${fileInfo.filename}...`)
+    try {
+      const res = await vaultApi.download(fileInfo.id)
+      const decrypted = CryptoJS.AES.decrypt(res.encrypted_content, masterPassword)
+      
+      const typedArray = new Uint8Array(decrypted.sigBytes)
+      const words = decrypted.words
+      for (let i = 0; i < decrypted.sigBytes; i++) {
+        typedArray[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
+      }
+
+      const blob = new Blob([typedArray], { type: res.mimetype })
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+      toast.success("Preview opened", { id: tid })
+    } catch (err) {
+      toast.error("Preview failed", { id: tid })
     }
   }
 
@@ -432,12 +453,20 @@ export default function SecureVault() {
                             </div>
                         </div>
 
-                        <button 
-                            onClick={() => handleDownload(file)}
-                            className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-xs font-bold bg-[var(--bg)] hover:bg-[var(--primary)] hover:text-white rounded-lg border border-[var(--border)] transition-all"
-                        >
-                            <Download className="w-3.5 h-3.5" /> Decrypt & Download
-                        </button>
+                        <div className="mt-4 flex gap-2">
+                            <button 
+                                onClick={() => handlePreview(file)}
+                                className="flex-1 py-2 flex items-center justify-center gap-2 text-xs font-bold bg-[var(--bg)] hover:bg-indigo-500 hover:text-white rounded-lg border border-[var(--border)] transition-all"
+                            >
+                                <Eye className="w-3.5 h-3.5" /> View
+                            </button>
+                            <button 
+                                onClick={() => handleDownload(file)}
+                                className="flex-1 py-2 flex items-center justify-center gap-2 text-xs font-bold bg-[var(--bg)] hover:bg-emerald-500 hover:text-white rounded-lg border border-[var(--border)] transition-all"
+                            >
+                                <Download className="w-3.5 h-3.5" /> Download
+                            </button>
+                        </div>
                     </div>
                   ))}
                 </div>
