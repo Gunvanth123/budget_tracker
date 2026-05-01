@@ -35,7 +35,7 @@ const cards = [
 export default function SummaryCards({ summary }) {
   if (!summary) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1,2,3,4].map(i => (
           <div key={i} className="card p-5 animate-pulse">
             <div className="h-8 w-8 rounded-xl mb-3" style={{ background: 'var(--border)' }} />

@@ -23,6 +23,7 @@ export default function SecureVault() {
   const [isUploading, setIsUploading] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all') // 'all', cat_id, or 'uncategorized'
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [collapsedCategories, setCollapsedCategories] = useState({})
 
@@ -183,9 +184,17 @@ export default function SecureVault() {
   }
 
   const groupedFiles = useMemo(() => {
-    const filtered = files.filter(f => 
+    let filtered = files.filter(f => 
       f.filename.toLowerCase().includes(searchQuery.toLowerCase())
     )
+
+    // Apply category filter if not 'all'
+    if (selectedCategory !== 'all') {
+        filtered = filtered.filter(f => {
+            if (selectedCategory === 'uncategorized') return !f.category_id
+            return f.category_id === parseInt(selectedCategory)
+        })
+    }
 
     const groups = {}
     filtered.forEach(file => {
@@ -197,7 +206,7 @@ export default function SecureVault() {
       groups[catId].files.push(file)
     })
     return Object.values(groups)
-  }, [files, searchQuery])
+  }, [files, searchQuery, selectedCategory])
 
   if (status === 'loading' || isConnecting) {
     return <div className="p-12 text-center opacity-50 flex flex-col items-center justify-center gap-4">
@@ -324,6 +333,45 @@ export default function SecureVault() {
                 Add Documents
             </button>
         </div>
+      </div>
+
+      {/* Category Pills Filter */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar animate-in fade-in slide-in-from-left-4 duration-500">
+        <button
+          onClick={() => setSelectedCategory('all')}
+          className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+            selectedCategory === 'all' 
+              ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20' 
+              : 'bg-[var(--card)] border-[var(--border)] opacity-60 hover:opacity-100 hover:border-indigo-500/50'
+          }`}
+        >
+          All Vault
+        </button>
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id.toString())}
+            className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+              selectedCategory === cat.id.toString()
+                ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20' 
+                : 'bg-[var(--card)] border-[var(--border)] opacity-60 hover:opacity-100 hover:border-indigo-500/50'
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
+        {files.some(f => !f.category_id) && (
+          <button
+            onClick={() => setSelectedCategory('uncategorized')}
+            className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+              selectedCategory === 'uncategorized' 
+                ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20' 
+                : 'bg-[var(--card)] border-[var(--border)] opacity-60 hover:opacity-100 hover:border-indigo-500/50'
+            }`}
+          >
+            Uncategorized
+          </button>
+        )}
       </div>
 
       {/* Files Content */}

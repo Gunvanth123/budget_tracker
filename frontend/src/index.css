@@ -287,20 +287,37 @@
     background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(4px);
     display: flex;
-    align-items: center;
+    align-items: flex-end; /* Mobile: bottom */
     justify-content: center;
     z-index: 100;
-    padding: 1rem;
-    animation: fadeIn 0.18s ease;
+    padding: 0; /* Mobile: no padding */
+    animation: fadeIn 0.2s ease;
   }
+  
+  @media (min-width: 640px) {
+    .modal-overlay {
+      align-items: center; /* Desktop: center */
+      padding: 1rem;
+    }
+  }
+
   .modal-content {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
-    animation: slideUp 0.22s ease;
-    max-height: 90vh;
+    border-radius: 24px 24px 0 0; /* Mobile: rounded top */
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 92vh;
     overflow-y: auto;
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .modal-content {
+      border-radius: 20px; /* Desktop: full rounded */
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+      max-height: 90vh;
+    }
   }
 
   /* ---- Chart Tooltip ---- */
@@ -346,6 +363,34 @@
     font-weight: 600;
     color: var(--text);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Responsive Utilities ---- */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .responsive-container {
+    padding: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  @media (min-width: 768px) {
+    .responsive-container {
+      padding: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .responsive-container {
+      padding: 2rem;
+    }
   }
 }
 

@@ -100,8 +100,8 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-[var(--card)] w-full max-w-xl rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-[var(--card)] w-full max-w-xl rounded-t-[2.5rem] sm:rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 duration-500">
         <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-indigo-500/5 shrink-0">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2">

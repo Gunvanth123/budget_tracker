@@ -123,6 +123,14 @@ export default function Layout() {
 
 
       </aside>
+      
+      {/* Sidebar Overlay (Mobile Only) */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Main */}
       <div className="flex-1 flex flex-col">
@@ -193,8 +201,10 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 overflow-y-auto">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto">
+          <div className="responsive-container">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

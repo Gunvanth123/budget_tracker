@@ -108,7 +108,7 @@ export default function Accounts() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {accounts.map((acc) => (
-            <div key={acc.id} className="card p-5 group">
+            <div key={acc.id} className="card p-5 group relative">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-2.5">
                   {acc.is_default && (
