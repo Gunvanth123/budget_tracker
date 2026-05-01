@@ -24,6 +24,26 @@ gdrive_service = None
 if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
     gdrive_service = GoogleDriveService(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI)
 
+@router.get("/categories", response_model=List[schemas.VaultCategoryOut])
+def get_vault_categories(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return db.query(VaultCategory).filter(VaultCategory.user_id == current_user.id).all()
+
+@router.post("/categories", response_model=schemas.VaultCategoryOut)
+def create_vault_category(category: schemas.VaultCategoryCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Check if exists
+    existing = db.query(VaultCategory).filter(
+        VaultCategory.user_id == current_user.id,
+        VaultCategory.name == category.name
+    ).first()
+    if existing:
+        return existing
+    
+    new_cat = VaultCategory(name=category.name, user_id=current_user.id)
+    db.add(new_cat)
+    db.commit()
+    db.refresh(new_cat)
+    return new_cat
+
 @router.get("/status")
 def get_vault_status(current_user: User = Depends(get_current_user)):
     return {
@@ -64,25 +84,6 @@ def connect_gdrive(code: str = Query(...), current_user: User = Depends(get_curr
         print(f"GDrive connection error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/categories", response_model=List[schemas.VaultCategoryOut])
-def get_vault_categories(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(VaultCategory).filter(VaultCategory.user_id == current_user.id).all()
-
-@router.post("/categories", response_model=schemas.VaultCategoryOut)
-def create_vault_category(category: schemas.VaultCategoryCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Check if exists
-    existing = db.query(VaultCategory).filter(
-        VaultCategory.user_id == current_user.id,
-        VaultCategory.name == category.name
-    ).first()
-    if existing:
-        return existing
-    
-    new_cat = VaultCategory(name=category.name, user_id=current_user.id)
-    db.add(new_cat)
-    db.commit()
-    db.refresh(new_cat)
-    return new_cat
 
 @router.get("/", response_model=List[schemas.VaultFileOut])
 def get_files(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

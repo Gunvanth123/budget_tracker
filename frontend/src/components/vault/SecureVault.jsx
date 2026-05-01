@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { 
   Shield, Lock, Unlock, Upload, Download, Trash2, 
   File, FileText, FileImage,
   Loader2, Search,
-  CheckCircle2, Settings, ExternalLink, Info
+  CheckCircle2, Settings, ExternalLink, Info,
+  FolderOpen, ChevronDown, ChevronRight, Plus
 } from 'lucide-react'
 import { vaultApi, passwordsApi } from '../../api/client'
 import toast from 'react-hot-toast'
 import CryptoJS from 'crypto-js'
+import VaultUploadModal from './VaultUploadModal'
 
 export default function SecureVault() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -17,9 +19,12 @@ export default function SecureVault() {
   const [gdriveConfigured, setGdriveConfigured] = useState(null) // null = loading, true/false = result
   const [masterPassword, setMasterPassword] = useState('')
   const [files, setFiles] = useState([])
+  const [categories, setCategories] = useState([])
   const [isUploading, setIsUploading] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [collapsedCategories, setCollapsedCategories] = useState({})
 
   const checkVaultStatus = useCallback(async () => {
     try {
@@ -61,10 +66,14 @@ export default function SecureVault() {
     checkVaultStatus()
   }, [checkVaultStatus, searchParams, handleGDriveCallback])
 
-  const fetchFiles = async () => {
+  const fetchAll = async () => {
     try {
-      const data = await vaultApi.getAll()
-      setFiles(data)
+      const [fData, cData] = await Promise.all([
+        vaultApi.getAll(),
+        vaultApi.getCategories()
+      ])
+      setFiles(fData)
+      setCategories(cData)
     } catch {
       toast.error("Failed to load your vault")
     }
@@ -75,7 +84,7 @@ export default function SecureVault() {
     try {
       await passwordsApi.verify(masterPassword)
       setStatus('unlocked')
-      fetchFiles()
+      fetchAll()
       toast.success("Vault decrypted successfully")
     } catch {
       toast.error("Incorrect Master Password")
@@ -154,10 +163,17 @@ export default function SecureVault() {
     try {
       await vaultApi.delete(id)
       toast.success("File deleted")
-      fetchFiles()
+      fetchAll()
     } catch {
       toast.error("Delete failed")
     }
+  }
+
+  const toggleCategory = (catId) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [catId]: !prev[catId]
+    }))
   }
 
   const getFileIcon = (mimetype) => {
@@ -166,9 +182,22 @@ export default function SecureVault() {
     return <File className="w-5 h-5 text-slate-400" />
   }
 
-  const filteredFiles = files.filter(f => 
-    f.filename.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const groupedFiles = useMemo(() => {
+    const filtered = files.filter(f => 
+      f.filename.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const groups = {}
+    filtered.forEach(file => {
+      const catId = file.category_id || 'uncategorized'
+      const catName = file.category?.name || 'Uncategorized'
+      if (!groups[catId]) {
+        groups[catId] = { id: catId, name: catName, files: [] }
+      }
+      groups[catId].files.push(file)
+    })
+    return Object.values(groups)
+  }, [files, searchQuery])
 
   if (status === 'loading' || isConnecting) {
     return <div className="p-12 text-center opacity-50 flex flex-col items-center justify-center gap-4">

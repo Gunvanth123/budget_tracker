@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { X, Upload, Plus, FolderPlus, Loader2, FileCheck } from 'lucide-react'
+import { X, Upload, Plus, FolderPlus, Loader2, FileCheck, Edit3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import CryptoJS from 'crypto-js'
 import { vaultApi } from '../../api/client'
 
 export default function VaultUploadModal({ isOpen, onClose, onSaved, categories, masterPassword }) {
-  const [selectedFiles, setSelectedFiles] = useState([])
+  const [selectedFiles, setSelectedFiles] = useState([]) // Array of { file, customName }
   const [categoryId, setCategoryId] = useState('')
   const [newCategoryName, setNewCategoryName] = useState('')
-  const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
 
@@ -17,10 +16,23 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files)
     if (files.length > 5) return toast.error("Max 5 files at once")
-    setSelectedFiles(files)
+    
+    // Initialize with original filenames (without extension for custom name)
+    const newFiles = files.map(f => ({
+      file: f,
+      customName: f.name.substring(0, f.name.lastIndexOf('.')) || f.name
+    }))
+    setSelectedFiles(newFiles)
   }
 
-  const encryptAndUpload = async (file) => {
+  const updateFileName = (index, newName) => {
+    const updated = [...selectedFiles]
+    updated[index].customName = newName
+    setSelectedFiles(updated)
+  }
+
+  const encryptAndUpload = async (item) => {
+    const { file, customName } = item
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = async (event) => {
@@ -29,8 +41,12 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
           const wa = CryptoJS.lib.WordArray.create(arrayBuffer)
           const encrypted = CryptoJS.AES.encrypt(wa, masterPassword).toString()
 
+          // Keep original extension
+          const ext = file.name.substring(file.name.lastIndexOf('.'))
+          const finalName = customName.endsWith(ext) ? customName : customName + ext
+
           const formData = new FormData()
-          formData.append('filename', file.name)
+          formData.append('filename', finalName)
           formData.append('mimetype', file.type)
           formData.append('size', file.size)
           formData.append('encrypted_content', encrypted)
@@ -56,6 +72,11 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
     e.preventDefault()
     if (selectedFiles.length === 0) return toast.error("Please select files")
     if (categoryId === 'new' && !newCategoryName) return toast.error("Enter category name")
+    
+    // Validate custom names
+    if (selectedFiles.some(f => !f.customName.trim())) {
+      return toast.error("Please provide names for all files")
+    }
 
     setUploading(true)
     setProgress(0)
@@ -80,8 +101,8 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-[var(--card)] w-full max-w-lg rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-indigo-500/5">
+      <div className="bg-[var(--card)] w-full max-w-xl rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-indigo-500/5 shrink-0">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Upload className="w-5 h-5 text-indigo-500" />
@@ -94,11 +115,11 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
           {/* File Input */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider opacity-60">Select Files (Max 5)</label>
-            <div className={`border-2 border-dashed rounded-2xl p-8 transition-all flex flex-col items-center justify-center gap-4 text-center ${
+            <label className="text-xs font-bold uppercase tracking-wider opacity-60">Step 1: Select Files (Max 5)</label>
+            <div className={`relative border-2 border-dashed rounded-2xl p-8 transition-all flex flex-col items-center justify-center gap-4 text-center ${
               selectedFiles.length > 0 ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-[var(--border)] hover:border-indigo-500/50 bg-[var(--bg)]'
             }`}>
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -116,24 +137,45 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
                 type="file" 
                 multiple 
                 onChange={handleFileChange} 
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                className="absolute inset-0 opacity-0 cursor-pointer z-10"
                 disabled={uploading}
               />
             </div>
-            {selectedFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1">
-                {selectedFiles.map((f, i) => (
-                  <span key={i} className="text-[10px] px-2 py-1 bg-slate-500/10 rounded-md truncate max-w-[120px]">
-                    {f.name}
-                  </span>
+          </div>
+
+          {/* Naming Section */}
+          {selectedFiles.length > 0 && (
+            <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
+              <label className="text-xs font-bold uppercase tracking-wider opacity-60">Step 2: Name Your Documents</label>
+              <div className="space-y-3">
+                {selectedFiles.map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0">
+                      <FileCheck className="w-4 h-4 text-indigo-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] opacity-40 truncate mb-1">Original: {item.file.name}</p>
+                        <div className="relative">
+                            <Edit3 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-40" />
+                            <input 
+                                type="text"
+                                className="input-sm w-full pl-8 py-1.5 text-xs"
+                                placeholder="Enter document name..."
+                                value={item.customName}
+                                onChange={(e) => updateFileName(i, e.target.value)}
+                                disabled={uploading}
+                            />
+                        </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Category Selection */}
           <div className="space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider opacity-60">Assign Category</label>
+            <label className="text-xs font-bold uppercase tracking-wider opacity-60">Step 3: Assign Category</label>
             <div className="flex flex-col gap-3">
               <select
                 className="select"
@@ -168,7 +210,7 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
 
           {/* Progress Bar */}
           {uploading && (
-            <div className="space-y-2">
+            <div className="space-y-2 shrink-0">
               <div className="flex justify-between text-[10px] font-bold uppercase">
                 <span className="text-indigo-500">Encrypting & Uploading...</span>
                 <span>{progress}%</span>
@@ -181,25 +223,27 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
               </div>
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={uploading || selectedFiles.length === 0}
-            className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/20 disabled:opacity-50"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Plus className="w-5 h-5" />
-                Encrypt & Store {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}
-              </>
-            )}
-          </button>
         </form>
+
+        <div className="p-6 border-t border-[var(--border)] shrink-0">
+            <button
+                onClick={handleSubmit}
+                disabled={uploading || selectedFiles.length === 0}
+                className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/20 disabled:opacity-50"
+            >
+                {uploading ? (
+                <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Processing...
+                </>
+                ) : (
+                <>
+                    <Plus className="w-5 h-5" />
+                    Encrypt & Store {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}
+                </>
+                )}
+            </button>
+        </div>
       </div>
     </div>
   )
