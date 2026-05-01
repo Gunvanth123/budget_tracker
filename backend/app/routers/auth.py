@@ -5,7 +5,7 @@ import pyotp
 
 from app.database.db import get_db
 from app.models.models import User
-from app.services.auth import hash_password, verify_password, create_access_token, get_current_user
+from app.services.auth import hash_password, verify_password, create_access_token, get_current_user, get_processed_profile_pic
 from app.services.seed import seed_default_categories_for_user
 from app.services.email import generate_otp, send_verification_otp, send_mfa_otp
 from datetime import datetime, timedelta
@@ -69,7 +69,8 @@ def register(req: RegisterRequest, background_tasks: BackgroundTasks, db: Sessio
             "name": user.name, 
             "email": user.email,
             "mfa_preference": user.mfa_preference,
-            "totp_enabled": user.totp_enabled
+            "totp_enabled": user.totp_enabled,
+            "profile_picture": get_processed_profile_pic(user)
         },
     )
 
@@ -98,7 +99,8 @@ def login(req: LoginRequest, background_tasks: BackgroundTasks, db: Session = De
             "name": user.name, 
             "email": user.email,
             "mfa_preference": user.mfa_preference,
-            "totp_enabled": user.totp_enabled
+            "totp_enabled": user.totp_enabled,
+            "profile_picture": get_processed_profile_pic(user)
         },
     )
 
@@ -110,7 +112,8 @@ def get_me(current_user: User = Depends(get_current_user)):
         "name": current_user.name, 
         "email": current_user.email,
         "mfa_preference": current_user.mfa_preference,
-        "totp_enabled": current_user.totp_enabled
+        "totp_enabled": current_user.totp_enabled,
+        "profile_picture": get_processed_profile_pic(current_user)
     }
 
 @router.post("/2fa/generate")

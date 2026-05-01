@@ -28,7 +28,7 @@ function CategoryCard({ cat, onEdit, onDelete }) {
         className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
         style={{ background: `${cat.color}20`, border: `1.5px solid ${cat.color}40` }}
       >
-        {ICON_EMOJI_MAP[cat.icon] || '🏷️'}
+        {ICON_EMOJI_MAP[cat.icon] || cat.icon || '🏷️'}
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate" style={{ color: 'var(--text)' }}>{cat.name}</p>
@@ -186,7 +186,7 @@ export default function Categories() {
               className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
               style={{ background: `${form.color}20`, border: `2px solid ${form.color}40` }}
             >
-              {ICON_EMOJI_MAP[form.icon] || '🏷️'}
+              {ICON_EMOJI_MAP[form.icon] || form.icon || '🏷️'}
             </div>
             <div>
               <p className="font-semibold" style={{ color: 'var(--text)' }}>{form.name || 'Category Name'}</p>
@@ -230,7 +230,21 @@ export default function Categories() {
           )}
 
           <div>
-            <label className="label">Icon</label>
+            <label className="label">Icon / Emoji</label>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={ICON_EMOJI_MAP[form.icon] ? '' : form.icon}
+                onChange={e => set('icon', e.target.value)}
+                className="input flex-1"
+                placeholder="Type or paste any emoji 🍕"
+                maxLength={5}
+              />
+              <div className="w-11 h-11 bg-[var(--border)] rounded-xl flex items-center justify-center text-xl">
+                {ICON_EMOJI_MAP[form.icon] || form.icon || '🏷️'}
+              </div>
+            </div>
+
             <div className="grid grid-cols-8 gap-1.5 max-h-32 overflow-y-auto p-1">
               {ICONS.map(icon => (
                 <button

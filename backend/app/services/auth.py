@@ -6,6 +6,8 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+import base64
+from app.services.gdrive import GoogleDriveService
 
 from app.database.db import get_db
 from app.models.models import User
@@ -51,3 +53,23 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+def get_processed_profile_pic(user: User) -> Optional[str]:
+    """Helper to get processed profile picture (base64 if in GDrive)"""
+    profile_pic = user.profile_picture
+    if profile_pic and profile_pic.startswith("gdrive://"):
+        try:
+            file_id = profile_pic.replace("gdrive://", "")
+            gdrive = GoogleDriveService(
+                os.getenv("GOOGLE_CLIENT_ID"),
+                os.getenv("GOOGLE_CLIENT_SECRET"),
+                os.getenv("GOOGLE_REDIRECT_URI")
+            )
+            service = gdrive.get_service(user.gdrive_token)
+            content = gdrive.download_file(service, file_id)
+            b64 = base64.b64encode(content).decode('utf-8')
+            return f"data:image/png;base64,{b64}"
+        except Exception as e:
+            print(f"Error processing GDrive profile pic: {e}")
+            return None
+    return profile_pic

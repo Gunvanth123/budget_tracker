@@ -14,6 +14,15 @@ const EMPTY = {
   currency: 'INR',
 }
 
+const ICON_EMOJI_MAP = {
+  tag: '🏷️', utensils: '🍽️', car: '🚗', 'shopping-bag': '🛍️', zap: '⚡', film: '🎬',
+  heart: '❤️', droplet: '💧', cpu: '💻', book: '📚', gamepad: '🎮', 'map-pin': '📍',
+  'shopping-cart': '🛒', shirt: '👕', home: '🏠', briefcase: '💼', laptop: '💻',
+  building: '🏢', 'trending-up': '📈', gift: '🎁', 'refresh-cw': '🔄', 'plus-circle': '➕',
+  star: '⭐', music: '🎵', coffee: '☕', phone: '📱', globe: '🌍', bus: '🚌',
+  train: '🚂', plane: '✈️',
+}
+
 export default function TransactionForm({ isOpen, onClose, onSaved, editData }) {
   const [form, setForm] = useState(EMPTY)
   const [categories, setCategories] = useState([])
@@ -129,9 +138,14 @@ export default function TransactionForm({ isOpen, onClose, onSaved, editData }) 
             required
           >
             <option value="">Select category…</option>
-            {filteredCategories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
+            {filteredCategories.map(c => {
+              const emoji = ICON_EMOJI_MAP[c.icon] || c.icon || '🏷️'
+              return (
+                <option key={c.id} value={c.id}>
+                  {emoji} {c.name}
+                </option>
+              )
+            })}
           </select>
         </div>
 
