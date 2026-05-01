@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from 'recharts'
 import { formatCurrency } from '../../utils/helpers'
 
 const CustomTooltip = ({ active, payload }) => {
@@ -36,8 +36,30 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
   )
 }
 
+const renderActiveShape = (props) => {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props
+  return (
+    <Sector
+      cx={cx}
+      cy={cy}
+      innerRadius={innerRadius}
+      outerRadius={outerRadius + 8}
+      startAngle={startAngle}
+      endAngle={endAngle}
+      fill={fill}
+      stroke="none"
+      filter="url(#shadow-active)"
+      style={{ cursor: 'pointer' }}
+    />
+  )
+}
+
 export default function ExpensePieChart({ data, selectedMonth, onMonthChange, months }) {
   const [showAll, setShowAll] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+
+  const onPieEnter = (_, index) => setActiveIndex(index)
+  const onPieLeave = () => setActiveIndex(-1)
 
   if (!data || data.length === 0) {
     return (
@@ -46,11 +68,10 @@ export default function ExpensePieChart({ data, selectedMonth, onMonthChange, mo
           <select 
             value={selectedMonth}
             onChange={(e) => onMonthChange(e.target.value)}
-            className="bg-transparent text-xs outline-none border border-gray-200 rounded px-1"
-            style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+            className="select-pill"
           >
             {months?.map(m => (
-              <option key={m} value={m} style={{ color: '#000' }}>
+              <option key={m} value={m}>
                 {new Date(m).toLocaleString('default', { month: 'short', year: 'numeric' })}
               </option>
             ))}
@@ -67,50 +88,98 @@ export default function ExpensePieChart({ data, selectedMonth, onMonthChange, mo
     )
   }
 
+  const totalAmount = data.reduce((acc, item) => acc + item.amount, 0)
   const displayedData = showAll ? data : data.slice(0, 6)
 
   return (
-    <div className="card p-5 flex flex-col h-full relative">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold" style={{ color: 'var(--text)' }}>Expense by Category</h3>
+    <div className="card p-5 flex flex-col h-full relative group">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col">
+          <h3 className="font-bold text-base" style={{ color: 'var(--text)' }}>Expense by Category</h3>
+          <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Top spending distribution</p>
+        </div>
         <select 
           value={selectedMonth}
           onChange={(e) => onMonthChange(e.target.value)}
-          className="bg-transparent text-xs outline-none border border-gray-200 rounded px-1"
-          style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+          className="select-pill"
         >
           {months?.map(m => (
-            <option key={m} value={m} style={{ color: '#000' }}>
+            <option key={m} value={m}>
               {new Date(m).toLocaleString('default', { month: 'short', year: 'numeric' })}
             </option>
           ))}
         </select>
       </div>
-      <div className="flex-1 min-h-[220px]">
+      
+      <div className="flex-1 min-h-[240px] relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
+            <defs>
+              <filter id="shadow" height="200%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+                <feOffset dx="1" dy="3" result="offsetblur" />
+                <feComponentTransfer>
+                  <feFuncA type="linear" slope="0.3" />
+                </feComponentTransfer>
+                <feMerge>
+                  <feMergeNode />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="shadow-active" height="200%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="4" />
+                <feOffset dx="2" dy="6" result="offsetblur" />
+                <feComponentTransfer>
+                  <feFuncA type="linear" slope="0.5" />
+                </feComponentTransfer>
+                <feMerge>
+                  <feMergeNode />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              {data.map((entry, i) => (
+                <linearGradient id={`colorGrad-${i}`} x1="0" y1="0" x2="0" y2="1" key={i}>
+                  <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
+                  <stop offset="100%" stopColor={entry.color} stopOpacity={0.7} />
+                </linearGradient>
+              ))}
+            </defs>
             <Pie
+              activeIndex={activeIndex}
+              activeShape={renderActiveShape}
               data={data}
               cx="50%"
               cy="50%"
-              outerRadius="70%"
-              innerRadius="35%"
+              outerRadius="85%"
+              innerRadius="60%"
               dataKey="amount"
               nameKey="category"
               labelLine={false}
               label={renderCustomLabel}
+              paddingAngle={5}
+              stroke="none"
+              filter="url(#shadow)"
+              onMouseEnter={onPieEnter}
+              onMouseLeave={onPieLeave}
+              style={{ outline: 'none' }}
             >
               {data.map((entry, i) => (
-                <Cell key={i} fill={entry.color} stroke="transparent" strokeWidth={0} />
+                <Cell key={i} fill={`url(#colorGrad-${i})`} />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
+
+        {/* Center Label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-1">
+          <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Total</span>
+          <span className="text-lg font-bold" style={{ color: 'var(--text)' }}>{formatCurrency(totalAmount)}</span>
+        </div>
       </div>
 
-      {/* Legend */}
-      <div className="mt-3 space-y-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+      {/* Legend - Limited height to prevent expansion */}
+      <div className="mt-3 space-y-1.5 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
         {displayedData.map((item, i) => (
           <div key={i} className="flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-1 duration-300">
             <div className="flex items-center gap-2">

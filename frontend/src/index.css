@@ -183,6 +183,44 @@
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(0,161,155,0.15);
   }
+  /* ---- Select Pill (Dashboard Filter) ---- */
+  .select-pill {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    min-width: 110px;
+  }
+  .select-pill:hover {
+    border-color: var(--primary);
+    color: var(--text);
+    background: var(--card);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .select-pill:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0,161,155,0.1);
+  }
+  .select-pill option {
+    background-color: var(--card);
+    color: var(--text);
+  }
+  .dark .select-pill option {
+    background-color: #1E293B; /* Hardcoded dark bg for better browser support */
+    color: #F8FAFC; /* White-ish text */
+  }
+
   /* Native dropdown options follow system theme; force bg/color for webkit */
   .select option {
     background: var(--card);

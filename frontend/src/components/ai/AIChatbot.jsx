@@ -155,10 +155,12 @@ export default function AIChatbot() {
   }
 
   const months = []
+  const today = new Date()
   for (let i = 0; i < 12; i++) {
-    const d = new Date()
-    d.setMonth(d.getMonth() - i)
-    months.push(d.toISOString().slice(0, 7))
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    months.push(`${y}-${m}`)
   }
 
   return (
