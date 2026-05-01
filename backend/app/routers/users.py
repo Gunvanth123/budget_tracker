@@ -6,6 +6,10 @@ from datetime import datetime, timedelta
 from app.database.db import get_db
 from app.models.models import User
 from app.services.auth import get_current_user, verify_password, hash_password
+from app.services.gdrive import GoogleDriveService
+import os
+import base64
+import io
 
 router = APIRouter()
 
@@ -23,11 +27,32 @@ class PasswordUpdateReq(BaseModel):
 
 @router.get("/me")
 def get_me(user: User = Depends(get_current_user)):
+    profile_pic = user.profile_picture
+    
+    # If it's a GDrive reference, download it
+    if profile_pic and profile_pic.startswith("gdrive://"):
+        try:
+            file_id = profile_pic.replace("gdrive://", "")
+            gdrive = GoogleDriveService(
+                os.getenv("GOOGLE_CLIENT_ID"),
+                os.getenv("GOOGLE_CLIENT_SECRET"),
+                os.getenv("GOOGLE_REDIRECT_URI")
+            )
+            service = gdrive.get_service(user.gdrive_token)
+            content = gdrive.download_file(service, file_id)
+            # Convert to base64 for frontend display
+            # Assuming it was uploaded as an image
+            b64 = base64.b64encode(content).decode('utf-8')
+            profile_pic = f"data:image/png;base64,{b64}"
+        except Exception as e:
+            print(f"Error fetching GDrive profile pic: {e}")
+            profile_pic = None
+
     return {
         "id": user.id, 
         "name": user.name, 
         "email": user.email, 
-        "profile_picture": user.profile_picture,
+        "profile_picture": profile_pic,
         "totp_enabled": user.totp_enabled
     }
 
@@ -35,12 +60,54 @@ def get_me(user: User = Depends(get_current_user)):
 def update_profile(req: ProfileUpdateReq, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if req.name is not None:
         user.name = req.name
+    
     if req.profile_picture is not None:
-        user.profile_picture = req.profile_picture
+        # Check if user has GDrive connected
+        if user.gdrive_token:
+            try:
+                gdrive = GoogleDriveService(
+                    os.getenv("GOOGLE_CLIENT_ID"),
+                    os.getenv("GOOGLE_CLIENT_SECRET"),
+                    os.getenv("GOOGLE_REDIRECT_URI")
+                )
+                service = gdrive.get_service(user.gdrive_token)
+                
+                # Get or create Profile folder in the main App folder
+                # user.gdrive_folder_id is the root App folder
+                profile_folder_id = gdrive.get_or_create_folder(service, "Profile", user.gdrive_folder_id)
+                
+                # Delete old GDrive profile pic if exists
+                if user.profile_picture and user.profile_picture.startswith("gdrive://"):
+                    try:
+                        old_id = user.profile_picture.replace("gdrive://", "")
+                        gdrive.delete_file(service, old_id)
+                    except: pass
+
+                # Process new profile pic (expected as data:image/png;base64,...)
+                header, encoded = req.profile_picture.split(",", 1)
+                mimetype = header.split(":")[1].split(";")[0]
+                data = base64.b64decode(encoded)
+                
+                # Upload to GDrive
+                file_id = gdrive.upload_file(
+                    service, 
+                    f"profile_{user.id}_{int(datetime.utcnow().timestamp())}", 
+                    data, 
+                    mimetype, 
+                    profile_folder_id
+                )
+                
+                user.profile_picture = f"gdrive://{file_id}"
+            except Exception as e:
+                print(f"GDrive upload failed, falling back to local: {e}")
+                user.profile_picture = req.profile_picture
+        else:
+            # Fallback to local storage if GDrive not connected
+            user.profile_picture = req.profile_picture
     
     db.commit()
     db.refresh(user)
-    return {"message": "Profile updated", "name": user.name}
+    return {"message": "Profile updated", "name": user.name, "profile_picture": user.profile_picture}
 
 @router.put("/email")
 def update_email(req: EmailUpdateReq, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
