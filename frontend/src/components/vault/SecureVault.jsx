@@ -107,7 +107,7 @@ export default function SecureVault() {
   const handleUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) return toast.error("Files must be under 5MB")
+    // Removed limit: if (file.size > 5 * 1024 * 1024) return toast.error("Files must be under 5MB")
 
     setIsUploading(true)
     const reader = new FileReader()

@@ -15,7 +15,7 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files)
-    if (files.length > 5) return toast.error("Max 5 files at once")
+    // Removed limit: if (files.length > 5) return toast.error("Max 5 files at once")
     
     // Initialize with original filenames (without extension for custom name)
     const newFiles = files.map(f => ({
@@ -118,7 +118,7 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
         <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
           {/* File Input */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider opacity-60">Step 1: Select Files (Max 5)</label>
+            <label className="text-xs font-bold uppercase tracking-wider opacity-60">Step 1: Select Files</label>
             <div className={`relative border-2 border-dashed rounded-2xl p-8 transition-all flex flex-col items-center justify-center gap-4 text-center ${
               selectedFiles.length > 0 ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-[var(--border)] hover:border-indigo-500/50 bg-[var(--bg)]'
             }`}>
@@ -131,7 +131,7 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
                 <p className="font-bold text-sm">
                   {selectedFiles.length > 0 ? `${selectedFiles.length} files selected` : "Drag & drop or click to upload"}
                 </p>
-                <p className="text-[10px] opacity-50 mt-1">PDF, JPG, PNG, DOC (Max 5MB each)</p>
+                <p className="text-[10px] opacity-50 mt-1">PDF, JPG, PNG, DOC (Secure Storage)</p>
               </div>
               <input 
                 type="file" 

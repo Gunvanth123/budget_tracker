@@ -100,9 +100,9 @@ async def upload_file(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Limit check: 5MB
-    if size > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+    # Limit check removed as requested
+    # if size > 5 * 1024 * 1024:
+    #     raise HTTPException(status_code=400, detail="File too large (max 5MB)")
 
     # Resolve category
     category = None

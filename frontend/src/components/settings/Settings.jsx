@@ -161,7 +161,7 @@ export default function Settings() {
                     <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                   </label>
                 </div>
-                <p className="text-sm opacity-60 max-w-[200px]">Click your avatar to upload a generic picture. Max size 2MB.</p>
+                <p className="text-sm opacity-60 max-w-[200px]">Click your avatar to upload a profile picture. Max size 2MB.</p>
               </div>
 
               <form onSubmit={handleProfileUpdate} className="pt-4 space-y-4">
