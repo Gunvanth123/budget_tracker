@@ -5,7 +5,7 @@ import {
   File, FileText, FileImage,
   Loader2, Search,
   CheckCircle2, Settings, ExternalLink, Info,
-  FolderOpen, ChevronDown, ChevronRight, Plus, Eye
+  FolderOpen, ChevronDown, ChevronRight, Plus, Eye, X
 } from 'lucide-react'
 import { vaultApi, passwordsApi } from '../../api/client'
 import toast from 'react-hot-toast'
