@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from '../Modal'
 import { transactionsApi, categoriesApi, accountsApi } from '../../api/client'
-import { ACCOUNT_TYPE_ICONS, todayISO } from '../../utils/helpers'
+import { ACCOUNT_TYPE_ICONS, todayISO, formatDateInput } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 
 const EMPTY = {
@@ -39,7 +39,7 @@ export default function TransactionForm({ isOpen, onClose, onSaved, editData }) 
           amount: editData.amount,
           category_id: editData.category_id,
           account_id: editData.account_id,
-          date: editData.date?.slice(0, 16) || todayISO(),
+          date: formatDateInput(editData.date) || todayISO(),
           notes: editData.notes || '',
           currency: editData.currency || 'INR',
         })
@@ -66,6 +66,7 @@ export default function TransactionForm({ isOpen, onClose, onSaved, editData }) 
         amount: parseFloat(form.amount),
         category_id: parseInt(form.category_id),
         account_id: parseInt(form.account_id),
+        date: new Date(form.date).toISOString(),
       }
       if (editData) {
         await transactionsApi.update(editData.id, payload)
