@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from collections import defaultdict
 import calendar
+from typing import List, Optional
 
 from app.database.db import get_db
 from app.models.models import Transaction, Account, Category, TransactionType, User
@@ -14,39 +15,63 @@ router = APIRouter()
 
 
 @router.get("/", response_model=DashboardOut)
-def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_dashboard(
+    month_year: Optional[str] = Query(None, regex=r"^\d{4}-\d{2}$"),
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
     now = datetime.utcnow()
     uid = current_user.id
+    
+    # If no month provided, use current
+    if not month_year:
+        target_date = now
+        month_year = now.strftime("%Y-%m")
+    else:
+        target_date = datetime.strptime(month_year, "%Y-%m")
 
-    # ── Summary: use real account balances (includes opening balance) ──────────
+    # Start and end of the target month
+    start_of_month = target_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    last_day = calendar.monthrange(target_date.year, target_date.month)[1]
+    end_of_month = target_date.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+
+    # ── Summary: for the SPECIFIC month ────────────────────────────────────────
+    # Monthly income and expense
+    m_income = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.user_id == uid, 
+        Transaction.type == TransactionType.income,
+        Transaction.date >= start_of_month,
+        Transaction.date <= end_of_month
+    ).scalar() or 0.0
+    
+    m_expense = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.user_id == uid, 
+        Transaction.type == TransactionType.expense,
+        Transaction.date >= start_of_month,
+        Transaction.date <= end_of_month
+    ).scalar() or 0.0
+
+    # Total balance is always global (current money in accounts)
     total_balance = db.query(func.sum(Account.balance)).filter(Account.user_id == uid).scalar() or 0.0
-
-    # All-time income and expense from ALL transactions (no date filter)
-    total_income = db.query(func.sum(Transaction.amount)).filter(
-        Transaction.user_id == uid, Transaction.type == TransactionType.income
-    ).scalar() or 0.0
-    total_expense = db.query(func.sum(Transaction.amount)).filter(
-        Transaction.user_id == uid, Transaction.type == TransactionType.expense
-    ).scalar() or 0.0
-
-    # opening_balance = money in accounts before any transactions
-    # Formula: total_balance = opening + income - expense
-    # So: opening = total_balance - income + expense
-    opening_balance = round(total_balance - total_income + total_expense, 2)
 
     summary = SummaryOut(
         total_balance=round(total_balance, 2),
-        total_income=round(total_income, 2),
-        total_expense=round(total_expense, 2),
-        net=round(total_balance, 2),
-        opening_balance=opening_balance,
+        total_income=round(m_income, 2),
+        total_expense=round(m_expense, 2),
+        net=round(m_income - m_expense, 2),
+        opening_balance=0.0,
     )
 
-    # ── Expense by category (all time) ─────────────────────────────────────────
+    # ── Expense by category (for the selected month) ──────────────────────────
     cat_data = (
         db.query(Category.name, Category.color, func.sum(Transaction.amount).label("total"))
         .join(Transaction, Transaction.category_id == Category.id)
-        .filter(Transaction.user_id == uid, Transaction.type == TransactionType.expense)
+        .filter(
+            Transaction.user_id == uid, 
+            Transaction.type == TransactionType.expense,
+            Transaction.date >= start_of_month,
+            Transaction.date <= end_of_month
+        )
         .group_by(Category.id)
         .order_by(func.sum(Transaction.amount).desc())
         .all()
@@ -61,14 +86,14 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
         ) for r in cat_data
     ]
 
-    # ── Monthly comparison: proper calendar months (last 6 months) ─────────────
+    # ── Monthly comparison: (still show last 6 months for context) ────────────
     monthly: dict = {}
-    # Build proper calendar months going back 5 months from current month
-    year, month = now.year, now.month
+    # Current month/year for context
+    c_year, c_month = now.year, now.month
     month_keys = []
     for i in range(5, -1, -1):
-        m = month - i
-        y = year
+        m = c_month - i
+        y = c_year
         while m <= 0:
             m += 12
             y -= 1
@@ -78,9 +103,7 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
         key = datetime(y, m, 1).strftime("%b %Y")
         monthly[key] = {"income": 0.0, "expense": 0.0}
 
-    # Start of 6 months ago
-    start_y, start_m = month_keys[0]
-    start_6m = datetime(start_y, start_m, 1)
+    start_6m = datetime(month_keys[0][0], month_keys[0][1], 1)
     for txn in db.query(Transaction).filter(
         Transaction.user_id == uid, Transaction.date >= start_6m
     ).all():
@@ -93,17 +116,20 @@ def get_dashboard(db: Session = Depends(get_db), current_user: User = Depends(ge
         for k, v in monthly.items()
     ]
 
-    # ── Daily trends (last 30 days) ────────────────────────────────────────────
+    # ── Daily trends (for the selected month) ──────────────────────────────────
     daily: dict = {}
-    for i in range(29, -1, -1):
-        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
-        daily[day] = {"income": 0.0, "expense": 0.0}
+    for d in range(1, last_day + 1):
+        day_str = target_date.replace(day=d).strftime("%Y-%m-%d")
+        daily[day_str] = {"income": 0.0, "expense": 0.0}
 
-    start_30d = now - timedelta(days=30)
-    for txn in db.query(Transaction).filter(Transaction.user_id == uid, Transaction.date >= start_30d).all():
-        day = txn.date.strftime("%Y-%m-%d")
-        if day in daily:
-            daily[day][txn.type.value] += txn.amount
+    for txn in db.query(Transaction).filter(
+        Transaction.user_id == uid, 
+        Transaction.date >= start_of_month,
+        Transaction.date <= end_of_month
+    ).all():
+        day_str = txn.date.strftime("%Y-%m-%d")
+        if day_str in daily:
+            daily[day_str][txn.type.value] += txn.amount
 
     daily_trends = [
         DailyData(date=k, income=round(v["income"], 2), expense=round(v["expense"], 2))

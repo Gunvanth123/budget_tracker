@@ -10,10 +10,11 @@ import toast from 'react-hot-toast'
 export default function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
 
   const fetchDashboard = async () => {
     try {
-      const d = await dashboardApi.get()
+      const d = await dashboardApi.get(selectedMonth)
       setData(d)
     } catch (err) {
       toast.error('Failed to load dashboard data')
@@ -24,9 +25,16 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboard()
-    const interval = setInterval(fetchDashboard, 60000) // Refresh every minute
+    const interval = setInterval(fetchDashboard, 60000)
     return () => clearInterval(interval)
-  }, [])
+  }, [selectedMonth])
+
+  const months = []
+  for (let i = 0; i < 12; i++) {
+    const d = new Date()
+    d.setMonth(d.getMonth() - i)
+    months.push(d.toISOString().slice(0, 7))
+  }
 
   return (
     <div className="space-y-5">
@@ -35,7 +43,12 @@ export default function Dashboard() {
 
       {/* Charts Row — equal width, equal height */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
-        <ExpensePieChart data={data?.expense_by_category} />
+        <ExpensePieChart 
+          data={data?.expense_by_category} 
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          months={months}
+        />
         <MonthlyBarChart data={data?.monthly_comparison} />
       </div>
 

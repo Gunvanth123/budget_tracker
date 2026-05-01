@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '../../utils/helpers'
 
@@ -35,25 +36,56 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
   )
 }
 
-export default function ExpensePieChart({ data }) {
+export default function ExpensePieChart({ data, selectedMonth, onMonthChange, months }) {
+  const [showAll, setShowAll] = useState(false)
+
   if (!data || data.length === 0) {
     return (
-      <div className="card p-5 h-80 flex flex-col items-center justify-center">
+      <div className="card p-5 h-80 flex flex-col items-center justify-center relative">
+        <div className="absolute top-4 right-4">
+          <select 
+            value={selectedMonth}
+            onChange={(e) => onMonthChange(e.target.value)}
+            className="bg-transparent text-xs outline-none border border-gray-200 rounded px-1"
+            style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+          >
+            {months?.map(m => (
+              <option key={m} value={m} style={{ color: '#000' }}>
+                {new Date(m).toLocaleString('default', { month: 'short', year: 'numeric' })}
+              </option>
+            ))}
+          </select>
+        </div>
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
           style={{ background: 'var(--border)' }}
         >
           <span className="text-2xl">🍕</span>
         </div>
-        <p className="font-medium text-sm" style={{ color: 'var(--text-muted)' }}>No expense data yet</p>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Add some expense transactions to see breakdown</p>
+        <p className="font-medium text-sm" style={{ color: 'var(--text-muted)' }}>No expense data for this month</p>
       </div>
     )
   }
 
+  const displayedData = showAll ? data : data.slice(0, 6)
+
   return (
-    <div className="card p-5 flex flex-col h-full">
-      <h3 className="font-semibold mb-4" style={{ color: 'var(--text)' }}>Expense by Category</h3>
+    <div className="card p-5 flex flex-col h-full relative">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold" style={{ color: 'var(--text)' }}>Expense by Category</h3>
+        <select 
+          value={selectedMonth}
+          onChange={(e) => onMonthChange(e.target.value)}
+          className="bg-transparent text-xs outline-none border border-gray-200 rounded px-1"
+          style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+        >
+          {months?.map(m => (
+            <option key={m} value={m} style={{ color: '#000' }}>
+              {new Date(m).toLocaleString('default', { month: 'short', year: 'numeric' })}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="flex-1 min-h-[220px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -78,9 +110,9 @@ export default function ExpensePieChart({ data }) {
       </div>
 
       {/* Legend */}
-      <div className="mt-3 space-y-1.5 max-h-40 overflow-y-auto">
-        {data.slice(0, 6).map((item, i) => (
-          <div key={i} className="flex items-center justify-between text-xs">
+      <div className="mt-3 space-y-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+        {displayedData.map((item, i) => (
+          <div key={i} className="flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-1 duration-300">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
               <span className="truncate max-w-[120px]" style={{ color: 'var(--text-muted)' }}>{item.category}</span>
@@ -89,7 +121,13 @@ export default function ExpensePieChart({ data }) {
           </div>
         ))}
         {data.length > 6 && (
-          <p className="text-xs pl-4" style={{ color: 'var(--text-muted)' }}>+{data.length - 6} more categories</p>
+          <button 
+            onClick={() => setShowAll(!showAll)}
+            className="text-xs pl-4 hover:underline cursor-pointer transition-all hover:text-indigo-500 text-left w-full mt-1" 
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {showAll ? 'Show less' : `+${data.length - 6} more categories`}
+          </button>
         )}
       </div>
     </div>
