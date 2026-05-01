@@ -35,6 +35,10 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS category_id INTEGER;"))
                 conn.execute(text("ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;"))
 
+                # Create indexes for transactions (Critical for Dashboard performance)
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_transactions_date ON transactions (date);"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_transactions_user_id ON transactions (user_id);"))
+
             elif engine.dialect.name == "sqlite":
                 # Migrate users table
                 columns = [

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -144,12 +144,24 @@ def get_dashboard(
         monthly[key] = {"income": 0.0, "expense": 0.0}
 
     start_history = datetime(month_keys[0][0], month_keys[0][1], 1)
-    for txn in db.query(Transaction).filter(
-        Transaction.user_id == uid, Transaction.date >= start_history
-    ).all():
-        key = txn.date.strftime("%b %Y")
+    
+    # Use SQL aggregation for monthly stats
+    monthly_stats = db.query(
+        func.date_trunc('month', Transaction.date).label('month'),
+        Transaction.type,
+        func.sum(Transaction.amount).label('total')
+    ).filter(
+        Transaction.user_id == uid,
+        Transaction.date >= start_history
+    ).group_by(
+        func.date_trunc('month', Transaction.date),
+        Transaction.type
+    ).all()
+
+    for row in monthly_stats:
+        key = row.month.strftime("%b %Y")
         if key in monthly:
-            monthly[key][txn.type.value] += txn.amount
+            monthly[key][row.type.value] = float(row.total)
 
     monthly_comparison = [
         MonthlyData(month=k, income=round(v["income"], 2), expense=round(v["expense"], 2))
@@ -167,14 +179,24 @@ def get_dashboard(
             day_str = target_date.replace(day=d).strftime("%Y-%m-%d")
             daily[day_str] = {"income": 0.0, "expense": 0.0}
 
-    for txn in db.query(Transaction).filter(
+    # Use SQL aggregation for daily stats
+    daily_stats = db.query(
+        func.date(Transaction.date).label('day'),
+        Transaction.type,
+        func.sum(Transaction.amount).label('total')
+    ).filter(
         Transaction.user_id == uid, 
         Transaction.date >= start_of_month,
         Transaction.date <= end_of_month
-    ).all():
-        day_str = txn.date.strftime("%Y-%m-%d")
+    ).group_by(
+        func.date(Transaction.date),
+        Transaction.type
+    ).all()
+
+    for row in daily_stats:
+        day_str = row.day.strftime("%Y-%m-%d")
         if day_str in daily:
-            daily[day_str][txn.type.value] += txn.amount
+            daily[day_str][row.type.value] = float(row.total)
 
     daily_trends = [
         DailyData(date=k, income=round(v["income"], 2), expense=round(v["expense"], 2))
@@ -194,7 +216,10 @@ def get_dashboard(
 def get_calendar_data(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     now = datetime.utcnow()
     start = now - timedelta(days=30)
-    txns = db.query(Transaction).filter(Transaction.user_id == current_user.id, Transaction.date >= start).all()
+    txns = db.query(Transaction).options(
+        joinedload(Transaction.category),
+        joinedload(Transaction.account)
+    ).filter(Transaction.user_id == current_user.id, Transaction.date >= start).all()
 
     calendar: dict = defaultdict(lambda: {"income": 0.0, "expense": 0.0, "transactions": []})
     for txn in txns:

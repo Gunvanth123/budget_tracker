@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 
@@ -23,7 +23,10 @@ def get_transactions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Transaction).filter(Transaction.user_id == current_user.id)
+    query = db.query(Transaction).options(
+        joinedload(Transaction.category),
+        joinedload(Transaction.account)
+    ).filter(Transaction.user_id == current_user.id)
     if type:
         query = query.filter(Transaction.type == type)
     if account_id:

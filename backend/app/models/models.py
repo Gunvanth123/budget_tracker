@@ -104,9 +104,9 @@ class Transaction(Base):
     type = Column(Enum(TransactionType), nullable=False)
     amount = Column(Float, nullable=False)
     notes = Column(Text, nullable=True)
-    date = Column(DateTime(timezone=True), nullable=False)
+    date = Column(DateTime(timezone=True), nullable=False, index=True)
     currency = Column(String(10), nullable=False, default="INR")
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
 
