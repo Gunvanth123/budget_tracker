@@ -94,7 +94,7 @@ class SummaryOut(BaseModel):
     total_income: float
     total_expense: float
     net: float
-    opening_balance: float  # Computed: money put in before any transactions
+    forecasted_expense: float  # AI/Historical projection for the month
 
 class CategoryBreakdown(BaseModel):
     category: str

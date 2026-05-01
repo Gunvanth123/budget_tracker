@@ -24,11 +24,11 @@ const cards = [
     bg: '#EF4444',
   },
   {
-    key: 'opening_balance',
-    label: 'Initial Deposits',
+    key: 'forecasted_expense',
+    label: 'Monthly Forecast',
     icon: Activity,
-    gradient: 'from-[#F59E0B] to-[#D97706]',
-    bg: '#F59E0B',
+    gradient: 'from-[#6366f1] to-[#4f46e5]',
+    bg: '#6366f1',
   },
 ]
 
@@ -74,9 +74,11 @@ export default function SummaryCards({ summary }) {
               {isNegative && <span className="text-base mr-0.5">-</span>}
               {formatCurrency(Math.abs(value))}
             </p>
-            {isNegative && (
+            {isNegative ? (
               <span className="text-xs" style={{ color: '#EF4444' }}>Deficit</span>
-            )}
+            ) : key === 'forecasted_expense' ? (
+              <span className="text-xs text-indigo-400 font-medium animate-pulse">Projection</span>
+            ) : null}
           </div>
         )
       })}

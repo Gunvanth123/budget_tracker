@@ -59,12 +59,44 @@ def get_dashboard(
 
     total_balance = db.query(func.sum(Account.balance)).filter(Account.user_id == uid).scalar() or 0.0
 
+    # ── Forecast Calculation ──────────────────────────────────────────────────
+    forecasted_expense = 0.0
+    if not is_range:
+        # Get last month's total expense for smoothing
+        first_of_last_month = (start_of_month - timedelta(days=1)).replace(day=1)
+        last_m_expense = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.user_id == uid,
+            Transaction.type == TransactionType.expense,
+            Transaction.date >= first_of_last_month,
+            Transaction.date < start_of_month
+        ).scalar() or 0.0
+
+        days_in_month = calendar.monthrange(start_of_month.year, start_of_month.month)[1]
+        
+        # If looking at current month, project based on today's date
+        if start_of_month.year == now.year and start_of_month.month == now.month:
+            day_of_month = now.day
+            # Simple projection: (current / days_passed) * total_days
+            base_projection = (m_expense / day_of_month) * days_in_month
+            
+            # Smoothing: weight current velocity more as month progresses
+            weight_current = min(0.9, (day_of_month / days_in_month))
+            weight_last = 1.0 - weight_current
+            
+            if last_m_expense > 0:
+                forecasted_expense = (weight_current * base_projection) + (weight_last * last_m_expense)
+            else:
+                forecasted_expense = base_projection
+        else:
+            # If looking at a past month, forecast is just the actual expense
+            forecasted_expense = m_expense
+
     summary = SummaryOut(
         total_balance=round(total_balance, 2),
         total_income=round(m_income, 2),
         total_expense=round(m_expense, 2),
         net=round(m_income - m_expense, 2),
-        opening_balance=0.0,
+        forecasted_expense=round(forecasted_expense, 2),
     )
 
     # ── Expense by category ────────────────────────────────────────────────────
