@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, X, Send, Bot, Trash2, Mic, MicOff, Volume2 } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, Trash2 } from 'lucide-react'
 import { dashboardApi, budgetsApi, aiApi, categoriesApi, accountsApi, transactionsApi } from '../../api/client'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -10,7 +10,6 @@ export default function AIChatbot() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [isListening, setIsListening] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   
   const endRef = useRef(null)
@@ -75,38 +74,6 @@ export default function AIChatbot() {
     }
   }
 
-  const startListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      toast.error("Voice recognition not supported in this browser.")
-      return
-    }
-
-    const recognition = new SpeechRecognition()
-    recognition.lang = 'en-IN'
-    recognition.interimResults = false
-
-    recognition.onstart = () => setIsListening(true)
-    recognition.onend = () => setIsListening(false)
-    recognition.onerror = () => setIsListening(false)
-    
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript
-      setInput(transcript)
-      // Auto-send if it's a clear command
-      setTimeout(() => handleSend(null, transcript), 500)
-    }
-
-    recognition.start()
-  }
-
-  const speak = (text) => {
-    const cleanText = text.replace(/\[ACTION\].*?\[\/ACTION\]/gs, '').replace(/[*#`_~]/g, '')
-    const utterance = new SpeechSynthesisUtterance(cleanText)
-    utterance.rate = 1.0
-    utterance.pitch = 1.0
-    window.speechSynthesis.speak(utterance)
-  }
 
   const handleSend = async (e, directInput = null) => {
     if (e) e.preventDefault()
@@ -144,7 +111,6 @@ export default function AIChatbot() {
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: aiContent }])
-      speak(aiContent)
     } catch (err) {
       console.error("AI Proxy Error:", err)
       const errorDetail = err.response?.data?.detail || 'AI Advisor is temporarily offline.'
@@ -228,7 +194,9 @@ export default function AIChatbot() {
                     m.content
                   ) : (
                     <div className="prose prose-sm prose-p:my-1 prose-ul:my-1 prose-indigo" style={{ color: 'inherit' }}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {m.content.replace(/\[ACTION\].*?\[\/ACTION\]/gs, '').trim()}
+                      </ReactMarkdown>
                     </div>
                   )}
                 </div>
@@ -259,14 +227,6 @@ export default function AIChatbot() {
                 className="flex-1 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 ring-indigo-500"
                 style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}
               />
-              <button 
-                type="button"
-                onClick={isListening ? () => {} : startListening}
-                className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                title="Voice Input"
-              >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
               <button 
                 type="submit" 
                 disabled={isTyping || !input.trim()} 

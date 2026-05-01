@@ -35,8 +35,11 @@ export default function Settings() {
     e.preventDefault()
     setLoading(true)
     try {
-      await usersApi.updateProfile({ name: profile.name, profile_picture: profile.profile_picture })
+      const res = await usersApi.updateProfile({ name: profile.name, profile_picture: profile.profile_picture })
       toast.success('Profile updated!')
+      if (res.profile_picture) {
+        setProfile(prev => ({ ...prev, profile_picture: res.profile_picture }))
+      }
     } catch {
       toast.error('Failed to update profile')
     } finally {
