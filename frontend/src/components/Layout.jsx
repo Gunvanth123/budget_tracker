@@ -86,7 +86,13 @@ export default function Layout() {
              style={{ borderBottom: '1px solid var(--border)' }}>
 
           <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="Budget Tracker" className="w-9 h-9 rounded-full object-cover" onError={e => { e.target.style.display='none' }} />
+            <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 flex-shrink-0 bg-slate-800 flex items-center justify-center">
+              {user?.profile_picture ? (
+                <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <img src="/logo.png" alt="Budget Tracker" className="w-full h-full object-cover p-1.5" onError={e => { e.target.style.display='none' }} />
+              )}
+            </div>
             <div>
               <div className="font-semibold text-sm">{user?.name || "Budget"}</div>
               <div className="text-xs opacity-60">Tracker Pro</div>
