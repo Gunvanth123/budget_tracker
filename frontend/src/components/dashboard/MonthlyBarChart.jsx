@@ -56,7 +56,7 @@ export default function MonthlyBarChart({ data }) {
           className="text-xs px-2 py-1 rounded-full"
           style={{ color: 'var(--text-muted)', background: 'var(--border)' }}
         >
-          Last 3 months
+          Last {data.length} months
         </span>
       </div>
       <div className="flex-1 min-h-[240px]">

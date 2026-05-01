@@ -6,9 +6,10 @@ import os
 import json
 
 from app.database.db import get_db
-from app.models.models import User, SecureFile
+from app.models.models import User, SecureFile, VaultCategory
 from app.services.auth import get_current_user
 from app.services.gdrive import GoogleDriveService
+from app.schemas import schemas
 
 router = APIRouter()
 
@@ -52,7 +53,7 @@ def connect_gdrive(code: str = Query(...), current_user: User = Depends(get_curr
         
         # Initialize folder structure
         service = gdrive_service.get_service(creds_json)
-        root_folder_id = gdrive_service.get_or_create_folder(service, "Budget Tracker Vault")
+        root_folder_id = gdrive_service.get_or_create_folder(service, "Elite Privacy Vault") # Updated name
         
         current_user.gdrive_token = creds_json
         current_user.gdrive_folder_id = root_folder_id
@@ -63,17 +64,29 @@ def connect_gdrive(code: str = Query(...), current_user: User = Depends(get_curr
         print(f"GDrive connection error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/")
+@router.get("/categories", response_model=List[schemas.VaultCategoryOut])
+def get_vault_categories(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return db.query(VaultCategory).filter(VaultCategory.user_id == current_user.id).all()
+
+@router.post("/categories", response_model=schemas.VaultCategoryOut)
+def create_vault_category(category: schemas.VaultCategoryCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Check if exists
+    existing = db.query(VaultCategory).filter(
+        VaultCategory.user_id == current_user.id,
+        VaultCategory.name == category.name
+    ).first()
+    if existing:
+        return existing
+    
+    new_cat = VaultCategory(name=category.name, user_id=current_user.id)
+    db.add(new_cat)
+    db.commit()
+    db.refresh(new_cat)
+    return new_cat
+
+@router.get("/", response_model=List[schemas.VaultFileOut])
 def get_files(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    files = db.query(SecureFile).filter(SecureFile.user_id == current_user.id).order_by(SecureFile.created_at.desc()).all()
-    return [{
-        "id": f.id,
-        "filename": f.filename,
-        "mimetype": f.mimetype,
-        "size": f.size,
-        "storage_location": f.storage_location,
-        "created_at": f.created_at
-    } for f in files]
+    return db.query(SecureFile).filter(SecureFile.user_id == current_user.id).order_by(SecureFile.created_at.desc()).all()
 
 @router.post("/upload")
 async def upload_file(
@@ -81,12 +94,27 @@ async def upload_file(
     mimetype: str = Form(...),
     size: int = Form(...),
     encrypted_content: str = Form(...),
+    category_id: Optional[int] = Form(None),
+    category_name: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     # Limit check: 5MB
     if size > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+
+    # Resolve category
+    category = None
+    if category_id:
+        category = db.query(VaultCategory).filter(VaultCategory.id == category_id, VaultCategory.user_id == current_user.id).first()
+    elif category_name:
+        # Check if exists, or create
+        category = db.query(VaultCategory).filter(VaultCategory.name == category_name, VaultCategory.user_id == current_user.id).first()
+        if not category:
+            category = VaultCategory(name=category_name, user_id=current_user.id)
+            db.add(category)
+            db.commit()
+            db.refresh(category)
 
     storage_location = "database"
     gdrive_file_id = None
@@ -97,9 +125,11 @@ async def upload_file(
         try:
             service = gdrive_service.get_service(current_user.gdrive_token)
             
-            # Determine subfolder based on mimetype
+            # Determine subfolder based on Category or mimetype
             folder_name = "Other"
-            if "pdf" in mimetype:
+            if category:
+                folder_name = category.name
+            elif "pdf" in mimetype:
                 folder_name = "PDFs"
             elif "image" in mimetype:
                 folder_name = "Images"
@@ -108,6 +138,11 @@ async def upload_file(
                 
             folder_id = gdrive_service.get_or_create_folder(service, folder_name, current_user.gdrive_folder_id)
             
+            # Save folder ID to category if it was missing
+            if category and not category.gdrive_folder_id:
+                category.gdrive_folder_id = folder_id
+                db.commit()
+
             # Upload to GDrive
             gdrive_file_id = gdrive_service.upload_file(
                 service, 
@@ -130,7 +165,8 @@ async def upload_file(
         size=size,
         encrypted_content=stored_content,
         gdrive_file_id=gdrive_file_id,
-        storage_location=storage_location
+        storage_location=storage_location,
+        category_id=category.id if category else None
     )
     db.add(new_file)
     db.commit()

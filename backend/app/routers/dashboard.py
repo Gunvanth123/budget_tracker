@@ -96,8 +96,8 @@ def get_dashboard(
     c_year, c_month = now.year, now.month
     month_keys = []
     
-    # If last_3_months is selected, show 3 months. Otherwise show 6.
-    history_count = 2 if is_range else 5
+    # Show last 3 months for the overview
+    history_count = 2
     
     for i in range(history_count, -1, -1):
         m = c_month - i

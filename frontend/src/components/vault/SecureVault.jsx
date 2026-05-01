@@ -287,16 +287,18 @@ export default function SecureVault() {
                 />
             </div>
             
-            <label className="btn-primary flex items-center gap-2 px-5 py-2 whitespace-nowrap cursor-pointer shadow-lg shadow-[var(--primary)]/20 hover:scale-105 transition-all">
-                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                Add Document
-                <input type="file" className="hidden" onChange={handleUpload} disabled={isUploading} />
-            </label>
+            <button 
+                onClick={() => setUploadModalOpen(true)}
+                className="btn-primary flex items-center gap-2 px-5 py-2 whitespace-nowrap shadow-lg shadow-[var(--primary)]/20 hover:scale-105 transition-all"
+            >
+                <Plus className="w-4 h-4" />
+                Add Documents
+            </button>
         </div>
       </div>
 
-      {/* Files Grid */}
-      {filteredFiles.length === 0 ? (
+      {/* Files Content */}
+      {groupedFiles.length === 0 ? (
         <div className="card py-24 text-center space-y-4">
           <div className="w-20 h-20 bg-[var(--bg)] rounded-full flex items-center justify-center mx-auto opacity-40">
             <Upload className="w-10 h-10" />
@@ -307,39 +309,62 @@ export default function SecureVault() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredFiles.map(file => (
-            <div key={file.id} className="group card p-4 hover:shadow-xl hover:border-[var(--primary)] transition-all relative overflow-hidden">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--bg)] flex items-center justify-center border border-[var(--border)] group-hover:scale-110 transition-transform">
-                        {getFileIcon(file.mimetype)}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {file.storage_location === 'gdrive' && (
-                             <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4 opacity-60" alt="GDrive" title="Stored in Google Drive" />
-                        )}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleDelete(file.id)} className="p-1.5 hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-colors" title="Delete">
-                                <Trash2 className="w-4 h-4" />
-                            </button>
+        <div className="space-y-8">
+          {groupedFiles.map(group => (
+            <div key={group.id} className="space-y-4">
+              <button 
+                onClick={() => toggleCategory(group.id)}
+                className="flex items-center gap-2 group w-full text-left"
+              >
+                <div className="p-1 rounded bg-[var(--border)] group-hover:bg-indigo-500/20 transition-colors">
+                  {collapsedCategories[group.id] ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+                <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 flex items-center gap-2">
+                  <FolderOpen className="w-4 h-4 text-indigo-500" />
+                  {group.name}
+                  <span className="text-[10px] font-medium bg-[var(--border)] px-1.5 py-0.5 rounded-full">{group.files.length}</span>
+                </h3>
+                <div className="flex-1 h-px bg-[var(--border)]" />
+              </button>
+
+              {!collapsedCategories[group.id] && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-in fade-in duration-500">
+                  {group.files.map(file => (
+                    <div key={file.id} className="group card p-4 hover:shadow-xl hover:border-[var(--primary)] transition-all relative overflow-hidden">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-[var(--bg)] flex items-center justify-center border border-[var(--border)] group-hover:scale-110 transition-transform">
+                                {getFileIcon(file.mimetype)}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {file.storage_location === 'gdrive' && (
+                                     <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4 opacity-60" alt="GDrive" title="Stored in Google Drive" />
+                                )}
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => handleDelete(file.id)} className="p-1.5 hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-colors" title="Delete">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <div className="space-y-1">
-                    <p className="font-bold text-sm truncate pr-6" title={file.filename}>{file.filename}</p>
-                    <div className="flex items-center justify-between text-[10px] opacity-60 uppercase font-medium">
-                        <span>{(file.size / 1024).toFixed(1)} KB</span>
-                        <span>{new Date(file.created_at).toLocaleDateString()}</span>
-                    </div>
-                </div>
+                        <div className="space-y-1">
+                            <p className="font-bold text-sm truncate pr-6" title={file.filename}>{file.filename}</p>
+                            <div className="flex items-center justify-between text-[10px] opacity-60 uppercase font-medium">
+                                <span>{(file.size / 1024).toFixed(1)} KB</span>
+                                <span>{new Date(file.created_at).toLocaleDateString()}</span>
+                            </div>
+                        </div>
 
-                <button 
-                    onClick={() => handleDownload(file)}
-                    className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-xs font-bold bg-[var(--bg)] hover:bg-[var(--primary)] hover:text-white rounded-lg border border-[var(--border)] transition-all"
-                >
-                    <Download className="w-3.5 h-3.5" /> Decrypt & Download
-                </button>
+                        <button 
+                            onClick={() => handleDownload(file)}
+                            className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-xs font-bold bg-[var(--bg)] hover:bg-[var(--primary)] hover:text-white rounded-lg border border-[var(--border)] transition-all"
+                        >
+                            <Download className="w-3.5 h-3.5" /> Decrypt & Download
+                        </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -352,6 +377,14 @@ export default function SecureVault() {
              <b>Privacy Warning:</b> Your files are encrypted locally {vaultStatus.is_gdrive_connected ? "before uploading to Google Drive" : "locally"}. If you lose your Master Password, these files cannot be recovered.
          </p>
       </div>
+
+      <VaultUploadModal 
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onSaved={fetchAll}
+        categories={categories}
+        masterPassword={masterPassword}
+      />
     </div>
   )
 }

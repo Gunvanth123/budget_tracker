@@ -185,3 +185,32 @@ class ChatMessageOut(ChatMessageBase):
 
     class Config:
         from_attributes = True
+# ─── Vault Schemas ────────────────────────────────────────────────────────────
+
+class VaultCategoryBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+class VaultCategoryCreate(VaultCategoryBase):
+    pass
+
+class VaultCategoryOut(VaultCategoryBase):
+    id: int
+    user_id: int
+    gdrive_folder_id: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class VaultFileOut(BaseModel):
+    id: int
+    filename: str
+    mimetype: Optional[str]
+    size: Optional[int]
+    storage_location: str
+    created_at: datetime
+    category_id: Optional[int] = None
+    category: Optional[VaultCategoryOut] = None
+
+    class Config:
+        from_attributes = True

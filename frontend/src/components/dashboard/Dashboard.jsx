@@ -7,10 +7,17 @@ import DailyLineChart from './DailyLineChart'
 import RecentTransactions from './RecentTransactions'
 import toast from 'react-hot-toast'
 
+import { Plus } from 'lucide-react'
+import TransactionForm from '../transactions/TransactionForm'
+
 export default function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  })
+  const [formOpen, setFormOpen] = useState(false)
 
   const fetchDashboard = async () => {
     try {
@@ -40,6 +47,17 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Overview</h2>
+        <button
+          onClick={() => setFormOpen(true)}
+          className="btn-primary flex items-center gap-2 px-4 py-2 text-sm shadow-lg shadow-indigo-500/20"
+        >
+          <Plus className="w-4 h-4" />
+          Add Transaction
+        </button>
+      </div>
+
       {/* Summary Cards */}
       <SummaryCards summary={data?.summary} />
 
@@ -59,6 +77,13 @@ export default function Dashboard() {
 
       {/* Recent Transactions */}
       <RecentTransactions />
+
+      {/* Modals */}
+      <TransactionForm 
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSaved={fetchDashboard}
+      />
     </div>
   )
 }

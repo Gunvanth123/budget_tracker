@@ -57,6 +57,7 @@ class User(Base):
     passwords = relationship("PasswordEntry", back_populates="user", cascade="all, delete-orphan")
     budget_goals = relationship("BudgetGoal", back_populates="user", cascade="all, delete-orphan")
     secure_files = relationship("SecureFile", back_populates="user", cascade="all, delete-orphan")
+    vault_categories = relationship("VaultCategory", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -182,6 +183,20 @@ class SecureFile(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="secure_files")
+    category_id = Column(Integer, ForeignKey("vault_categories.id"), nullable=True)
+    category = relationship("VaultCategory", back_populates="files")
+
+class VaultCategory(Base):
+    __tablename__ = "vault_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    gdrive_folder_id = Column(String(255), nullable=True) # ID of the folder in GDrive for this category
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="vault_categories")
+    files = relationship("SecureFile", back_populates="category")
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
