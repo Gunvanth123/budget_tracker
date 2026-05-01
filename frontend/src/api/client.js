@@ -11,6 +11,12 @@ const api = axios.create({
   withCredentials: true,
 })
 
+// Root API for health checks (outside /api prefix)
+const rootApi = axios.create({
+  baseURL: BASE_URL || '/',
+  withCredentials: true,
+})
+
 export const accountsApi = {
   getAll: () => api.get('/accounts/').then(r => r.data),
   create: (data) => api.post('/accounts/', data).then(r => r.data),
@@ -102,4 +108,9 @@ export const aiApi = {
   clearHistory: (month_year) => api.delete(`/ai/history/${month_year}`).then(r => r.data),
 }
 
+export const healthApi = {
+  ping: () => rootApi.get('/health').then(r => r.data).catch(() => ({ status: 'error' })),
+}
+
 export default api
+

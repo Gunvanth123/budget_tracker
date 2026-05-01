@@ -30,6 +30,11 @@ async def lifespan(app: FastAPI):
                 # Migrate accounts table
                 conn.execute(text("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT FALSE;"))
 
+                # Migrate password_entries table
+                conn.execute(text("ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS backup_codes TEXT;"))
+                conn.execute(text("ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS category_id INTEGER;"))
+                conn.execute(text("ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;"))
+
             elif engine.dialect.name == "sqlite":
                 # Migrate users table
                 columns = [
@@ -52,6 +57,20 @@ async def lifespan(app: FastAPI):
                 # Migrate accounts table
                 try:
                     conn.execute(text("ALTER TABLE accounts ADD COLUMN is_default BOOLEAN DEFAULT FALSE;"))
+                except Exception:
+                    pass
+
+                # Migrate password_entries table
+                try:
+                    conn.execute(text("ALTER TABLE password_entries ADD COLUMN backup_codes TEXT;"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE password_entries ADD COLUMN category_id INTEGER;"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE password_entries ADD COLUMN updated_at DATETIME;"))
                 except Exception:
                     pass
     except Exception as e:

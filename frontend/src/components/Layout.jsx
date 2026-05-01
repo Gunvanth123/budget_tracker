@@ -6,6 +6,7 @@ import {
   Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { healthApi } from '../api/client'
 import { clsx } from '../utils/helpers'
 import toast from 'react-hot-toast'
 
@@ -31,6 +32,19 @@ export default function Layout() {
 
   // ✅ THEME STATE
   const [darkMode, setDarkMode] = useState(true)
+
+  // ✅ KEEP ALIVE (To prevent Render sleep)
+  useEffect(() => {
+    // Initial ping
+    healthApi.ping()
+
+    // Interval every 1 minute
+    const interval = setInterval(() => {
+      healthApi.ping()
+    }, 60000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   // ✅ LOAD DEFAULT (DARK)
   useEffect(() => {
