@@ -171,8 +171,10 @@ export default function ExpensePieChart({ data, selectedMonth, onMonthChange, mo
           </PieChart>
         </ResponsiveContainer>
 
-        {/* Center Label */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-1">
+        {/* Center Label - Fades out on hover to avoid overlap with tooltip */}
+        <div 
+          className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-1 transition-opacity duration-300 ${activeIndex !== -1 ? 'opacity-0' : 'opacity-100'}`}
+        >
           <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Total</span>
           <span className="text-lg font-bold" style={{ color: 'var(--text)' }}>{formatCurrency(totalAmount)}</span>
         </div>
