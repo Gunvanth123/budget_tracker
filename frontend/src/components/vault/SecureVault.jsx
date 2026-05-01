@@ -502,6 +502,62 @@ export default function SecureVault() {
         categories={categories}
         masterPassword={masterPassword}
       />
+
+      {/* Document Preview Modal */}
+      {previewData.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300">
+            <div className="absolute top-4 right-4 flex gap-3 z-50">
+                <button 
+                    onClick={() => {
+                        const a = document.createElement('a')
+                        a.href = previewData.url
+                        a.download = previewData.filename
+                        a.click()
+                    }}
+                    className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-md"
+                >
+                    <Download className="w-5 h-5" />
+                </button>
+                <button 
+                    onClick={closePreview}
+                    className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all shadow-lg"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+            
+            <div className="w-full h-full p-4 flex flex-col items-center justify-center">
+                <div className="mb-4 text-center mt-8">
+                    <h3 className="text-white font-bold text-lg">{previewData.filename}</h3>
+                    <p className="text-white/40 text-xs uppercase tracking-widest">{previewData.mimetype}</p>
+                </div>
+                
+                <div className="flex-1 w-full max-w-5xl bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
+                    {previewData.mimetype.startsWith('image/') ? (
+                        <img src={previewData.url} className="w-full h-full object-contain" alt="Preview" />
+                    ) : previewData.mimetype === 'application/pdf' ? (
+                        <iframe src={previewData.url} className="w-full h-full border-0" title="PDF Preview" />
+                    ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-white/60 space-y-4">
+                            <FileText className="w-20 h-20 opacity-20" />
+                            <p>No interactive preview available for this file type.</p>
+                            <button 
+                                onClick={() => {
+                                    const a = document.createElement('a')
+                                    a.href = previewData.url
+                                    a.download = previewData.filename
+                                    a.click()
+                                }}
+                                className="btn-primary"
+                            >
+                                Download to View
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   )
 }
