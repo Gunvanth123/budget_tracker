@@ -130,7 +130,9 @@ class PasswordEntryBase(BaseModel):
     website: str
     username: str
     encrypted_password: str
+    backup_codes: Optional[str] = None
     notes: Optional[str] = None
+    category_id: Optional[int] = None
 
 class PasswordEntryCreate(PasswordEntryBase):
     pass
@@ -139,12 +141,29 @@ class PasswordEntryUpdate(BaseModel):
     website: Optional[str] = None
     username: Optional[str] = None
     encrypted_password: Optional[str] = None
+    backup_codes: Optional[str] = None
     notes: Optional[str] = None
+    category_id: Optional[int] = None
+
+class PasswordCategoryBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+class PasswordCategoryCreate(PasswordCategoryBase):
+    pass
+
+class PasswordCategoryOut(PasswordCategoryBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class PasswordEntryOut(PasswordEntryBase):
     id: int
     created_at: datetime
     updated_at: Optional[datetime]
+    category: Optional[PasswordCategoryOut] = None
 
     class Config:
         from_attributes = True

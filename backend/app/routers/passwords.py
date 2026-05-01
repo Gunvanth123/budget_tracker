@@ -3,8 +3,12 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database.db import get_db
-from app.models.models import PasswordEntry, User
-from app.schemas.schemas import PasswordEntryCreate, PasswordEntryOut, MasterPasswordSetup, MasterPasswordVerify, PasswordEntryUpdate
+from app.models.models import PasswordEntry, PasswordCategory, User
+from app.schemas.schemas import (
+    PasswordEntryCreate, PasswordEntryOut, MasterPasswordSetup, 
+    MasterPasswordVerify, PasswordEntryUpdate,
+    PasswordCategoryCreate, PasswordCategoryOut
+)
 from app.services.auth import get_current_user
 from passlib.context import CryptContext
 
@@ -67,4 +71,30 @@ def delete_password(entry_id: int, db: Session = Depends(get_db), current_user: 
         raise HTTPException(status_code=404, detail="Entry not found")
         
     db.delete(db_entry)
+    db.commit()
+
+# ─── Categories Endpoints ───────────────────────────────────────────────────
+
+@router.get("/categories", response_model=List[PasswordCategoryOut])
+def get_categories(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return db.query(PasswordCategory).filter(PasswordCategory.user_id == current_user.id).all()
+
+@router.post("/categories", response_model=PasswordCategoryOut)
+def create_category(cat: PasswordCategoryCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    db_cat = PasswordCategory(**cat.model_dump(), user_id=current_user.id)
+    db.add(db_cat)
+    db.commit()
+    db.refresh(db_cat)
+    return db_cat
+
+@router.delete("/categories/{cat_id}", status_code=204)
+def delete_category(cat_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    db_cat = db.query(PasswordCategory).filter(PasswordCategory.id == cat_id, PasswordCategory.user_id == current_user.id).first()
+    if not db_cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    # Nullify entries in this category before deleting
+    db.query(PasswordEntry).filter(PasswordEntry.category_id == cat_id).update({"category_id": None})
+    
+    db.delete(db_cat)
     db.commit()

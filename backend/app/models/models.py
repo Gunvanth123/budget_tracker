@@ -58,6 +58,7 @@ class User(Base):
     budget_goals = relationship("BudgetGoal", back_populates="user", cascade="all, delete-orphan")
     secure_files = relationship("SecureFile", back_populates="user", cascade="all, delete-orphan")
     vault_categories = relationship("VaultCategory", back_populates="user", cascade="all, delete-orphan")
+    password_categories = relationship("PasswordCategory", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -155,7 +156,22 @@ class PasswordEntry(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    category_id = Column(Integer, ForeignKey("password_categories.id"), nullable=True)
+    backup_codes = Column(Text, nullable=True) # AES-256 encrypted base64 payload
+
     user = relationship("User", back_populates="passwords")
+    category = relationship("PasswordCategory", back_populates="entries")
+
+class PasswordCategory(Base):
+    __tablename__ = "password_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="password_categories")
+    entries = relationship("PasswordEntry", back_populates="category")
 
 class BudgetGoal(Base):
     __tablename__ = "budget_goals"

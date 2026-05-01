@@ -3,7 +3,7 @@ import { usersApi, mfaApi } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import QRCode from 'react-qr-code'
 import toast from 'react-hot-toast'
-import { User, Shield, Camera } from 'lucide-react'
+import { User, Shield, Camera, CheckCircle2 } from 'lucide-react'
 
 export default function Settings() {
   const { user } = useAuth()
@@ -146,42 +146,46 @@ export default function Settings() {
       {activeTab === 'profile' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          <div className="card p-6 space-y-4">
+          <div className="card p-6 flex flex-col">
             <h3 className="font-semibold text-lg border-b pb-2 mb-4">Avatar</h3>
-            <div className="flex items-center gap-4">
-              <div className="relative w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border-2 border-[var(--primary)]">
-                {profile.profile_picture ? (
-                  <img src={profile.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-10 h-10 opacity-30" />
-                )}
-                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-                  <Camera className="w-6 h-6 text-white" />
-                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                </label>
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="flex items-center gap-4">
+                <div className="relative w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border-2 border-[var(--primary)] shrink-0">
+                  {profile.profile_picture ? (
+                    <img src={profile.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-10 h-10 opacity-30" />
+                  )}
+                  <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                    <Camera className="w-6 h-6 text-white" />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  </label>
+                </div>
+                <p className="text-sm opacity-60 max-w-[200px]">Click your avatar to upload a generic picture. Max size 2MB.</p>
               </div>
-              <p className="text-sm opacity-60 max-w-[200px]">Click your avatar to upload a generic picture. Max size 2MB.</p>
-            </div>
 
-            <form onSubmit={handleProfileUpdate} className="pt-4 space-y-4">
-              <div>
-                <label className="label">Public Name</label>
-                <input type="text" className="input" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} required />
-              </div>
-              <button type="submit" disabled={loading} className="btn-primary w-full">Save Profile</button>
-            </form>
+              <form onSubmit={handleProfileUpdate} className="pt-4 space-y-4">
+                <div>
+                  <label className="label">Public Name</label>
+                  <input type="text" className="input" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} required />
+                </div>
+                <button type="submit" disabled={loading} className="btn-primary w-full">Save Profile</button>
+              </form>
+            </div>
           </div>
 
-          <div className="card p-6 space-y-4">
+          <div className="card p-6 flex flex-col">
             <h3 className="font-semibold text-lg border-b pb-2 mb-4">Email Address</h3>
-            <p className="text-xs opacity-60 mb-2">Notice: For security reasons, you can only change your registered email address once every 30 days.</p>
-            <form onSubmit={handleEmailUpdate} className="space-y-4 pt-2">
-              <div>
-                <label className="label">Primary Email</label>
-                <input type="email" className="input" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} required />
-              </div>
-              <button type="submit" disabled={loading} className="btn-secondary w-full">Update Email</button>
-            </form>
+            <div className="flex-1 flex flex-col justify-between">
+              <p className="text-xs opacity-60 mb-2">Notice: For security reasons, you can only change your registered email address once every 30 days.</p>
+              <form onSubmit={handleEmailUpdate} className="space-y-4 pt-2">
+                <div>
+                  <label className="label">Primary Email</label>
+                  <input type="email" className="input" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} required />
+                </div>
+                <button type="submit" disabled={loading} className="btn-primary w-full">Update Email</button>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -204,43 +208,42 @@ export default function Settings() {
             </form>
           </div>
 
-          <div className="card p-6 space-y-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-              <Shield className="w-24 h-24" />
-            </div>
-            
+          <div className="card p-6 flex flex-col">
             <h3 className="font-semibold text-lg border-b pb-2 mb-4">Two-Factor Authentication</h3>
             
-            {profile.totp_enabled ? (
-              <div className="bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400 p-4 rounded-xl">
-                <p className="font-semibold flex items-center gap-2 mb-1"><Shield className="w-4 h-4" /> MFA is Currently Active</p>
-                <p className="text-sm opacity-80 mb-4">Your account is heavily secured using Google Authenticator.</p>
-                <button onClick={disable2FA} className="btn-secondary text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full">
-                  Disable 2FA
-                </button>
-              </div>
-            ) : mfaData ? (
-              <div className="space-y-4 flex flex-col items-center">
-                <p className="text-sm opacity-80 text-center">1. Scan this QR Code with Google Authenticator.</p>
-                <div className="bg-white p-4 rounded-xl shadow-sm inline-block">
-                  <QRCode value={mfaData.uri} size={150} />
+            <div className="flex-1 flex flex-col justify-between">
+              {profile.totp_enabled ? (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 p-4 rounded-xl">
+                  <p className="font-semibold flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4" /> MFA is Active</p>
+                  <p className="text-sm opacity-80 mb-4">Your account is secured with Google Authenticator.</p>
+                  <button onClick={disable2FA} className="btn-secondary text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full">
+                    Disable 2FA
+                  </button>
                 </div>
-                <p className="text-sm opacity-80 text-center mt-2">2. Enter the generated 6-digit code below.</p>
-                <div className="flex gap-2 w-full">
-                   <input type="text" maxLength={6} placeholder="000000" className="input text-center font-mono tracking-widest text-lg" value={otpCode} onChange={e => setOtpCode(e.target.value)} />
-                   <button onClick={verify2FA} className="btn-primary whitespace-nowrap">Verify</button>
+              ) : mfaData ? (
+                <div className="space-y-4">
+                  <p className="text-sm opacity-80">1. Scan this QR Code with Google Authenticator.</p>
+                  <div className="bg-white p-4 rounded-xl shadow-sm flex justify-center">
+                    <QRCode value={mfaData.uri} size={150} />
+                  </div>
+                  <p className="text-sm opacity-80">2. Enter the generated 6-digit code below.</p>
+                  <div className="flex gap-2">
+                     <input type="text" maxLength={6} placeholder="000000" className="input text-center font-mono tracking-widest text-lg flex-1" value={otpCode} onChange={e => setOtpCode(e.target.value)} />
+                     <button onClick={verify2FA} className="btn-primary whitespace-nowrap">Verify</button>
+                  </div>
+                  <button onClick={() => setMfaData(null)} className="text-sm opacity-50 underline mt-2 block mx-auto">Cancel Setup</button>
                 </div>
-                <button onClick={() => setMfaData(null)} className="text-sm opacity-50 underline mt-2">Cancel Setup</button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm opacity-80">Add an extra layer of security to your account with a Google Authenticator TOTP token.</p>
-                <button onClick={generate2FA} className="btn-primary w-full flex items-center justify-center gap-2">
-                  <Shield className="w-4 h-4" /> Setup Google Authenticator
-                </button>
-              </div>
-            )}
-            
+              ) : (
+                <>
+                  <p className="text-sm opacity-80">Add an extra layer of security to your account with a Google Authenticator TOTP token.</p>
+                  <div className="pt-4">
+                    <button onClick={generate2FA} className="btn-primary w-full flex items-center justify-center gap-2">
+                      Setup Google Authenticator
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
