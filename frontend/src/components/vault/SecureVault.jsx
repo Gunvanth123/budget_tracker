@@ -25,6 +25,7 @@ export default function SecureVault() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all') // 'all', cat_id, or 'uncategorized'
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [previewData, setPreviewData] = useState({ isOpen: false, url: '', filename: '', mimetype: '' })
   const [collapsedCategories, setCollapsedCategories] = useState({})
 
   const checkVaultStatus = useCallback(async () => {
@@ -173,11 +174,21 @@ export default function SecureVault() {
 
       const blob = new Blob([typedArray], { type: res.mimetype })
       const url = URL.createObjectURL(blob)
-      window.open(url, '_blank')
-      toast.success("Preview opened", { id: tid })
+      setPreviewData({
+          isOpen: true,
+          url,
+          filename: fileInfo.filename,
+          mimetype: res.mimetype
+      })
+      toast.success("Ready to view", { id: tid })
     } catch (err) {
       toast.error("Preview failed", { id: tid })
     }
+  }
+
+  const closePreview = () => {
+    if (previewData.url) URL.revokeObjectURL(previewData.url)
+    setPreviewData({ isOpen: false, url: '', filename: '', mimetype: '' })
   }
 
   const handleDelete = async (id) => {
