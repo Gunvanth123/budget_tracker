@@ -21,6 +21,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <App />
         <Toaster
           position="top-right"
+          containerStyle={{ zIndex: 999999 }}
           toastOptions={{
             style: {
               fontFamily: 'Poppins, sans-serif',
