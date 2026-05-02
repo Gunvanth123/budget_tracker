@@ -87,6 +87,20 @@ class TransactionOut(TransactionBase):
         from_attributes = True
 
 
+# ─── Usage Stats Schemas ──────────────────────────────────────────────────────
+
+class UsageUpdate(BaseModel):
+    feature_id: str
+
+class UsageStatsOut(BaseModel):
+    feature_id: str
+    count: int
+    last_used: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # ─── Dashboard Schemas ────────────────────────────────────────────────────────
 
 class SummaryOut(BaseModel):
@@ -271,15 +285,3 @@ class PopcornEntryOut(PopcornEntryBase):
         from_attributes = True
 
 
-# ─── Usage Stats Schemas ──────────────────────────────────────────────────────
-
-class UsageUpdate(BaseModel):
-    feature_id: str
-
-class UsageStatsOut(BaseModel):
-    feature_id: str
-    count: int
-    last_used: datetime
-
-    class Config:
-        from_attributes = True
