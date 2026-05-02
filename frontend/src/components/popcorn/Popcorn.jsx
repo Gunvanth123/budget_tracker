@@ -61,8 +61,12 @@ const PopcornPoster = ({ url, title, category }) => {
           )}
         />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-10">
-          <PopcornIcon className="w-12 h-12" />
+        <div className="w-full h-full p-4 flex flex-col items-center justify-center text-center bg-gradient-to-br from-slate-800 via-indigo-950 to-slate-900 border-r border-white/5">
+          <PopcornIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--primary)] opacity-40 mb-3" />
+          <h4 className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/40 px-2 line-clamp-4 leading-relaxed">
+            {title}
+          </h4>
+          <div className="mt-4 w-6 h-0.5 bg-[var(--primary)]/30 rounded-full" />
         </div>
       )}
       <div className="absolute top-3 left-3 px-2 py-1 rounded bg-black/60 backdrop-blur-md text-[9px] font-bold uppercase tracking-widest text-white border border-white/10">
@@ -525,8 +529,12 @@ export default function Popcorn() {
                     alt={selectedEntry.title} 
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center opacity-10">
-                    <PopcornIcon className="w-20 h-20" />
+                  <div className="w-full h-full p-8 flex flex-col items-center justify-center text-center bg-gradient-to-br from-slate-800 via-indigo-950 to-slate-900 border-r border-white/5">
+                    <PopcornIcon className="w-16 h-16 text-[var(--primary)] opacity-40 mb-6" />
+                    <h2 className="text-xl font-black uppercase tracking-wider text-white/40 leading-relaxed">
+                      {selectedEntry.title}
+                    </h2>
+                    <div className="mt-8 w-10 h-1 bg-[var(--primary)]/30 rounded-full" />
                   </div>
                 )}
                 <button 
