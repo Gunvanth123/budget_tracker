@@ -27,7 +27,6 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const { user, logout, refreshUser } = useAuth()
   const navigate = useNavigate()
@@ -131,9 +130,8 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className={clsx(
         'fixed lg:static inset-y-0 left-0 z-50 lg:z-auto',
-        sidebarCollapsed ? 'lg:w-20' : 'lg:w-64',
         'w-64 flex flex-col',
-        'transition-all duration-300 ease-in-out',
+        'transition-transform duration-300 ease-out',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}
       style={{ background: 'var(--card)', borderRight: '1px solid var(--border)' }}
@@ -143,7 +141,7 @@ export default function Layout() {
         <div className="h-16 flex items-center justify-between px-4"
              style={{ borderBottom: '1px solid var(--border)' }}>
 
-          <div className="flex items-center gap-2.5 overflow-hidden">
+          <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 flex-shrink-0 bg-slate-800 flex items-center justify-center">
               {user?.profile_picture ? (
                 <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
@@ -151,12 +149,10 @@ export default function Layout() {
                 <img src="/logo.png" alt="Budget Tracker" className="w-full h-full object-cover p-1.5" onError={e => { e.target.style.display='none' }} />
               )}
             </div>
-            {!sidebarCollapsed && (
-              <div className="animate-in fade-in slide-in-from-left-2 duration-300">
-                <div className="font-semibold text-sm truncate w-32">{user?.name || "Budget"}</div>
-                <div className="text-xs opacity-60">Tracker Pro</div>
-              </div>
-            )}
+            <div>
+              <div className="font-semibold text-sm">{user?.name || "Budget"}</div>
+              <div className="text-xs opacity-60">Tracker Pro</div>
+            </div>
           </div>
 
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden opacity-60 p-1">
@@ -172,8 +168,7 @@ export default function Layout() {
               to={to}
               className={({ isActive }) =>
                 clsx(
-                   'flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative',
-                   sidebarCollapsed ? 'justify-center' : 'gap-3',
+                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                    isActive ? 'font-semibold' : 'opacity-70 hover:opacity-100'
                 )
               }
@@ -182,15 +177,8 @@ export default function Layout() {
                 color: isActive ? '#fff' : 'var(--text)'
               })}
             >
-              <Icon className="w-4 h-4 shrink-0" />
-              {!sidebarCollapsed && <span className="animate-in fade-in slide-in-from-left-2 duration-300">{label}</span>}
-              
-              {/* Tooltip for collapsed mode */}
-              {sidebarCollapsed && (
-                <div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100] border border-white/10">
-                  {label}
-                </div>
-              )}
+              <Icon className="w-4 h-4" />
+              {label}
             </NavLink>
           ))}
 
@@ -198,13 +186,10 @@ export default function Layout() {
           {showInstallBtn && (
             <button
               onClick={handleInstallClick}
-              className={clsx(
-                "w-full mt-4 flex items-center rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-[1.02] transition-all shadow-md",
-                sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'
-              )}
+              className="w-full mt-4 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-[1.02] transition-all shadow-md"
             >
               <Download className="w-4 h-4" />
-              {!sidebarCollapsed && "Install App"}
+              Install Desktop App
             </button>
           )}
         </nav>
@@ -233,15 +218,6 @@ export default function Layout() {
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
               <Menu className="w-5 h-5" />
             </button>
-            
-            {/* Collapse Toggle for Desktop */}
-            <button 
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
-              className="hidden lg:flex p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 opacity-60 hover:opacity-100"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            
             <h1 className="font-semibold text-lg">{currentPage}</h1>
           </div>
 
