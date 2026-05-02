@@ -93,10 +93,12 @@ export default function Popcorn() {
     reasons_for_liking: '',
     genres: [],
     customGenre: '',
-    poster: null
+    poster: null,
+    posterUrl: ''
   })
   const [posterPreview, setPosterPreview] = useState(null)
   const [isGeneratingSynopsis, setIsGeneratingSynopsis] = useState(false)
+  const [isFetchingPoster, setIsFetchingPoster] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Filters
@@ -174,6 +176,31 @@ export default function Popcorn() {
     }
   }
 
+  const fetchPosterFromUrl = async () => {
+    if (!formData.posterUrl) {
+      toast.error('Please enter a URL first')
+      return
+    }
+    
+    setIsFetchingPoster(true)
+    try {
+      // Check if it's a direct image URL
+      if (formData.posterUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i)) {
+        setPosterPreview(formData.posterUrl)
+        toast.success('Image link detected!')
+      } else {
+        // Try to extract from page
+        const res = await popcornApi.extractPoster(formData.posterUrl)
+        setPosterPreview(res.poster_url)
+        toast.success('Poster found on page!')
+      }
+    } catch (error) {
+      toast.error('Could not find a poster at that URL')
+    } finally {
+      setIsFetchingPoster(false)
+    }
+  }
+
   const handleEditClick = (entry) => {
     setEditingEntry(entry)
     setFormData({
@@ -186,7 +213,8 @@ export default function Popcorn() {
       reasons_for_liking: entry.reasons_for_liking || '',
       genres: entry.genres ? entry.genres.split(', ').filter(g => GENRES.includes(g)) : [],
       customGenre: '',
-      poster: null
+      poster: null,
+      posterUrl: ''
     })
     setPosterPreview(entry.poster_url ? `${API_URL}${entry.poster_url}?token=${token}` : null)
     setShowModal(true)
@@ -218,7 +246,12 @@ export default function Popcorn() {
       data.append('synopsis', formData.synopsis)
       data.append('reasons_for_liking', formData.reasons_for_liking)
       data.append('genres', finalGenres.join(', '))
-      if (formData.poster) data.append('poster', formData.poster)
+      if (formData.poster) {
+        data.append('poster', formData.poster)
+      } else if (posterPreview && posterPreview.startsWith('http')) {
+        // If we have a remote preview and no manual file upload, pass it as remote_poster_url
+        data.append('remote_poster_url', posterPreview)
+      }
 
       if (editingEntry) {
         await popcornApi.update(editingEntry.id, data)
@@ -249,7 +282,8 @@ export default function Popcorn() {
       reasons_for_liking: '',
       genres: [],
       customGenre: '',
-      poster: null
+      poster: null,
+      posterUrl: ''
     })
     setPosterPreview(null)
     setEditingEntry(null)
@@ -638,6 +672,30 @@ export default function Popcorn() {
                       </>
                     )}
                   </div>
+
+                  {/* URL Input */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-bold tracking-widest opacity-40">Or Fetch from URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="posterUrl"
+                        value={formData.posterUrl}
+                        onChange={handleInputChange}
+                        placeholder="Paste link here..."
+                        className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-[var(--border)] text-xs outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={fetchPosterFromUrl}
+                        disabled={isFetchingPoster || !isGDriveConnected}
+                        className="px-3 py-2 bg-indigo-500/10 text-indigo-400 rounded-xl hover:bg-indigo-500/20 disabled:opacity-30 transition-all border border-indigo-500/20"
+                      >
+                        {isFetchingPoster ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
                   {!isGDriveConnected && (
                     <div className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 rounded-lg text-xs text-yellow-500 border border-yellow-500/20">
                       <ExternalLink className="w-3 h-3" />

@@ -7,6 +7,8 @@ import httpx
 import json
 import io
 from PIL import Image
+import re
+from datetime import datetime
 
 from app.database.db import get_db
 from app.models.models import User, PopcornEntry
@@ -40,37 +42,44 @@ async def create_popcorn_entry(
     reasons_for_liking: Optional[str] = Form(None),
     genres: Optional[str] = Form(None),
     poster: Optional[UploadFile] = File(None),
+    remote_poster_url: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     poster_url = None
     gdrive_file_id = None
 
-    if poster:
+    if poster or remote_poster_url:
         # If GDrive is connected, upload there
         if current_user.gdrive_token and current_user.gdrive_folder_id and gdrive_service:
             try:
                 service = gdrive_service.get_service(current_user.gdrive_token)
                 popcorn_folder_id = gdrive_service.get_or_create_folder(service, "Popcorn Posters", current_user.gdrive_folder_id)
                 
-                content = await poster.read()
-                gdrive_file_id = gdrive_service.upload_file(
-                    service,
-                    f"poster_{title}_{poster.filename}",
-                    content,
-                    poster.content_type,
-                    popcorn_folder_id
-                )
-                # Store a URL that includes the token for img tag compatibility
-                # Or we can just store the gdrive_file_id and let the frontend handle it
-                poster_url = f"/api/popcorn/poster/{gdrive_file_id}"
+                content = None
+                mimetype = "image/jpeg"
+                
+                if poster:
+                    content = await poster.read()
+                    mimetype = poster.content_type
+                elif remote_poster_url:
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.get(remote_poster_url, follow_redirects=True, timeout=10.0)
+                        if resp.status_code == 200:
+                            content = resp.content
+                            mimetype = resp.headers.get("content-type", "image/jpeg")
+
+                if content:
+                    gdrive_file_id = gdrive_service.upload_file(
+                        service,
+                        f"poster_{title}_{int(datetime.utcnow().timestamp())}",
+                        content,
+                        mimetype,
+                        popcorn_folder_id
+                    )
+                    poster_url = f"/api/popcorn/poster/{gdrive_file_id}"
             except Exception as e:
                 print(f"Popcorn poster upload to GDrive failed: {e}")
-        else:
-            # Fallback: we don't have local storage implemented for posters yet in this app's architecture,
-            # so we'll just skip it if GDrive isn't connected, as per user requirement.
-            # (User said: "else it should add to connect the gdrive for uploading the poster")
-            pass
 
     new_entry = PopcornEntry(
         user_id=current_user.id,
@@ -172,6 +181,39 @@ async def get_ai_synopsis(title: str, category: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/extract-poster")
+async def extract_poster_url(url: str):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10.0, follow_redirects=True)
+            if response.status_code != 200:
+                raise HTTPException(status_code=400, detail="Could not fetch the URL")
+            
+            html = response.text
+            
+            # Common patterns for movie posters in meta tags
+            patterns = [
+                r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+                r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+                r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
+                r'<link[^>]+rel=["\']image_src["\'][^>]+href=["\']([^"\']+)["\']'
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, html, re.IGNORECASE)
+                if match:
+                    image_url = match.group(1)
+                    if image_url.startswith("//"):
+                        image_url = "https:" + image_url
+                    return {"poster_url": image_url}
+            
+            # Fallback: look for <img> tags that might be posters (risky but better than nothing)
+            # Actually, better to just fail if no meta tags found to avoid garbage
+            raise HTTPException(status_code=404, detail="No poster image found in meta tags")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract poster: {str(e)}")
+
 @router.put("/{entry_id}", response_model=schemas.PopcornEntryOut)
 async def update_popcorn_entry(
     entry_id: int,
@@ -183,6 +225,7 @@ async def update_popcorn_entry(
     reasons_for_liking: Optional[str] = Form(None),
     genres: Optional[str] = Form(None),
     poster: Optional[UploadFile] = File(None),
+    remote_poster_url: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -197,8 +240,9 @@ async def update_popcorn_entry(
     entry.synopsis = synopsis
     entry.reasons_for_liking = reasons_for_liking
     entry.genres = genres
+    entry.rating = rating # Fixed potential missing update
 
-    if poster:
+    if poster or remote_poster_url:
         if current_user.gdrive_token and current_user.gdrive_folder_id and gdrive_service:
             try:
                 # Delete old poster if exists
@@ -210,16 +254,29 @@ async def update_popcorn_entry(
                 service = gdrive_service.get_service(current_user.gdrive_token)
                 popcorn_folder_id = gdrive_service.get_or_create_folder(service, "Popcorn Posters", current_user.gdrive_folder_id)
                 
-                content = await poster.read()
-                new_file_id = gdrive_service.upload_file(
-                    service,
-                    f"poster_{title}_{poster.filename}",
-                    content,
-                    poster.content_type,
-                    popcorn_folder_id
-                )
-                entry.gdrive_file_id = new_file_id
-                entry.poster_url = f"/api/popcorn/poster/{new_file_id}"
+                content = None
+                mimetype = "image/jpeg"
+                
+                if poster:
+                    content = await poster.read()
+                    mimetype = poster.content_type
+                elif remote_poster_url:
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.get(remote_poster_url, follow_redirects=True, timeout=10.0)
+                        if resp.status_code == 200:
+                            content = resp.content
+                            mimetype = resp.headers.get("content-type", "image/jpeg")
+
+                if content:
+                    new_file_id = gdrive_service.upload_file(
+                        service,
+                        f"poster_{title}_{int(datetime.utcnow().timestamp())}",
+                        content,
+                        mimetype,
+                        popcorn_folder_id
+                    )
+                    entry.gdrive_file_id = new_file_id
+                    entry.poster_url = f"/api/popcorn/poster/{new_file_id}"
             except Exception as e:
                 print(f"Update poster failed: {e}")
 
