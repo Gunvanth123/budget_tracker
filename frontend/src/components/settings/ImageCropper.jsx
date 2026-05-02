@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Crop, Check, RotateCw, ZoomIn, ZoomOut } from 'lucide-react'
 
-export default function ImageCropper({ image, onCrop, onCancel }) {
+export default function ImageCropper({ image, onCrop, onCancel, circular = true }) {
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -37,9 +37,10 @@ export default function ImageCropper({ image, onCrop, onCancel }) {
     const ctx = canvas.getContext('2d')
     const img = imageRef.current
     
-    const cropSize = 300 // Output size
-    canvas.width = cropSize
-    canvas.height = cropSize
+    const cropWidth = circular ? 300 : 400
+    const cropHeight = circular ? 300 : 600
+    canvas.width = cropWidth
+    canvas.height = cropHeight
     
     // Calculate scaling
     const scale = zoom
@@ -61,12 +62,12 @@ export default function ImageCropper({ image, onCrop, onCancel }) {
     const aspect = imgWidth / imgHeight
     
     let drawWidth, drawHeight
-    if (aspect > 1) {
-        drawHeight = 300
-        drawWidth = 300 * aspect
+    if (aspect > (cropWidth / cropHeight)) {
+        drawHeight = cropHeight
+        drawWidth = cropHeight * aspect
     } else {
-        drawWidth = 300
-        drawHeight = 300 / aspect
+        drawWidth = cropWidth
+        drawHeight = cropWidth / aspect
     }
 
     ctx.drawImage(
@@ -87,7 +88,7 @@ export default function ImageCropper({ image, onCrop, onCancel }) {
         <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-indigo-500/5">
           <h3 className="font-bold flex items-center gap-2">
             <Crop className="w-4 h-4 text-indigo-500" />
-            Adjust Profile Picture
+            {circular ? 'Adjust Profile Picture' : 'Adjust Movie Poster'}
           </h3>
           <button onClick={onCancel} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full">
             <X className="w-5 h-5" />
@@ -105,9 +106,17 @@ export default function ImageCropper({ image, onCrop, onCancel }) {
           onTouchMove={handleMove}
           onTouchEnd={handleEnd}
         >
-          {/* Circular Mask Overlay */}
-          <div className="absolute inset-0 z-10 pointer-events-none border-[40px] border-black/60 rounded-full" style={{ boxShadow: '0 0 0 9999px rgba(0,0,0,0.6)' }} />
-          <div className="absolute inset-0 z-10 pointer-events-none border border-white/20 rounded-full m-[40px]" />
+          {/* Mask Overlay */}
+          {circular ? (
+            <>
+              <div className="absolute inset-0 z-10 pointer-events-none border-[40px] border-black/60 rounded-full" style={{ boxShadow: '0 0 0 9999px rgba(0,0,0,0.6)' }} />
+              <div className="absolute inset-0 z-10 pointer-events-none border border-white/20 rounded-full m-[40px]" />
+            </>
+          ) : (
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+              <div className="w-[300px] aspect-[2/3] border border-white/50 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]" />
+            </div>
+          )}
 
           <img
             ref={imageRef}

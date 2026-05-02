@@ -4,6 +4,7 @@ import { Plus, Trash2, Edit3, Loader2, Image as ImageIcon, Sparkles, X, Search, 
 import { popcornApi, vaultApi, usageApi, API_URL } from '../../api/client'
 import toast from 'react-hot-toast'
 import { clsx } from '../../utils/helpers'
+import ImageCropper from '../settings/ImageCropper'
 
 const CATEGORIES = [
   "Anime movie", "Anime series", "TV show", "Movies", "Shows", "Short films", "Learning"
@@ -104,6 +105,7 @@ export default function Popcorn() {
   const [isGeneratingSynopsis, setIsGeneratingSynopsis] = useState(false)
   const [isFetchingPoster, setIsFetchingPoster] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [tempImage, setTempImage] = useState(null)
 
   // Filters
   const [search, setSearch] = useState('')
@@ -156,9 +158,27 @@ export default function Popcorn() {
   const handlePosterChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      setFormData(prev => ({ ...prev, poster: file }))
-      setPosterPreview(URL.createObjectURL(file))
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File too large (max 5MB)')
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setTempImage(reader.result)
+      }
+      reader.readAsDataURL(file)
     }
+  }
+
+  const handleCroppedImage = async (base64) => {
+    // Convert base64 to File object for the API
+    const response = await fetch(base64)
+    const blob = await response.blob()
+    const file = new File([blob], 'poster.jpg', { type: 'image/jpeg' })
+    
+    setFormData(prev => ({ ...prev, poster: file }))
+    setPosterPreview(base64)
+    setTempImage(null)
   }
 
   const generateSynopsis = async () => {
@@ -880,6 +900,16 @@ export default function Popcorn() {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* IMAGE CROPPER MODAL */}
+      {tempImage && (
+        <ImageCropper 
+          image={tempImage}
+          onCrop={handleCroppedImage}
+          onCancel={() => setTempImage(null)}
+          circular={false}
+        />
       )}
     </div>
   )
