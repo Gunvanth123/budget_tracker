@@ -37,7 +37,7 @@ async def create_popcorn_entry(
     title: str = Form(...),
     category: str = Form(...),
     language: Optional[str] = Form(None),
-    rating: Optional[int] = Form(None),
+    rating: Optional[float] = Form(None),
     synopsis: Optional[str] = Form(None),
     reasons_for_liking: Optional[str] = Form(None),
     genres: Optional[str] = Form(None),

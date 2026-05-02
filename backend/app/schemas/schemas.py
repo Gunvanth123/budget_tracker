@@ -269,7 +269,7 @@ class PopcornEntryUpdate(BaseModel):
     title: Optional[str] = None
     category: Optional[str] = None
     language: Optional[str] = None
-    rating: Optional[int] = None
+    rating: Optional[float] = None
     synopsis: Optional[str] = None
     reasons_for_liking: Optional[str] = None
     genres: Optional[str] = None
