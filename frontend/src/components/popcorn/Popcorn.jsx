@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, Trash2, Edit3, Loader2, Image as ImageIcon, Sparkles, X, Search, Popcorn as PopcornIcon, ExternalLink, ChevronRight } from 'lucide-react'
-import { popcornApi, vaultApi } from '../../api/client'
+import { popcornApi, vaultApi, API_URL } from '../../api/client'
 import toast from 'react-hot-toast'
 import { clsx } from '../../utils/helpers'
 
@@ -149,7 +149,7 @@ export default function Popcorn() {
       customGenre: '',
       poster: null
     })
-    setPosterPreview(entry.poster_url ? `${entry.poster_url}?token=${token}` : null)
+    setPosterPreview(entry.poster_url ? `${API_URL}${entry.poster_url}?token=${token}` : null)
     setShowModal(true)
   }
 
@@ -306,7 +306,7 @@ export default function Popcorn() {
               <div className="w-32 sm:w-48 h-full sm:h-auto relative overflow-hidden bg-slate-800 flex-shrink-0">
                 {entry.poster_url ? (
                   <img 
-                    src={`${entry.poster_url}?token=${token}&width=400`} 
+                    src={`${API_URL}${entry.poster_url}?token=${token}&width=400`} 
                     alt={entry.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     loading="lazy"
@@ -394,7 +394,7 @@ export default function Popcorn() {
               <div className="w-full md:w-2/5 h-64 md:h-auto relative bg-slate-800">
                 {selectedEntry.poster_url ? (
                   <img 
-                    src={`${selectedEntry.poster_url}?token=${token}&width=1000`} 
+                    src={`${API_URL}${selectedEntry.poster_url}?token=${token}&width=1000`} 
                     className="w-full h-full object-cover" 
                     alt={selectedEntry.title} 
                   />

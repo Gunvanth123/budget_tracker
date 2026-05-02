@@ -11,6 +11,8 @@ const api = axios.create({
   withCredentials: true,
 })
 
+export const API_URL = BASE_URL
+
 // Root API for health checks (outside /api prefix)
 const rootApi = axios.create({
   baseURL: BASE_URL || '/',
