@@ -15,6 +15,7 @@ import BudgetGoals from './components/budgets/BudgetGoals'
 import AIChatbot from './components/ai/AIChatbot'
 import Settings from './components/settings/Settings'
 import SecureVault from './components/vault/SecureVault'
+import Popcorn from './components/popcorn/Popcorn'
 
 
 function LoadingScreen() {
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="passwords" element={<PasswordManager />} />
         <Route path="budgets" element={<BudgetGoals />} />
         <Route path="vault" element={<SecureVault />} />
+        <Route path="popcorn" element={<Popcorn />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

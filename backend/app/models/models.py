@@ -60,6 +60,7 @@ class User(Base):
     vault_categories = relationship("VaultCategory", back_populates="user", cascade="all, delete-orphan")
     password_categories = relationship("PasswordCategory", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
+    popcorn_entries = relationship("PopcornEntry", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -225,3 +226,22 @@ class ChatMessage(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="chat_messages")
+
+class PopcornEntry(Base):
+    __tablename__ = "popcorn_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    category = Column(String(100), nullable=False) # Anime movie, TV show, etc.
+    language = Column(String(100), nullable=True)
+    rating = Column(Integer, nullable=True) # 1-5 popcorns
+    synopsis = Column(Text, nullable=True)
+    reasons_for_liking = Column(Text, nullable=True)
+    genres = Column(Text, nullable=True) # Comma-separated or JSON list
+    poster_url = Column(Text, nullable=True) # Local or GDrive public URL if applicable
+    gdrive_file_id = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", back_populates="popcorn_entries")

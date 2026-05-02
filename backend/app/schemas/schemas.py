@@ -233,3 +233,38 @@ class VaultFileOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ─── Popcorn Schemas ──────────────────────────────────────────────────────────
+
+class PopcornEntryBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    category: str
+    language: Optional[str] = None
+    rating: Optional[int] = Field(None, ge=0, le=5)
+    synopsis: Optional[str] = None
+    reasons_for_liking: Optional[str] = None
+    genres: Optional[str] = None # Comma-separated
+    poster_url: Optional[str] = None
+    gdrive_file_id: Optional[str] = None
+
+class PopcornEntryCreate(PopcornEntryBase):
+    pass
+
+class PopcornEntryUpdate(BaseModel):
+    title: Optional[str] = None
+    category: Optional[str] = None
+    language: Optional[str] = None
+    rating: Optional[int] = None
+    synopsis: Optional[str] = None
+    reasons_for_liking: Optional[str] = None
+    genres: Optional[str] = None
+    poster_url: Optional[str] = None
+
+class PopcornEntryOut(PopcornEntryBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True

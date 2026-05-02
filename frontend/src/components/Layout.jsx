@@ -3,7 +3,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Shield, Key, Target, Settings as SettingsIcon } from 'lucide-react'
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, Tags,
-  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon, Download
+  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon, Download, Clapperboard
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { healthApi } from '../api/client'
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { to: '/passwords',    icon: Key,             label: 'Passwords'    },
   { to: '/vault',        icon: Shield,          label: 'Secure Vault' },
   { to: '/budgets',      icon: Target,          label: 'Budget Goals' },
+  { to: '/popcorn',      icon: Clapperboard,    label: 'Popcorn'      },
   { to: '/settings',     icon: SettingsIcon,    label: 'Settings'     },
 ]
 

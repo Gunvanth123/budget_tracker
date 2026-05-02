@@ -108,6 +108,15 @@ export const aiApi = {
   clearHistory: (month_year) => api.delete(`/ai/history/${month_year}`).then(r => r.data),
 }
 
+export const popcornApi = {
+  getAll: () => api.get('/popcorn/').then(r => r.data),
+  create: (formData) => api.post('/popcorn/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(r => r.data),
+  delete: (id) => api.delete(`/popcorn/${id}`).then(r => r.data),
+  getSynopsis: (title, category) => api.get('/popcorn/ai-synopsis', { params: { title, category } }).then(r => r.data),
+}
+
 export const healthApi = {
   ping: () => rootApi.get('/health').then(r => r.data).catch(() => ({ status: 'error' })),
 }
