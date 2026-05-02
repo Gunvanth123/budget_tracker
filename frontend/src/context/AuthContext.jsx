@@ -19,13 +19,21 @@ export function AuthProvider({ children }) {
     }
   }, [token])
 
+  const refreshUser = useCallback(async () => {
+    if (!token) return
+    try {
+      const r = await api.get('/auth/me')
+      setUser(r.data)
+    } catch {
+      setToken(null)
+      setUser(null)
+    }
+  }, [token])
+
   // On mount: validate token and load user
   useEffect(() => {
     if (!token) { setLoading(false); return }
-    api.get('/auth/me')
-      .then(r => setUser(r.data))
-      .catch(() => { setToken(null); setUser(null) })
-      .finally(() => setLoading(false))
+    refreshUser().finally(() => setLoading(false))
   }, [])
 
   const login = useCallback(async (email, password, otp_code = null) => {
@@ -53,7 +61,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

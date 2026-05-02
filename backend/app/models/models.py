@@ -43,6 +43,7 @@ class User(Base):
     verification_otp = Column(String(10), nullable=True)
     otp_expires_at = Column(DateTime(timezone=True), nullable=True)
     mfa_preference = Column(String(20), default="none", nullable=False) # none, app, email
+    has_seen_onboarding = Column(Boolean, default=False, nullable=False)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -61,6 +62,7 @@ class User(Base):
     password_categories = relationship("PasswordCategory", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
     popcorn_entries = relationship("PopcornEntry", back_populates="user", cascade="all, delete-orphan")
+    usage_stats = relationship("UsageStats", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -245,3 +247,14 @@ class PopcornEntry(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="popcorn_entries")
+
+class UsageStats(Base):
+    __tablename__ = "usage_stats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    feature_id = Column(String(50), nullable=False) # 'passwords', 'vault', 'popcorn', 'todo', etc.
+    count = Column(Integer, default=0, nullable=False)
+    last_used = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", back_populates="usage_stats")

@@ -23,7 +23,8 @@ async def lifespan(app: FastAPI):
                     "is_verified BOOLEAN DEFAULT FALSE",
                     "verification_otp VARCHAR(10)",
                     "otp_expires_at TIMESTAMP",
-                    "mfa_preference VARCHAR(20) DEFAULT 'none'"
+                    "mfa_preference VARCHAR(20) DEFAULT 'none'",
+                    "has_seen_onboarding BOOLEAN DEFAULT FALSE"
                 ]
                 for col in user_cols:
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col.split(' ')[0]} {col.split(' ', 1)[1]};"))
@@ -50,7 +51,8 @@ async def lifespan(app: FastAPI):
                 user_cols = [
                     "master_password_hash VARCHAR(255)", "profile_picture TEXT", "last_email_change DATETIME",
                     "totp_secret VARCHAR(255)", "totp_enabled BOOLEAN DEFAULT FALSE", "is_verified BOOLEAN DEFAULT FALSE",
-                    "verification_otp VARCHAR(10)", "otp_expires_at DATETIME", "mfa_preference VARCHAR(20) DEFAULT 'none'"
+                    "verification_otp VARCHAR(10)", "otp_expires_at DATETIME", "mfa_preference VARCHAR(20) DEFAULT 'none'",
+                    "has_seen_onboarding BOOLEAN DEFAULT FALSE"
                 ]
                 for col in user_cols:
                     try: conn.execute(text(f"ALTER TABLE users ADD COLUMN {col};"))
@@ -103,7 +105,7 @@ async def cors_handler(request: Request, call_next):
     
     return response
 
-from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users, ai, vault, popcorn
+from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users, ai, vault, popcorn, usage
 
 app.include_router(auth.router,         prefix="/api/auth",         tags=["Auth"])
 app.include_router(users.router,        prefix="/api/users",        tags=["Users"])
@@ -117,6 +119,7 @@ app.include_router(budgets.router,      prefix="/api/budgets",      tags=["Budge
 app.include_router(vault.router,        prefix="/api/vault",        tags=["Vault"])
 app.include_router(ai.router,           prefix="/api/ai",           tags=["AI"])
 app.include_router(popcorn.router,      prefix="/api/popcorn",      tags=["Popcorn"])
+app.include_router(usage.router,        prefix="/api/usage",        tags=["Usage"])
 
 @app.get("/")
 def root():

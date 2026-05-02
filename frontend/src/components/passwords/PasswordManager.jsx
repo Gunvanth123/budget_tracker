@@ -3,7 +3,7 @@ import {
   Plus, Eye, EyeOff, Lock, Unlock, Copy, Download, Trash2, Pencil,
   FolderOpen, ChevronDown, ChevronRight, Search, ShieldCheck, Key
 } from 'lucide-react'
-import { passwordsApi } from '../../api/client'
+import { passwordsApi, usageApi } from '../../api/client'
 import toast from 'react-hot-toast'
 import CryptoJS from 'crypto-js'
 import PasswordForm from './PasswordForm'
@@ -65,6 +65,7 @@ export default function PasswordManager() {
       toast.success("Master password configured")
       setStatus('unlocked')
       fetchAll()
+      usageApi.track('passwords')
     } catch {
       toast.error("Failed to setup master password")
     }
@@ -76,6 +77,7 @@ export default function PasswordManager() {
       await passwordsApi.verify(masterPassword)
       setStatus('unlocked')
       fetchAll()
+      usageApi.track('passwords')
       toast.success("Unlocked successfully")
     } catch {
       toast.error("Invalid master password")

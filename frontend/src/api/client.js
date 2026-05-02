@@ -92,6 +92,7 @@ export const usersApi = {
   updateProfile: (data) => api.put('/users/profile', data).then(r => r.data),
   updateEmail: (data) => api.put('/users/email', data).then(r => r.data),
   updatePassword: (data) => api.put('/users/password', data).then(r => r.data),
+  completeOnboarding: () => api.put('/users/onboarding').then(r => r.data),
 }
 
 export const mfaApi = {
@@ -120,6 +121,11 @@ export const popcornApi = {
   }).then(r => r.data),
   delete: (id) => api.delete(`/popcorn/${id}`).then(r => r.data),
   getSynopsis: (title, category) => api.get('/popcorn/ai-synopsis', { params: { title, category } }).then(r => r.data),
+}
+
+export const usageApi = {
+  track: (feature_id) => api.post('/usage/track', { feature_id }).then(r => r.data),
+  getTop: () => api.get('/usage/top').then(r => r.data),
 }
 
 export const healthApi = {

@@ -117,6 +117,7 @@ class DashboardOut(BaseModel):
     expense_by_category: list[CategoryBreakdown]
     monthly_comparison: list[MonthlyData]
     daily_trends: list[DailyData]
+    quick_access: list[UsageStatsOut]
 
 # ─── Password Manager Schemas ─────────────────────────────────────────────────
 
@@ -265,6 +266,20 @@ class PopcornEntryOut(PopcornEntryBase):
     user_id: int
     created_at: datetime
     updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+# ─── Usage Stats Schemas ──────────────────────────────────────────────────────
+
+class UsageUpdate(BaseModel):
+    feature_id: str
+
+class UsageStatsOut(BaseModel):
+    feature_id: str
+    count: int
+    last_used: datetime
 
     class Config:
         from_attributes = True

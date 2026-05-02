@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { categoriesApi, budgetsApi, dashboardApi } from '../../api/client'
+import { categoriesApi, budgetsApi, dashboardApi, usageApi } from '../../api/client'
 import toast from 'react-hot-toast'
 import { Target, TrendingDown, CheckCircle } from 'lucide-react'
 
@@ -13,6 +13,7 @@ export default function BudgetGoals() {
 
   useEffect(() => {
     fetchData()
+    usageApi.track('budgets')
   }, [])
 
   const fetchData = async () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { todoApi } from '../../api/client'
+import { todoApi, usageApi } from '../../api/client'
 import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, ListTodo } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -327,6 +327,7 @@ export default function Todo() {
       .then(setLists)
       .catch(() => toast.error('Failed to load todo lists'))
       .finally(() => setLoading(false))
+    usageApi.track('todo')
   }, [])
 
   useEffect(() => {

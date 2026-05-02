@@ -31,7 +31,8 @@ def get_me(user: User = Depends(get_current_user)):
         "name": user.name, 
         "email": user.email, 
         "profile_picture": get_processed_profile_pic(user),
-        "totp_enabled": user.totp_enabled
+        "totp_enabled": user.totp_enabled,
+        "has_seen_onboarding": user.has_seen_onboarding
     }
 
 @router.put("/profile")
@@ -121,3 +122,9 @@ def update_password(req: PasswordUpdateReq, db: Session = Depends(get_db), user:
     user.hashed_password = hash_password(req.new_password)
     db.commit()
     return {"message": "Password securely updated"}
+
+@router.put("/onboarding")
+def mark_onboarding_seen(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    user.has_seen_onboarding = True
+    db.commit()
+    return {"message": "Onboarding completed"}

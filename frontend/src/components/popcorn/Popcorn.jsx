@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, Trash2, Edit3, Loader2, Image as ImageIcon, Sparkles, X, Search, Popcorn as PopcornIcon, ExternalLink, ChevronRight } from 'lucide-react'
-import { popcornApi, vaultApi, API_URL } from '../../api/client'
+import { popcornApi, vaultApi, usageApi, API_URL } from '../../api/client'
 import toast from 'react-hot-toast'
 import { clsx } from '../../utils/helpers'
 
@@ -72,6 +72,7 @@ export default function Popcorn() {
   useEffect(() => {
     fetchEntries()
     checkGDriveStatus()
+    usageApi.track('popcorn')
   }, [])
 
   const fetchEntries = async () => {

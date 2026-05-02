@@ -54,7 +54,10 @@ export default function Dashboard() {
           Quick Access
         </h2>
         {/* Quick Actions Services */}
-        <QuickActions onAddTransaction={() => setFormOpen(true)} />
+        <QuickActions 
+          onAddTransaction={() => setFormOpen(true)} 
+          usage={data?.quick_access} 
+        />
       </div>
 
       <div className="pt-2 space-y-4">

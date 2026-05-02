@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { MessageSquare, X, Send, Bot, Trash2 } from 'lucide-react'
-import { dashboardApi, budgetsApi, aiApi, categoriesApi, accountsApi, transactionsApi } from '../../api/client'
+import { dashboardApi, budgetsApi, aiApi, categoriesApi, accountsApi, transactionsApi, usageApi } from '../../api/client'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import toast from 'react-hot-toast'
@@ -23,6 +23,7 @@ export default function AIChatbot() {
   useEffect(() => {
     if (isOpen) {
       fetchHistory()
+      usageApi.track('ai')
     }
   }, [selectedMonth, isOpen])
 

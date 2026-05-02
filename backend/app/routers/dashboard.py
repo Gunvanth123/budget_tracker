@@ -7,8 +7,8 @@ import calendar
 from typing import List, Optional
 
 from app.database.db import get_db
-from app.models.models import Transaction, Account, Category, TransactionType, User
-from app.schemas.schemas import DashboardOut, SummaryOut, CategoryBreakdown, MonthlyData, DailyData
+from app.models.models import Transaction, Account, Category, TransactionType, User, UsageStats
+from app.schemas.schemas import DashboardOut, SummaryOut, CategoryBreakdown, MonthlyData, DailyData, UsageStatsOut
 from app.services.auth import get_current_user
 
 router = APIRouter()
@@ -203,11 +203,17 @@ def get_dashboard(
         for k, v in daily.items()
     ]
 
+    # ── Quick Access (Top Usage) ──────────────────────────────────────────────
+    quick_access = db.query(UsageStats).filter(
+        UsageStats.user_id == uid
+    ).order_by(UsageStats.count.desc()).limit(3).all()
+
     return DashboardOut(
         summary=summary,
         expense_by_category=expense_by_category,
         monthly_comparison=monthly_comparison,
         daily_trends=daily_trends,
+        quick_access=quick_access
     )
 
 

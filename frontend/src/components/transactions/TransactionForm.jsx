@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from '../Modal'
-import { transactionsApi, categoriesApi, accountsApi } from '../../api/client'
+import { transactionsApi, categoriesApi, accountsApi, usageApi } from '../../api/client'
 import { ACCOUNT_TYPE_ICONS, todayISO, formatDateInput } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 
@@ -73,6 +73,7 @@ export default function TransactionForm({ isOpen, onClose, onSaved, editData }) 
         toast.success('Transaction updated!')
       } else {
         await transactionsApi.create(payload)
+        usageApi.track('transaction')
         toast.success('Transaction added!')
       }
       onSaved()

@@ -8,7 +8,7 @@ import {
   CheckCircle2, Settings, ExternalLink, Info,
   FolderOpen, ChevronDown, ChevronRight, Plus, Eye, X
 } from 'lucide-react'
-import { vaultApi, passwordsApi } from '../../api/client'
+import { vaultApi, passwordsApi, usageApi } from '../../api/client'
 import toast from 'react-hot-toast'
 import CryptoJS from 'crypto-js'
 import VaultUploadModal from './VaultUploadModal'
@@ -88,6 +88,7 @@ export default function SecureVault() {
       await passwordsApi.verify(masterPassword)
       setStatus('unlocked')
       fetchAll()
+      usageApi.track('vault')
       toast.success("Vault decrypted successfully")
     } catch {
       toast.error("Incorrect Master Password")

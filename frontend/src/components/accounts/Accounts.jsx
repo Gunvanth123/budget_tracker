@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { accountsApi } from '../../api/client'
+import { accountsApi, usageApi } from '../../api/client'
 import { formatCurrency, ACCOUNT_TYPES, ACCOUNT_TYPE_ICONS, CATEGORY_COLORS } from '../../utils/helpers'
 import Modal from '../Modal'
 import { Plus, Pencil, Trash2, Wallet } from 'lucide-react'
@@ -26,7 +26,10 @@ export default function Accounts() {
     }
   }
 
-  useEffect(() => { fetchAccounts() }, [])
+  useEffect(() => { 
+    fetchAccounts() 
+    usageApi.track('accounts')
+  }, [])
 
   const openCreate = () => { setEditData(null); setForm(EMPTY); setFormOpen(true) }
   const openEdit = (acc) => {

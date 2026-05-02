@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { healthApi } from '../api/client'
 import { clsx } from '../utils/helpers'
 import toast from 'react-hot-toast'
+import OnboardingModal from './OnboardingModal'
 
 const NAV_ITEMS = [
   { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
@@ -27,9 +28,16 @@ const NAV_ITEMS = [
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  useEffect(() => {
+    if (user && !user.has_seen_onboarding) {
+      setShowOnboarding(true)
+    }
+  }, [user])
 
   // ✅ PWA INSTALL STATE
   const [deferredPrompt, setDeferredPrompt] = useState(null)
@@ -273,6 +281,16 @@ export default function Layout() {
           </div>
         </main>
       </div>
+
+      {showOnboarding && (
+        <OnboardingModal 
+          user={user} 
+          onComplete={() => {
+            setShowOnboarding(false)
+            refreshUser()
+          }} 
+        />
+      )}
     </div>
   )
 }
