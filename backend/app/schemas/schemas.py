@@ -240,7 +240,7 @@ class PopcornEntryBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     category: str
     language: Optional[str] = None
-    rating: Optional[int] = Field(None, ge=0, le=5)
+    rating: Optional[float] = Field(None, ge=0, le=5)
     synopsis: Optional[str] = None
     reasons_for_liking: Optional[str] = None
     genres: Optional[str] = None # Comma-separated

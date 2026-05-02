@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Star, Loader2, Image as ImageIcon, Sparkles, X, Filter, Search, Popcorn as PopcornIcon, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, Edit3, Loader2, Image as ImageIcon, Sparkles, X, Search, Popcorn as PopcornIcon, ExternalLink, ChevronRight } from 'lucide-react'
 import { popcornApi, vaultApi } from '../../api/client'
 import toast from 'react-hot-toast'
 import { clsx } from '../../utils/helpers'
@@ -13,24 +13,26 @@ const GENRES = [
   "Mystery", "Romance", "Sci-Fi", "Thriller", "Western", "Psychological", "Slice of Life", "Supernatural"
 ]
 
-const PopcornRating = ({ rating, setRating, interactive = false }) => {
+const PopcornRating = ({ rating, interactive = false }) => {
+  const stars = [1, 2, 3, 4, 5]
+  
   return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <button
-          key={i}
-          type="button"
-          disabled={!interactive}
-          onClick={() => interactive && setRating(i)}
-          className={clsx(
-            "transition-all duration-300",
-            interactive ? "hover:scale-125 cursor-pointer" : "cursor-default",
-            i <= rating ? "text-yellow-500 fill-yellow-500" : "text-gray-400 opacity-30"
-          )}
-        >
-          <PopcornIcon className={clsx("w-6 h-6", i <= rating && "drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]")} />
-        </button>
-      ))}
+    <div className="flex gap-1.5 items-center">
+      {stars.map((i) => {
+        const fill = Math.max(0, Math.min(1, rating - (i - 1)))
+        return (
+          <div key={i} className="relative">
+            <PopcornIcon className="w-5 h-5 text-gray-700 opacity-30" />
+            <div 
+              className="absolute inset-0 overflow-hidden text-yellow-500 fill-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]"
+              style={{ width: `${fill * 100}%` }}
+            >
+              <PopcornIcon className="w-5 h-5" />
+            </div>
+          </div>
+        )
+      })}
+      {interactive && <span className="text-xs font-bold text-yellow-500 ml-2">{Number(rating).toFixed(1)}</span>}
     </div>
   )
 }
@@ -38,8 +40,10 @@ const PopcornRating = ({ rating, setRating, interactive = false }) => {
 export default function Popcorn() {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [editingEntry, setEditingEntry] = useState(null)
   const [isGDriveConnected, setIsGDriveConnected] = useState(false)
+  const token = localStorage.getItem('bt_token')
   
   // Form state
   const [formData, setFormData] = useState({
@@ -128,15 +132,28 @@ export default function Popcorn() {
     }
   }
 
+  const handleEditClick = (entry) => {
+    setEditingEntry(entry)
+    setFormData({
+      title: entry.title,
+      category: CATEGORIES.includes(entry.category) ? entry.category : 'Other',
+      customCategory: CATEGORIES.includes(entry.category) ? '' : entry.category,
+      language: entry.language || '',
+      rating: entry.rating || 0,
+      synopsis: entry.synopsis || '',
+      reasons_for_liking: entry.reasons_for_liking || '',
+      genres: entry.genres ? entry.genres.split(', ').filter(g => GENRES.includes(g)) : [],
+      customGenre: '',
+      poster: null
+    })
+    setPosterPreview(entry.poster_url ? `${entry.poster_url}?token=${token}` : null)
+    setShowModal(true)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.title || !formData.category) {
       toast.error('Title and Category are required')
-      return
-    }
-
-    if (!isGDriveConnected && formData.poster) {
-      toast.error('Connect Google Drive to upload posters')
       return
     }
 
@@ -156,13 +173,19 @@ export default function Popcorn() {
       data.append('genres', finalGenres.join(', '))
       if (formData.poster) data.append('poster', formData.poster)
 
-      await popcornApi.create(data)
-      toast.success('Added to your watchlist!')
-      setShowAddModal(false)
+      if (editingEntry) {
+        await popcornApi.update(editingEntry.id, data)
+        toast.success('Updated successfully!')
+      } else {
+        await popcornApi.create(data)
+        toast.success('Added to your watchlist!')
+      }
+      
+      setShowModal(false)
       resetForm()
       fetchEntries()
     } catch (error) {
-      toast.error('Failed to add entry')
+      toast.error(editingEntry ? 'Failed to update' : 'Failed to add')
     } finally {
       setIsSubmitting(false)
     }
@@ -182,6 +205,7 @@ export default function Popcorn() {
       poster: null
     })
     setPosterPreview(null)
+    setEditingEntry(null)
   }
 
   const handleDelete = async (id) => {
@@ -213,7 +237,7 @@ export default function Popcorn() {
           <p className="opacity-60 mt-1">Your personal movie and show vault</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => { resetForm(); setShowModal(true); }}
           className="flex items-center gap-2 px-5 py-2.5 bg-[var(--primary)] text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all"
         >
           <Plus className="w-5 h-5" />
@@ -233,7 +257,7 @@ export default function Popcorn() {
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--card)] border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+        <div className="md:col-span-2 flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
           {['All', ...CATEGORIES].map(cat => (
             <button
               key={cat}
@@ -251,7 +275,7 @@ export default function Popcorn() {
         </div>
       </div>
 
-      {/* CONTENT GRID */}
+      {/* CONTENT GRID (HORIZONTAL GRID LAYOUT) */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-10 h-10 animate-spin text-[var(--primary)]" />
@@ -261,82 +285,81 @@ export default function Popcorn() {
         <div className="text-center py-20 bg-[var(--card)] rounded-3xl border border-dashed border-[var(--border)]">
           <PopcornIcon className="w-16 h-16 mx-auto opacity-10 mb-4" />
           <h3 className="text-xl font-semibold opacity-60">No movies found</h3>
-          <p className="opacity-40 max-w-xs mx-auto mt-2">Start building your collection by adding your first movie or show!</p>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="mt-6 text-[var(--primary)] font-medium hover:underline"
-          >
-            Add one now
-          </button>
+          <p className="opacity-40 max-w-xs mx-auto mt-2">Start building your collection!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {filteredEntries.map((entry) => (
             <div 
               key={entry.id} 
-              className="group relative bg-[var(--card)] rounded-2xl overflow-hidden border border-[var(--border)] hover:border-[var(--primary)]/50 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-xl"
+              className="group flex flex-col sm:flex-row bg-[var(--card)] rounded-2xl overflow-hidden border border-[var(--border)] hover:border-[var(--primary)]/50 transition-all duration-300 shadow-sm hover:shadow-xl"
             >
-              {/* Poster Container */}
-              <div className="aspect-[2/3] relative overflow-hidden bg-slate-800">
+              {/* Left: Poster */}
+              <div className="w-full sm:w-48 h-72 sm:h-auto relative overflow-hidden bg-slate-800 flex-shrink-0">
                 {entry.poster_url ? (
                   <img 
-                    src={entry.poster_url} 
+                    src={`${entry.poster_url}?token=${token}`} 
                     alt={entry.title} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/logo.png';
-                      e.target.classList.add('p-10', 'opacity-20');
-                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-20">
-                    <PopcornIcon className="w-16 h-16" />
-                    <span className="text-xs uppercase tracking-widest">No Poster</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-10">
+                    <PopcornIcon className="w-12 h-12" />
                   </div>
                 )}
-                
-                {/* Overlays */}
-                <div className="absolute top-3 right-3 flex flex-col gap-2">
-                  <div className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider text-white border border-white/10">
-                    {entry.category}
-                  </div>
-                </div>
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                   <button 
-                    onClick={() => handleDelete(entry.id)}
-                    className="absolute top-3 left-3 p-2 rounded-full bg-red-500/20 text-red-500 backdrop-blur-md border border-red-500/30 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                   >
-                     <Trash2 className="w-4 h-4" />
-                   </button>
+                <div className="absolute top-3 left-3 px-2 py-1 rounded bg-black/60 backdrop-blur-md text-[9px] font-bold uppercase tracking-widest text-white border border-white/10">
+                  {entry.category}
                 </div>
               </div>
 
-              {/* Info Container */}
-              <div className="p-4 space-y-3">
-                <div>
-                  <h3 className="font-bold text-lg leading-tight line-clamp-1">{entry.title}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <PopcornRating rating={entry.rating} />
-                    {entry.language && <span className="text-[10px] opacity-40 uppercase font-bold tracking-widest">• {entry.language}</span>}
+              {/* Right: Info */}
+              <div className="flex-1 p-5 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-xl leading-tight text-[var(--text)]">{entry.title}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <PopcornRating rating={entry.rating} />
+                        {entry.language && <span className="text-[10px] opacity-40 uppercase font-bold tracking-widest">• {entry.language}</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                       <button 
+                        onClick={() => handleEditClick(entry)}
+                        className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all"
+                       >
+                         <Edit3 className="w-4 h-4" />
+                       </button>
+                       <button 
+                        onClick={() => handleDelete(entry.id)}
+                        className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                    </div>
                   </div>
-                </div>
 
-                {entry.genres && (
                   <div className="flex flex-wrap gap-1.5">
-                    {entry.genres.split(',').slice(0, 3).map(g => (
+                    {entry.genres?.split(', ').map(g => (
                       <span key={g} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 opacity-70">
                         {g.trim()}
                       </span>
                     ))}
                   </div>
-                )}
 
-                {entry.synopsis && (
-                  <p className="text-sm opacity-60 line-clamp-2 italic">
-                    "{entry.synopsis}"
-                  </p>
+                  {entry.synopsis && (
+                    <p className="text-sm opacity-60 line-clamp-3 italic leading-relaxed">
+                      "{entry.synopsis}"
+                    </p>
+                  )}
+                </div>
+
+                {entry.reasons_for_liking && (
+                  <div className="pt-4 border-t border-[var(--border)]">
+                    <p className="text-[10px] uppercase font-bold tracking-widest opacity-30 mb-1">Personal Note</p>
+                    <p className="text-xs opacity-50 line-clamp-2">{entry.reasons_for_liking}</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -344,39 +367,39 @@ export default function Popcorn() {
         </div>
       )}
 
-      {/* ADD MODAL */}
-      {showAddModal && (
+      {/* MODAL (ADD / EDIT) */}
+      {showModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-          <div className="relative bg-[var(--card)] w-full max-w-2xl rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="relative bg-[var(--card)] w-full max-w-3xl rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                   <Sparkles className="w-6 h-6 text-yellow-500" />
-                  Add to Watchlist
+                  {editingEntry ? 'Edit Entry' : 'Add to Watchlist'}
                 </h2>
-                <p className="text-sm opacity-60">Save your favorite movies and shows</p>
+                <p className="text-sm opacity-60">{editingEntry ? 'Update your movie details' : 'Save your favorite movies and shows'}</p>
               </div>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
                 <X className="w-6 h-6" />
               </button>
             </div>
 
             {/* Modal Content */}
-            <form onSubmit={handleSubmit} className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
+            <form onSubmit={handleSubmit} className="p-6 max-h-[75vh] overflow-y-auto space-y-8">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Poster Upload */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold opacity-70">Movie Poster</label>
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold opacity-70">Poster Art</label>
                   <div className="relative aspect-[2/3] rounded-2xl bg-slate-800 border-2 border-dashed border-[var(--border)] group overflow-hidden flex flex-col items-center justify-center gap-3 transition-all hover:border-[var(--primary)]/50">
                     {posterPreview ? (
                       <>
                         <img src={posterPreview} className="w-full h-full object-cover" alt="Preview" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                           <label className="px-4 py-2 bg-white text-black rounded-full font-bold cursor-pointer hover:scale-105 transition-transform">
-                            Change
+                            {editingEntry ? 'Replace Poster' : 'Change'}
                             <input type="file" className="hidden" accept="image/*" onChange={handlePosterChange} />
                           </label>
                         </div>
@@ -388,7 +411,7 @@ export default function Popcorn() {
                           {!isGDriveConnected ? (
                             <p className="text-xs text-yellow-500 font-medium">Connect GDrive to upload</p>
                           ) : (
-                            <p className="text-xs opacity-40">Drag & drop or click to upload</p>
+                            <p className="text-xs opacity-40">Click to upload poster</p>
                           )}
                         </div>
                         <input 
@@ -404,12 +427,12 @@ export default function Popcorn() {
                   {!isGDriveConnected && (
                     <div className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 rounded-lg text-xs text-yellow-500 border border-yellow-500/20">
                       <ExternalLink className="w-3 h-3" />
-                      <span>Connect Google Drive in <b>Secure Vault</b> first</span>
+                      <span>Connect Google Drive in <b>Vault</b></span>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Title */}
                   <div className="space-y-2">
                     <label className="text-sm font-semibold opacity-70">Title *</label>
@@ -419,7 +442,7 @@ export default function Popcorn() {
                       name="title"
                       value={formData.title}
                       onChange={handleInputChange}
-                      placeholder="e.g. Inception"
+                      placeholder="e.g. Your Name"
                       className="w-full px-4 py-3 rounded-xl bg-white/5 border border-[var(--border)] focus:ring-2 focus:ring-[var(--primary)]/50 outline-none transition-all"
                     />
                   </div>
@@ -434,7 +457,7 @@ export default function Popcorn() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-3 rounded-xl bg-[var(--card)] border border-[var(--border)] focus:ring-2 focus:ring-[var(--primary)]/50 outline-none appearance-none"
                     >
-                      <option value="">Select Type</option>
+                      <option value="">Select Category</option>
                       {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                       <option value="Other">Other...</option>
                     </select>
@@ -445,12 +468,12 @@ export default function Popcorn() {
                         value={formData.customCategory}
                         onChange={handleInputChange}
                         placeholder="Enter custom category"
-                        className="w-full mt-2 px-4 py-2 rounded-lg bg-white/5 border border-[var(--border)] focus:outline-none"
+                        className="w-full mt-2 px-4 py-2 rounded-lg bg-white/5 border border-[var(--border)] outline-none"
                       />
                     )}
                   </div>
 
-                   {/* Language */}
+                  {/* Language */}
                    <div className="space-y-2">
                     <label className="text-sm font-semibold opacity-70">Language</label>
                     <input
@@ -458,67 +481,81 @@ export default function Popcorn() {
                       name="language"
                       value={formData.language}
                       onChange={handleInputChange}
-                      placeholder="e.g. Japanese / English"
+                      placeholder="e.g. Japanese"
                       className="w-full px-4 py-3 rounded-xl bg-white/5 border border-[var(--border)] focus:ring-2 focus:ring-[var(--primary)]/50 outline-none"
                     />
                   </div>
 
-                  {/* Rating */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold opacity-70">Popcorn Rating</label>
-                    <PopcornRating rating={formData.rating} setRating={(r) => setFormData(prev => ({ ...prev, rating: r }))} interactive={true} />
+                  {/* Rating Slider */}
+                  <div className="space-y-3 p-4 rounded-2xl bg-white/5 border border-[var(--border)]">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold opacity-70">Rating</label>
+                      <span className="text-lg font-black text-yellow-500">{Number(formData.rating).toFixed(1)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      value={formData.rating}
+                      onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+                    />
+                    <div className="flex justify-center">
+                      <PopcornRating rating={formData.rating} />
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* AI Synopsis */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <label className="text-sm font-semibold opacity-70">Synopsis</label>
                   <button
                     type="button"
                     onClick={generateSynopsis}
                     disabled={isGeneratingSynopsis || !formData.title || !formData.category}
-                    className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 disabled:opacity-30 transition-all border border-indigo-500/20"
                   >
                     {isGeneratingSynopsis ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    Generate with AI
+                    AI Generate
                   </button>
                 </div>
                 <textarea
                   name="synopsis"
                   value={formData.synopsis}
                   onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-[var(--border)] focus:ring-2 focus:ring-[var(--primary)]/50 outline-none resize-none"
-                  placeholder="The AI will add a synopsis here, or you can write your own..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-[var(--border)] focus:ring-2 focus:ring-[var(--primary)]/50 outline-none resize-none text-sm leading-relaxed"
+                  placeholder="Tell the story..."
                 />
               </div>
 
               {/* Reasons */}
               <div className="space-y-2">
-                <label className="text-sm font-semibold opacity-70">Why I liked it?</label>
+                <label className="text-sm font-semibold opacity-70">Reasons for liking</label>
                 <textarea
                   name="reasons_for_liking"
                   value={formData.reasons_for_liking}
                   onChange={handleInputChange}
                   rows={2}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-[var(--border)] focus:ring-2 focus:ring-[var(--primary)]/50 outline-none resize-none"
-                  placeholder="Storytelling, Animation, Acting..."
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-[var(--border)] focus:ring-2 focus:ring-[var(--primary)]/50 outline-none resize-none text-sm"
+                  placeholder="What made it special for you?"
                 />
               </div>
 
-              {/* Genres (Multi-select) */}
-              <div className="space-y-2">
+              {/* Genres */}
+              <div className="space-y-3">
                 <label className="text-sm font-semibold opacity-70">Genres</label>
-                <div className="flex flex-wrap gap-2 p-3 rounded-2xl bg-white/5 border border-[var(--border)]">
+                <div className="flex flex-wrap gap-2 p-4 rounded-2xl bg-white/5 border border-[var(--border)]">
                   {GENRES.map(genre => (
                     <button
                       key={genre}
                       type="button"
                       onClick={() => handleGenreToggle(genre)}
                       className={clsx(
-                        "px-3 py-1 rounded-lg text-xs font-medium border transition-all",
+                        "px-3 py-1.5 rounded-xl text-xs font-medium border transition-all",
                         formData.genres.includes(genre)
                           ? "bg-[var(--primary)]/20 border-[var(--primary)] text-[var(--primary)]"
                           : "border-[var(--border)] hover:bg-white/5"
@@ -527,33 +564,35 @@ export default function Popcorn() {
                       {genre}
                     </button>
                   ))}
-                  <input
-                    type="text"
-                    name="customGenre"
-                    value={formData.customGenre}
-                    onChange={handleInputChange}
-                    placeholder="+ Add custom"
-                    className="px-3 py-1 rounded-lg text-xs bg-transparent border border-dashed border-[var(--border)] focus:border-[var(--primary)] outline-none min-w-[100px]"
-                  />
+                  <div className="flex-1 min-w-[120px]">
+                    <input
+                      type="text"
+                      name="customGenre"
+                      value={formData.customGenre}
+                      onChange={handleInputChange}
+                      placeholder="+ Add custom genre"
+                      className="w-full px-3 py-1.5 rounded-xl text-xs bg-transparent border border-dashed border-[var(--border)] focus:border-[var(--primary)] outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-4 pt-4">
+              {/* Buttons */}
+              <div className="flex gap-4 pt-6">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-6 py-3 rounded-xl font-semibold border border-[var(--border)] hover:bg-white/5 transition-all"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-6 py-3.5 rounded-xl font-semibold border border-[var(--border)] hover:bg-white/5 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-[2] px-6 py-3 rounded-xl font-semibold bg-[var(--primary)] text-white hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30"
+                  className="flex-[2] px-6 py-3.5 rounded-xl font-semibold bg-[var(--primary)] text-white hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30"
                 >
-                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                  Submit to Vault
+                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : editingEntry ? <Edit3 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                  {editingEntry ? 'Save Changes' : 'Submit Entry'}
                 </button>
               </div>
 

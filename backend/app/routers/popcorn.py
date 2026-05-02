@@ -7,7 +7,8 @@ import json
 
 from app.database.db import get_db
 from app.models.models import User, PopcornEntry
-from app.services.auth import get_current_user
+from app.services.auth import get_current_user, oauth2_scheme, SECRET_KEY, ALGORITHM
+from jose import jwt, JWTError
 from app.services.gdrive import GoogleDriveService
 from app.schemas import schemas
 
@@ -57,8 +58,8 @@ async def create_popcorn_entry(
                     poster.content_type,
                     popcorn_folder_id
                 )
-                # For poster_url, we could use a specialized proxy endpoint if needed,
-                # but for now we'll store the ID and handle it in the frontend or a proxy.
+                # Store a URL that includes the token for img tag compatibility
+                # Or we can just store the gdrive_file_id and let the frontend handle it
                 poster_url = f"/api/popcorn/poster/{gdrive_file_id}"
             except Exception as e:
                 print(f"Popcorn poster upload to GDrive failed: {e}")
@@ -86,7 +87,20 @@ async def create_popcorn_entry(
     return new_entry
 
 @router.get("/poster/{file_id}")
-async def get_poster(file_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_poster(file_id: str, token: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    # Manual token verification for img tags
+    if not token:
+        raise HTTPException(status_code=401, detail="Token required")
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        current_user = db.query(User).filter(User.id == int(user_id)).first()
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
     if not current_user.gdrive_token or not gdrive_service:
         raise HTTPException(status_code=400, detail="Google Drive not connected")
     
@@ -140,6 +154,61 @@ async def get_ai_synopsis(title: str, category: str):
         return {"synopsis": synopsis}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/{entry_id}", response_model=schemas.PopcornEntryOut)
+async def update_popcorn_entry(
+    entry_id: int,
+    title: str = Form(...),
+    category: str = Form(...),
+    language: Optional[str] = Form(None),
+    rating: Optional[float] = Form(None),
+    synopsis: Optional[str] = Form(None),
+    reasons_for_liking: Optional[str] = Form(None),
+    genres: Optional[str] = Form(None),
+    poster: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    entry = db.query(PopcornEntry).filter(PopcornEntry.id == entry_id, PopcornEntry.user_id == current_user.id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    entry.title = title
+    entry.category = category
+    entry.language = language
+    entry.rating = rating
+    entry.synopsis = synopsis
+    entry.reasons_for_liking = reasons_for_liking
+    entry.genres = genres
+
+    if poster:
+        if current_user.gdrive_token and current_user.gdrive_folder_id and gdrive_service:
+            try:
+                # Delete old poster if exists
+                if entry.gdrive_file_id:
+                    service = gdrive_service.get_service(current_user.gdrive_token)
+                    try: gdrive_service.delete_file(service, entry.gdrive_file_id)
+                    except: pass
+
+                service = gdrive_service.get_service(current_user.gdrive_token)
+                popcorn_folder_id = gdrive_service.get_or_create_folder(service, "Popcorn Posters", current_user.gdrive_folder_id)
+                
+                content = await poster.read()
+                new_file_id = gdrive_service.upload_file(
+                    service,
+                    f"poster_{title}_{poster.filename}",
+                    content,
+                    poster.content_type,
+                    popcorn_folder_id
+                )
+                entry.gdrive_file_id = new_file_id
+                entry.poster_url = f"/api/popcorn/poster/{new_file_id}"
+            except Exception as e:
+                print(f"Update poster failed: {e}")
+
+    db.commit()
+    db.refresh(entry)
+    return entry
 
 @router.delete("/{entry_id}")
 def delete_popcorn_entry(entry_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

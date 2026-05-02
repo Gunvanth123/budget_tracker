@@ -83,14 +83,14 @@ export default function Transactions() {
         <div className="flex-1" />
         <button
           onClick={() => setExportModalOpen(true)}
-          className="btn-secondary flex items-center gap-2 self-start"
+          className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto"
         >
           <Download className="w-4 h-4" />
           Export
         </button>
         <button
           onClick={() => { setEditData(null); setFormOpen(true) }}
-          className="btn-primary flex items-center gap-2 self-start"
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           Add Transaction
@@ -98,18 +98,18 @@ export default function Transactions() {
       </div>
 
       {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="card p-3 text-center">
-          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Showing</p>
-          <p className="font-bold" style={{ color: 'var(--text)' }}>{filtered.length}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="card p-3 sm:p-4 text-center flex flex-row sm:flex-col items-center sm:justify-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Showing</p>
+          <p className="font-bold text-lg" style={{ color: 'var(--text)' }}>{filtered.length}</p>
         </div>
-        <div className="card p-3 text-center">
-          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Income</p>
-          <p className="font-bold text-sm" style={{ color: '#22C55E' }}>{formatCurrency(totalIncome)}</p>
+        <div className="card p-3 sm:p-4 text-center flex flex-row sm:flex-col items-center sm:justify-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Income</p>
+          <p className="font-bold text-lg" style={{ color: '#22C55E' }}>{formatCurrency(totalIncome)}</p>
         </div>
-        <div className="card p-3 text-center">
-          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Expense</p>
-          <p className="font-bold text-sm" style={{ color: '#EF4444' }}>{formatCurrency(totalExpense)}</p>
+        <div className="card p-3 sm:p-4 text-center flex flex-row sm:flex-col items-center sm:justify-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Expense</p>
+          <p className="font-bold text-lg" style={{ color: '#EF4444' }}>{formatCurrency(totalExpense)}</p>
         </div>
       </div>
 

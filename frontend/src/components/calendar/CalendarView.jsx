@@ -56,18 +56,18 @@ export default function CalendarView() {
   return (
     <div className="space-y-5">
       {/* Month summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="card p-4 text-center">
-          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Month Income</p>
-          <p className="font-bold" style={{ color: '#22C55E' }}>{formatCurrency(monthlyTotals.income)}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="card p-3 sm:p-4 text-center flex flex-row sm:flex-col items-center sm:justify-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Income</p>
+          <p className="font-bold text-lg" style={{ color: '#22C55E' }}>{formatCurrency(monthlyTotals.income)}</p>
         </div>
-        <div className="card p-4 text-center">
-          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Month Expense</p>
-          <p className="font-bold" style={{ color: '#EF4444' }}>{formatCurrency(monthlyTotals.expense)}</p>
+        <div className="card p-3 sm:p-4 text-center flex flex-row sm:flex-col items-center sm:justify-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Expense</p>
+          <p className="font-bold text-lg" style={{ color: '#EF4444' }}>{formatCurrency(monthlyTotals.expense)}</p>
         </div>
-        <div className="card p-4 text-center">
-          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Net</p>
-          <p className="font-bold" style={{ color: monthlyTotals.income - monthlyTotals.expense >= 0 ? 'var(--primary)' : '#EF4444' }}>
+        <div className="card p-3 sm:p-4 text-center flex flex-row sm:flex-col items-center sm:justify-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Net</p>
+          <p className="font-bold text-lg" style={{ color: monthlyTotals.income - monthlyTotals.expense >= 0 ? 'var(--primary)' : '#EF4444' }}>
             {formatCurrency(monthlyTotals.income - monthlyTotals.expense)}
           </p>
         </div>
@@ -130,7 +130,7 @@ export default function CalendarView() {
                 <div
                   key={key}
                   onClick={() => handleDayClick(day)}
-                  className={`min-h-[80px] p-1.5 rounded-xl border transition-all cursor-pointer ${
+                  className={`min-h-[80px] p-1.5 rounded-xl border transition-all cursor-pointer relative group ${
                     isSelected ? 'ring-2' : ''
                   } ${hasData && inMonth ? 'hover:shadow-md' : ''}`}
                   style={{
@@ -145,6 +145,22 @@ export default function CalendarView() {
                     outline: isSelected ? '2px solid var(--primary)' : 'none',
                   }}
                 >
+                  {/* Floating Totals Popover (Mobile/iPad Focus) */}
+                  {hasData && inMonth && isSelected && (
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 bg-[var(--card)] border border-[var(--border)] rounded-lg p-2 shadow-xl flex flex-col gap-1 min-w-[90px] animate-in fade-in zoom-in-95 duration-200 sm:hidden">
+                       <div className="flex items-center justify-between gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+                          <span className="text-[10px] font-bold text-[#22C55E]">{formatCurrency(data.income)}</span>
+                       </div>
+                       <div className="flex items-center justify-between gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
+                          <span className="text-[10px] font-bold text-[#EF4444]">{formatCurrency(data.expense)}</span>
+                       </div>
+                       {/* Arrow */}
+                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--card)] border-r border-b border-[var(--border)] rotate-45" />
+                    </div>
+                  )}
+
                   <div
                     className="text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-1"
                     style={today
@@ -157,16 +173,25 @@ export default function CalendarView() {
 
                   {hasData && inMonth && (
                     <div className="space-y-0.5">
-                      {data.income > 0 && (
-                        <div className="text-[10px] font-semibold rounded px-1 truncate" style={{ color: '#22C55E', background: 'rgba(34,197,94,0.12)' }}>
-                          +{formatCurrency(data.income)}
-                        </div>
-                      )}
-                      {data.expense > 0 && (
-                        <div className="text-[10px] font-semibold rounded px-1 truncate" style={{ color: '#EF4444', background: 'rgba(239,68,68,0.12)' }}>
-                          -{formatCurrency(data.expense)}
-                        </div>
-                      )}
+                      {/* Desktop: Show amounts */}
+                      <div className="hidden sm:block space-y-0.5">
+                        {data.income > 0 && (
+                          <div className="text-[10px] font-semibold rounded px-1 truncate" style={{ color: '#22C55E', background: 'rgba(34,197,94,0.12)' }}>
+                            +{formatCurrency(data.income)}
+                          </div>
+                        )}
+                        {data.expense > 0 && (
+                          <div className="text-[10px] font-semibold rounded px-1 truncate" style={{ color: '#EF4444', background: 'rgba(239,68,68,0.12)' }}>
+                            -{formatCurrency(data.expense)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Mobile: Show dots */}
+                      <div className="flex sm:hidden justify-center gap-1 mt-1">
+                        {data.income > 0 && <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#22C55E' }} />}
+                        {data.expense > 0 && <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#EF4444' }} />}
+                      </div>
                     </div>
                   )}
                 </div>

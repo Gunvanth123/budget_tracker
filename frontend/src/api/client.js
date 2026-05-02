@@ -113,6 +113,9 @@ export const popcornApi = {
   create: (formData) => api.post('/popcorn/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }).then(r => r.data),
+  update: (id, formData) => api.put(`/popcorn/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(r => r.data),
   delete: (id) => api.delete(`/popcorn/${id}`).then(r => r.data),
   getSynopsis: (title, category) => api.get('/popcorn/ai-synopsis', { params: { title, category } }).then(r => r.data),
 }

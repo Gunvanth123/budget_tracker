@@ -235,7 +235,7 @@ class PopcornEntry(Base):
     title = Column(String(255), nullable=False)
     category = Column(String(100), nullable=False) # Anime movie, TV show, etc.
     language = Column(String(100), nullable=True)
-    rating = Column(Integer, nullable=True) # 1-5 popcorns
+    rating = Column(Float, nullable=True) # 1-5 popcorns
     synopsis = Column(Text, nullable=True)
     reasons_for_liking = Column(Text, nullable=True)
     genres = Column(Text, nullable=True) # Comma-separated or JSON list
