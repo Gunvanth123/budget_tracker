@@ -190,7 +190,7 @@ export default function Popcorn() {
     setIsGeneratingSynopsis(true)
     try {
       const finalCategory = formData.category === 'Other' ? formData.customCategory : formData.category
-      const res = await popcornApi.getSynopsis(formData.title, finalCategory)
+      const res = await popcornApi.getSynopsis(formData.title, finalCategory, formData.language)
       setFormData(prev => ({ ...prev, synopsis: res.synopsis }))
       toast.success('Synopsis generated!')
     } catch (error) {

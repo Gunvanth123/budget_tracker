@@ -120,7 +120,7 @@ export const popcornApi = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }).then(r => r.data),
   delete: (id) => api.delete(`/popcorn/${id}`).then(r => r.data),
-  getSynopsis: (title, category) => api.get('/popcorn/ai-synopsis', { params: { title, category } }).then(r => r.data),
+  getSynopsis: (title, category, language) => api.get('/popcorn/ai-synopsis', { params: { title, category, language } }).then(r => r.data),
   extractPoster: (url) => api.get('/popcorn/extract-poster', { params: { url } }).then(r => r.data),
 }
 

@@ -145,7 +145,7 @@ async def get_poster(file_id: str, token: Optional[str] = Query(None), width: Op
         raise HTTPException(status_code=500, detail="Failed to fetch poster from Google Drive")
 
 @router.get("/ai-synopsis")
-async def get_ai_synopsis(title: str, category: str):
+async def get_ai_synopsis(title: str, category: str, language: Optional[str] = None):
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="AI Service not configured.")
@@ -156,7 +156,8 @@ async def get_ai_synopsis(title: str, category: str):
         "Content-Type": "application/json"
     }
     
-    prompt = f"Provide a brief, engaging synopsis for the {category} titled '{title}'. Keep it under 100 words."
+    lang_context = f" in {language}" if language else ""
+    prompt = f"Provide a brief, engaging synopsis for the {category} titled '{title}'{lang_context}. Keep it under 100 words."
     
     payload = {
         "model": "llama-3.3-70b-versatile",
