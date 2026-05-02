@@ -38,6 +38,40 @@ const PopcornRating = ({ rating, interactive = false }) => {
   )
 }
 
+const PopcornPoster = ({ url, title, category }) => {
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState(false)
+
+  return (
+    <div className="w-32 sm:w-48 h-full sm:h-auto relative overflow-hidden bg-slate-800 flex-shrink-0">
+      {!loaded && !error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-800/80">
+          <Loader2 className="w-6 h-6 animate-spin text-white/20" />
+        </div>
+      )}
+      {url ? (
+        <img 
+          src={url} 
+          alt={title} 
+          onLoad={() => setLoaded(true)}
+          onError={() => { setError(true); setLoaded(true); }}
+          className={clsx(
+            "w-full h-full object-cover group-hover:scale-105 transition-all duration-700",
+            loaded ? "opacity-100 scale-100" : "opacity-0 scale-110"
+          )}
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-10">
+          <PopcornIcon className="w-12 h-12" />
+        </div>
+      )}
+      <div className="absolute top-3 left-3 px-2 py-1 rounded bg-black/60 backdrop-blur-md text-[9px] font-bold uppercase tracking-widest text-white border border-white/10">
+        {category}
+      </div>
+    </div>
+  )
+}
+
 export default function Popcorn() {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -68,6 +102,10 @@ export default function Popcorn() {
   // Filters
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('All')
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   useEffect(() => {
     fetchEntries()
@@ -234,6 +272,18 @@ export default function Popcorn() {
     return matchesSearch && matchesCategory
   })
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredEntries.length / itemsPerPage)
+  const paginatedEntries = filteredEntries.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, categoryFilter])
+
   return (
     <div className="space-y-8 pb-10">
       {/* HEADER SECTION */}
@@ -298,29 +348,17 @@ export default function Popcorn() {
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {filteredEntries.map((entry) => (
+          {paginatedEntries.map((entry) => (
             <div 
               key={entry.id} 
               className="group flex flex-row bg-[var(--card)] rounded-2xl overflow-hidden border border-[var(--border)] hover:border-[var(--primary)]/50 transition-all duration-300 shadow-sm hover:shadow-xl h-[210px] sm:h-auto"
             >
               {/* Left: Poster */}
-              <div className="w-32 sm:w-48 h-full sm:h-auto relative overflow-hidden bg-slate-800 flex-shrink-0">
-                {entry.poster_url ? (
-                  <img 
-                    src={`${API_URL}${entry.poster_url}?token=${token}&width=400`} 
-                    alt={entry.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-10">
-                    <PopcornIcon className="w-12 h-12" />
-                  </div>
-                )}
-                <div className="absolute top-3 left-3 px-2 py-1 rounded bg-black/60 backdrop-blur-md text-[9px] font-bold uppercase tracking-widest text-white border border-white/10">
-                  {entry.category}
-                </div>
-              </div>
+              <PopcornPoster 
+                url={entry.poster_url ? `${API_URL}${entry.poster_url}?token=${token}&width=400` : null}
+                title={entry.title}
+                category={entry.category}
+              />
 
               {/* Right: Info */}
               <div className="flex-1 p-3.5 sm:p-5 flex flex-col justify-between min-w-0">
@@ -382,6 +420,59 @@ export default function Popcorn() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* PAGINATION CONTROLS */}
+      {!loading && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 pt-6 border-t border-[var(--border)]">
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => {
+                setCurrentPage(prev => prev - 1)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              className="p-2.5 rounded-xl bg-[var(--card)] border border-[var(--border)] disabled:opacity-30 hover:bg-white/5 transition-all rotate-180"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            
+            <div className="flex gap-1.5 px-4">
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setCurrentPage(i + 1)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className={clsx(
+                    "w-10 h-10 rounded-xl font-bold text-sm transition-all border",
+                    currentPage === i + 1
+                      ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg shadow-[var(--primary)]/20"
+                      : "bg-[var(--card)] border-[var(--border)] opacity-60 hover:opacity-100"
+                  )}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => {
+                setCurrentPage(prev => prev + 1)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              className="p-2.5 rounded-xl bg-[var(--card)] border border-[var(--border)] disabled:opacity-30 hover:bg-white/5 transition-all"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <p className="text-xs font-bold opacity-30 uppercase tracking-widest">
+            Page {currentPage} of {totalPages} • Showing {paginatedEntries.length} items
+          </p>
         </div>
       )}
 
