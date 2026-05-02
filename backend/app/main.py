@@ -8,12 +8,13 @@ from app.database.db import engine, Base
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     
-    # Auto-migrate the existing users table
+    # Auto-migrate the existing tables
     try:
         from sqlalchemy import text
         with engine.begin() as conn:
             if engine.dialect.name == "postgresql":
-                columns = [
+                # USERS TABLE
+                user_cols = [
                     "master_password_hash VARCHAR(255)",
                     "profile_picture TEXT",
                     "last_email_change TIMESTAMP",
@@ -24,61 +25,47 @@ async def lifespan(app: FastAPI):
                     "otp_expires_at TIMESTAMP",
                     "mfa_preference VARCHAR(20) DEFAULT 'none'"
                 ]
-                for col in columns:
-                    conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col};"))
+                for col in user_cols:
+                    conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col.split(' ')[0]} {col.split(' ', 1)[1]};"))
 
-                # Migrate accounts table
+                # ACCOUNTS TABLE
                 conn.execute(text("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT FALSE;"))
 
-                # Migrate password_entries table
-                conn.execute(text("ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS backup_codes TEXT;"))
-                conn.execute(text("ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS category_id INTEGER;"))
-                conn.execute(text("ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;"))
+                # PASSWORD ENTRIES TABLE
+                pw_cols = [
+                    "backup_codes TEXT",
+                    "category_id INTEGER",
+                    "updated_at TIMESTAMP"
+                ]
+                for col in pw_cols:
+                    conn.execute(text(f"ALTER TABLE password_entries ADD COLUMN IF NOT EXISTS {col.split(' ')[0]} {col.split(' ', 1)[1]};"))
 
-                # Create indexes for transactions (Critical for Dashboard performance)
+                # INDEXES
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_transactions_date ON transactions (date);"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_transactions_user_id ON transactions (user_id);"))
 
             elif engine.dialect.name == "sqlite":
-                # Migrate users table
-                columns = [
-                    "master_password_hash VARCHAR(255)",
-                    "profile_picture TEXT",
-                    "last_email_change DATETIME",
-                    "totp_secret VARCHAR(255)",
-                    "totp_enabled BOOLEAN DEFAULT FALSE",
-                    "is_verified BOOLEAN DEFAULT FALSE",
-                    "verification_otp VARCHAR(10)",
-                    "otp_expires_at DATETIME",
-                    "mfa_preference VARCHAR(20) DEFAULT 'none'"
+                # SQLite doesn't support IF NOT EXISTS for ADD COLUMN in older versions or some dialects, 
+                # so we keep the try-except blocks but cleaner.
+                user_cols = [
+                    "master_password_hash VARCHAR(255)", "profile_picture TEXT", "last_email_change DATETIME",
+                    "totp_secret VARCHAR(255)", "totp_enabled BOOLEAN DEFAULT FALSE", "is_verified BOOLEAN DEFAULT FALSE",
+                    "verification_otp VARCHAR(10)", "otp_expires_at DATETIME", "mfa_preference VARCHAR(20) DEFAULT 'none'"
                 ]
-                for col in columns:
-                    try:
-                        conn.execute(text(f"ALTER TABLE users ADD COLUMN {col};"))
-                    except Exception:
-                        pass
+                for col in user_cols:
+                    try: conn.execute(text(f"ALTER TABLE users ADD COLUMN {col};"))
+                    except: pass
                 
-                # Migrate accounts table
-                try:
-                    conn.execute(text("ALTER TABLE accounts ADD COLUMN is_default BOOLEAN DEFAULT FALSE;"))
-                except Exception:
-                    pass
+                try: conn.execute(text("ALTER TABLE accounts ADD COLUMN is_default BOOLEAN DEFAULT FALSE;"))
+                except: pass
 
-                # Migrate password_entries table
-                try:
-                    conn.execute(text("ALTER TABLE password_entries ADD COLUMN backup_codes TEXT;"))
-                except Exception:
-                    pass
-                try:
-                    conn.execute(text("ALTER TABLE password_entries ADD COLUMN category_id INTEGER;"))
-                except Exception:
-                    pass
-                try:
-                    conn.execute(text("ALTER TABLE password_entries ADD COLUMN updated_at DATETIME;"))
-                except Exception:
-                    pass
+                pw_cols = ["backup_codes TEXT", "category_id INTEGER", "updated_at DATETIME"]
+                for col in pw_cols:
+                    try: conn.execute(text(f"ALTER TABLE password_entries ADD COLUMN {col};"))
+                    except: pass
     except Exception as e:
         print(f"Auto-migration skipped or failed: {e}")
+
         
     yield
 

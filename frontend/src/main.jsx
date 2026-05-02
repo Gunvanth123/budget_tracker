@@ -5,6 +5,11 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
 import App from './App'
 import './index.css'
+import { registerSW } from 'virtual:pwa-register'
+
+// Register Service Worker for PWA
+registerSW({ immediate: true })
+
 
 // SET DEFAULT DARK
 document.documentElement.classList.add('dark')
