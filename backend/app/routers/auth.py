@@ -70,6 +70,7 @@ def register(req: RegisterRequest, background_tasks: BackgroundTasks, db: Sessio
             "email": user.email,
             "mfa_preference": user.mfa_preference,
             "totp_enabled": user.totp_enabled,
+            "has_seen_onboarding": user.has_seen_onboarding,
             "profile_picture": get_processed_profile_pic(user)
         },
     )
@@ -100,6 +101,7 @@ def login(req: LoginRequest, background_tasks: BackgroundTasks, db: Session = De
             "email": user.email,
             "mfa_preference": user.mfa_preference,
             "totp_enabled": user.totp_enabled,
+            "has_seen_onboarding": user.has_seen_onboarding,
             "profile_picture": get_processed_profile_pic(user)
         },
     )
@@ -113,6 +115,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "mfa_preference": current_user.mfa_preference,
         "totp_enabled": current_user.totp_enabled,
+        "has_seen_onboarding": current_user.has_seen_onboarding,
         "profile_picture": get_processed_profile_pic(current_user)
     }
 

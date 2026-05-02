@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
   const refreshUser = useCallback(async () => {
     if (!token) return
     try {
-      const r = await api.get('/auth/me')
+      const r = await api.get(`/auth/me?t=${Date.now()}`)
       setUser(r.data)
     } catch {
       setToken(null)
