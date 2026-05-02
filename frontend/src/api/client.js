@@ -65,6 +65,7 @@ export const passwordsApi = {
   delete: (id) => api.delete(`/passwords/${id}`),
   getCategories: () => api.get('/passwords/categories').then(r => r.data),
   createCategory: (data) => api.post('/passwords/categories', data).then(r => r.data),
+  changeMasterKey: (data) => api.put('/passwords/change-master-password', data).then(r => r.data),
 }
 
 export const budgetsApi = {

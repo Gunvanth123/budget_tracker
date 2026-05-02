@@ -3,8 +3,9 @@ import { usersApi, mfaApi } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import QRCode from 'react-qr-code'
 import toast from 'react-hot-toast'
-import { User, Shield, Camera, CheckCircle2 } from 'lucide-react'
+import { User, Shield, Camera, CheckCircle2, Key } from 'lucide-react'
 import ImageCropper from './ImageCropper'
+import MasterKeyChange from './MasterKeyChange'
 
 export default function Settings() {
   const { user } = useAuth()
@@ -151,6 +152,12 @@ export default function Settings() {
         >
           <Shield className="w-4 h-4" /> Security & 2FA
         </button>
+        <button 
+          className={`flex items-center gap-2 pb-2 px-1 border-b-2 transition-colors ${activeTab === 'master-key' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent opacity-60 hover:opacity-100'}`}
+          onClick={() => setActiveTab('master-key')}
+        >
+          <Key className="w-4 h-4" /> Master Key
+        </button>
       </div>
 
       {activeTab === 'profile' && (
@@ -255,6 +262,10 @@ export default function Settings() {
               )}
             </div>
           </div>
+      )}
+      {activeTab === 'master-key' && (
+        <div className="max-w-2xl mx-auto">
+          <MasterKeyChange />
         </div>
       )}
       {/* Image Crop Modal */}

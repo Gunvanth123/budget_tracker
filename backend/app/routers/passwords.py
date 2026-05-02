@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database.db import get_db
-from app.models.models import PasswordEntry, PasswordCategory, User
+from app.models.models import PasswordEntry, PasswordCategory, User, SecureFile
 from app.schemas.schemas import (
     PasswordEntryCreate, PasswordEntryOut, MasterPasswordSetup, 
     MasterPasswordVerify, PasswordEntryUpdate,
-    PasswordCategoryCreate, PasswordCategoryOut
+    PasswordCategoryCreate, PasswordCategoryOut, MasterKeyChangeReq
 )
 from app.services.auth import get_current_user
 from passlib.context import CryptContext
@@ -38,6 +38,38 @@ def verify_master_password(data: MasterPasswordVerify, db: Session = Depends(get
         raise HTTPException(status_code=401, detail="Invalid master password")
         
     return {"message": "Verified"}
+
+@router.put("/change-master-password")
+def change_master_password(data: MasterKeyChangeReq, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.master_password_hash:
+        raise HTTPException(status_code=400, detail="Master password not set up")
+        
+    if not pwd_context.verify(data.current_master_password, current_user.master_password_hash):
+        raise HTTPException(status_code=401, detail="Invalid current master password")
+
+    # Transactional update
+    try:
+        # Update Passwords
+        for p in data.reencrypted_passwords:
+            db_p = db.query(PasswordEntry).filter(PasswordEntry.id == p.id, PasswordEntry.user_id == current_user.id).first()
+            if db_p:
+                db_p.encrypted_password = p.encrypted_password
+                db_p.backup_codes = p.backup_codes
+        
+        # Update Secure Files (metadata/db content)
+        for f in data.reencrypted_files:
+            db_f = db.query(SecureFile).filter(SecureFile.id == f.id, SecureFile.user_id == current_user.id).first()
+            if db_f:
+                db_f.encrypted_content = f.encrypted_content
+        
+        # Update Master Password Hash
+        current_user.master_password_hash = pwd_context.hash(data.new_master_password)
+        
+        db.commit()
+        return {"message": "Master key changed and all data re-encrypted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update data: {str(e)}")
 
 @router.get("/", response_model=List[PasswordEntryOut])
 def get_passwords(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
