@@ -3,7 +3,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Shield, Key, Target, Settings as SettingsIcon } from 'lucide-react'
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, Tags,
-  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon
+  Calendar, Menu, X, ListTodo, LogOut, ChevronDown, Sun, Moon, Download
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { healthApi } from '../api/client'
@@ -30,7 +30,40 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  // ✅ PWA INSTALL STATE
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [showInstallBtn, setShowInstallBtn] = useState(false)
+
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setShowInstallBtn(true)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+
+    window.addEventListener('appinstalled', () => {
+      setShowInstallBtn(false)
+      setDeferredPrompt(null)
+      toast.success('App installed successfully!')
+    })
+
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setShowInstallBtn(false)
+      setDeferredPrompt(null)
+    }
+  }
+
   // ✅ THEME STATE
+
   const [darkMode, setDarkMode] = useState(true)
 
   // ✅ KEEP ALIVE (To prevent Render sleep)
@@ -126,8 +159,8 @@ export default function Layout() {
               to={to}
               className={({ isActive }) =>
                 clsx(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                  isActive ? 'font-semibold' : 'opacity-70 hover:opacity-100'
+                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                   isActive ? 'font-semibold' : 'opacity-70 hover:opacity-100'
                 )
               }
               style={({ isActive }) => ({
@@ -139,7 +172,19 @@ export default function Layout() {
               {label}
             </NavLink>
           ))}
+
+          {/* PWA Install Button */}
+          {showInstallBtn && (
+            <button
+              onClick={handleInstallClick}
+              className="w-full mt-4 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-[1.02] transition-all shadow-md"
+            >
+              <Download className="w-4 h-4" />
+              Install Desktop App
+            </button>
+          )}
         </nav>
+
 
 
       </aside>
