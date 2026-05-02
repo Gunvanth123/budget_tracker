@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import QRCode from 'react-qr-code'
 import toast from 'react-hot-toast'
 import { User, Shield, Camera, CheckCircle2 } from 'lucide-react'
+import ImageCropper from './ImageCropper'
 
 export default function Settings() {
   const { user } = useAuth()
@@ -17,6 +18,9 @@ export default function Settings() {
   // 2FA state
   const [mfaData, setMfaData] = useState(null)
   const [otpCode, setOtpCode] = useState('')
+
+  // Crop state
+  const [tempImage, setTempImage] = useState(null)
 
   useEffect(() => {
     loadProfile()
@@ -82,12 +86,18 @@ export default function Settings() {
   const handleAvatarUpload = (e) => {
     const file = e.target.files[0]
     if (file) {
+      if (file.size > 2 * 1024 * 1024) return toast.error("File is too large (max 2MB)")
       const reader = new FileReader()
       reader.onloadend = () => {
-        setProfile({ ...profile, profile_picture: reader.result })
+        setTempImage(reader.result)
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  const handleCroppedImage = (croppedBase64) => {
+    setProfile({ ...profile, profile_picture: croppedBase64 })
+    setTempImage(null)
   }
 
   const generate2FA = async () => {
@@ -223,15 +233,15 @@ export default function Settings() {
               ) : mfaData ? (
                 <div className="space-y-4">
                   <p className="text-sm opacity-80">1. Scan this QR Code with Google Authenticator.</p>
-                  <div className="bg-white p-4 rounded-xl shadow-sm flex justify-center">
-                    <QRCode value={mfaData.uri} size={150} />
+                  <div className="bg-white p-6 rounded-2xl shadow-inner flex justify-center border border-gray-200">
+                    <QRCode value={mfaData.uri} size={150} fgColor="#1e293b" />
                   </div>
                   <p className="text-sm opacity-80">2. Enter the generated 6-digit code below.</p>
                   <div className="flex gap-2">
                      <input type="text" maxLength={6} placeholder="000000" className="input text-center font-mono tracking-widest text-lg flex-1" value={otpCode} onChange={e => setOtpCode(e.target.value)} />
                      <button onClick={verify2FA} className="btn-primary whitespace-nowrap">Verify</button>
                   </div>
-                  <button onClick={() => setMfaData(null)} className="text-sm opacity-50 underline mt-2 block mx-auto">Cancel Setup</button>
+                  <button onClick={() => setMfaData(null)} className="text-sm opacity-60 hover:opacity-100 transition-opacity underline mt-2 block mx-auto">Cancel Setup</button>
                 </div>
               ) : (
                 <>
@@ -246,6 +256,14 @@ export default function Settings() {
             </div>
           </div>
         </div>
+      )}
+      {/* Image Crop Modal */}
+      {tempImage && (
+        <ImageCropper 
+            image={tempImage} 
+            onCrop={handleCroppedImage} 
+            onCancel={() => setTempImage(null)} 
+        />
       )}
     </div>
   )

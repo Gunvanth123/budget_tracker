@@ -142,7 +142,7 @@ export default function AIChatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[32rem] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-100" style={{ backgroundColor: 'var(--card)' }}>
+        <div className="fixed bottom-6 right-6 w-96 h-[32rem] bg-[var(--card)] rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-[var(--border)]">
           {/* Header */}
           <div className="p-4 text-white flex justify-between items-center" style={{ background: 'var(--primary)' }}>
             <div className="flex flex-col">
@@ -173,7 +173,7 @@ export default function AIChatbot() {
           </div>
 
           {/* Chat Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50" style={{ backgroundColor: 'var(--bg)' }}>
+          <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[var(--bg)]">
             {messages.length === 0 && (
               <div className="text-center text-sm text-gray-500 mt-10">
                 <p>👋 Hi! I'm your AI financial coach for {new Date(selectedMonth).toLocaleString('default', { month: 'long' })}.</p>
@@ -185,15 +185,15 @@ export default function AIChatbot() {
               <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm ${
                   m.role === 'user' 
-                    ? 'bg-indigo-500 text-white rounded-br-none' 
-                    : 'text-gray-800 rounded-bl-none border border-gray-100'
+                    ? 'bg-[var(--primary)] text-white rounded-br-none' 
+                    : 'rounded-bl-none border border-[var(--border)]'
                 }`}
-                style={m.role === 'assistant' ? { backgroundColor: 'var(--card)', color: 'var(--text)', borderColor: 'var(--border)' } : {}}
+                style={m.role === 'assistant' ? { backgroundColor: 'var(--card)', color: 'var(--text)' } : {}}
                 >
                   {m.role === 'user' ? (
                     m.content
                   ) : (
-                    <div className="prose prose-sm prose-p:my-1 prose-ul:my-1 prose-indigo" style={{ color: 'inherit' }}>
+                    <div className="prose prose-sm prose-p:my-1 prose-ul:my-1 dark:prose-invert" style={{ color: 'inherit' }}>
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {m.content.replace(/\[ACTION\].*?\[\/ACTION\]/gs, '').trim()}
                       </ReactMarkdown>
@@ -205,7 +205,7 @@ export default function AIChatbot() {
             
             {isTyping && (
               <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-none p-3 shadow-sm border border-gray-100 flex gap-1"
+                <div className="rounded-2xl rounded-bl-none p-3 shadow-sm border border-[var(--border)] flex gap-1"
                      style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -217,7 +217,7 @@ export default function AIChatbot() {
           </div>
 
           {/* Input Area */}
-          <div className="p-3 bg-white border-t border-gray-100" style={{ backgroundColor: 'var(--card)' }}>
+          <div className="p-3 bg-[var(--card)] border-t border-[var(--border)]">
             <form onSubmit={handleSend} className="flex gap-2">
               <input
                 type="text"

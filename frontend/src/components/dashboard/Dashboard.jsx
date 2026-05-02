@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 
 import { Plus } from 'lucide-react'
 import TransactionForm from '../transactions/TransactionForm'
+import QuickActions from './QuickActions'
 
 export default function Dashboard() {
   const [data, setData] = useState(null)
@@ -46,20 +47,24 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Overview</h2>
-        <button
-          onClick={() => setFormOpen(true)}
-          className="btn-primary flex items-center gap-2 px-4 py-2 text-sm shadow-lg shadow-indigo-500/20"
-        >
-          <Plus className="w-4 h-4" />
-          Add Transaction
-        </button>
+    <div className="space-y-6 pb-10">
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+          <span className="w-1.5 h-6 bg-indigo-500 rounded-full" />
+          Quick Access
+        </h2>
+        {/* Quick Actions Services */}
+        <QuickActions onAddTransaction={() => setFormOpen(true)} />
       </div>
 
-      {/* Summary Cards */}
-      <SummaryCards summary={data?.summary} />
+      <div className="pt-2 space-y-4">
+        <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+          <span className="w-1.5 h-6 bg-emerald-500 rounded-full" />
+          Financial Overview
+        </h2>
+        {/* Summary Cards */}
+        <SummaryCards summary={data?.summary} />
+      </div>
 
       {/* Charts Row — equal width, equal height */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">

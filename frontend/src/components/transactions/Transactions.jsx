@@ -218,13 +218,15 @@ export default function Transactions() {
                 </div>
 
                 {/* Details */}
-                <div className="min-w-0 pl-3">
-                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>
+                <div className="min-w-0 pl-3 flex flex-col justify-center">
+                  <p className="text-sm font-medium line-clamp-1 hover:line-clamp-none transition-all break-words" style={{ color: 'var(--text)' }}>
                     {txn.notes || txn.category?.name}
                   </p>
-                  <span className={txn.type === 'income' ? 'badge-income' : 'badge-expense'}>
-                    {txn.category?.name}
-                  </span>
+                  <div className="flex flex-wrap gap-1 mt-0.5">
+                    <span className={txn.type === 'income' ? 'badge-income' : 'badge-expense'}>
+                      {txn.category?.name}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Account */}
@@ -290,10 +292,18 @@ export default function Transactions() {
                     : <ArrowDownLeft className="w-4 h-4" style={{ color: '#EF4444' }} />
                   }
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{txn.notes || txn.category?.name}</p>
-                  <span className={txn.type === 'income' ? 'badge-income' : 'badge-expense'}>{txn.category?.name}</span>
-                  <span className="text-xs ml-1.5" style={{ color: 'var(--text-muted)' }}>· {txn.account?.name}</span>
+                <div className="flex-1 min-w-0 py-1">
+                  <p className="text-sm font-medium leading-tight mb-1 break-words line-clamp-2" style={{ color: 'var(--text)' }}>
+                    {txn.notes || txn.category?.name}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={txn.type === 'income' ? 'badge-income' : 'badge-expense'}>
+                      {txn.category?.name}
+                    </span>
+                    <span className="text-[10px] opacity-40 uppercase font-bold tracking-widest">
+                      • {txn.account?.name}
+                    </span>
+                  </div>
                 </div>
                 <span className="font-mono font-semibold text-sm" style={{ color: txn.type === 'income' ? '#22C55E' : '#EF4444' }}>
                   {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}

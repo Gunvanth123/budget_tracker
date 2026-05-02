@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Save, FolderPlus, ShieldCheck } from 'lucide-react'
 import { passwordsApi } from '../../api/client'
 import toast from 'react-hot-toast'
@@ -106,7 +107,7 @@ export default function PasswordForm({ isOpen, onClose, onSaved, masterPassword,
     }
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-[var(--card)] z-10" style={{ borderColor: 'var(--border)' }}>
@@ -220,6 +221,7 @@ export default function PasswordForm({ isOpen, onClose, onSaved, masterPassword,
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

@@ -62,14 +62,19 @@
 
   html {
     scroll-behavior: smooth;
+    background-color: var(--bg);
   }
 
   body {
+    margin: 0;
+    padding: 0;
     font-family: 'Poppins', sans-serif;
     background-color: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     will-change: background-color, color;
+    overflow-x: hidden;
+    overscroll-behavior: none;
     
     /* MOBILE FONT SIZE BOOST */
     font-size: 16px; 
@@ -293,40 +298,26 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     display: flex;
-    align-items: flex-end; /* Mobile: bottom */
+    align-items: center;
     justify-content: center;
-    z-index: 100;
-    padding: 0; /* Mobile: no padding */
-    animation: fadeIn 0.2s ease;
-  }
-  
-  @media (min-width: 640px) {
-    .modal-overlay {
-      align-items: center; /* Desktop: center */
-      padding: 1rem;
-    }
+    padding: 1rem;
+    z-index: 99999;
+    animation: fadeIn 0.2s ease-out;
   }
 
   .modal-content {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 24px 24px 0 0; /* Mobile: rounded top */
-    box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    max-height: 92vh;
+    max-height: 90vh;
     overflow-y: auto;
     width: 100%;
-  }
-
-  @media (min-width: 640px) {
-    .modal-content {
-      border-radius: 20px; /* Desktop: full rounded */
-      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
-      max-height: 90vh;
-    }
   }
 
   /* ---- Chart Tooltip ---- */

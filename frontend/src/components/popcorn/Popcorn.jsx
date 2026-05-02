@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Plus, Trash2, Edit3, Loader2, Image as ImageIcon, Sparkles, X, Search, Popcorn as PopcornIcon, ExternalLink, ChevronRight } from 'lucide-react'
 import { popcornApi, vaultApi } from '../../api/client'
 import toast from 'react-hot-toast'
@@ -41,6 +42,8 @@ export default function Popcorn() {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showViewModal, setShowViewModal] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState(null)
   const [editingEntry, setEditingEntry] = useState(null)
   const [isGDriveConnected, setIsGDriveConnected] = useState(false)
   const token = localStorage.getItem('bt_token')
@@ -148,6 +151,11 @@ export default function Popcorn() {
     })
     setPosterPreview(entry.poster_url ? `${entry.poster_url}?token=${token}` : null)
     setShowModal(true)
+  }
+
+  const handleViewClick = (entry) => {
+    setSelectedEntry(entry)
+    setShowViewModal(true)
   }
 
   const handleSubmit = async (e) => {
@@ -292,13 +300,13 @@ export default function Popcorn() {
           {filteredEntries.map((entry) => (
             <div 
               key={entry.id} 
-              className="group flex flex-col sm:flex-row bg-[var(--card)] rounded-2xl overflow-hidden border border-[var(--border)] hover:border-[var(--primary)]/50 transition-all duration-300 shadow-sm hover:shadow-xl"
+              className="group flex flex-row bg-[var(--card)] rounded-2xl overflow-hidden border border-[var(--border)] hover:border-[var(--primary)]/50 transition-all duration-300 shadow-sm hover:shadow-xl h-[210px] sm:h-auto"
             >
               {/* Left: Poster */}
-              <div className="w-full sm:w-48 h-72 sm:h-auto relative overflow-hidden bg-slate-800 flex-shrink-0">
+              <div className="w-32 sm:w-48 h-full sm:h-auto relative overflow-hidden bg-slate-800 flex-shrink-0">
                 {entry.poster_url ? (
                   <img 
-                    src={`${entry.poster_url}?token=${token}`} 
+                    src={`${entry.poster_url}?token=${token}&width=400`} 
                     alt={entry.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     loading="lazy"
@@ -314,49 +322,58 @@ export default function Popcorn() {
               </div>
 
               {/* Right: Info */}
-              <div className="flex-1 p-5 flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold text-xl leading-tight text-[var(--text)]">{entry.title}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <PopcornRating rating={entry.rating} />
-                        {entry.language && <span className="text-[10px] opacity-40 uppercase font-bold tracking-widest">• {entry.language}</span>}
+              <div className="flex-1 p-3.5 sm:p-5 flex flex-col justify-between min-w-0">
+                <div className="space-y-1.5 sm:space-y-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-base sm:text-xl truncate text-[var(--text)]">{entry.title}</h3>
+                      <div className="flex items-center gap-1 sm:gap-2 mt-1 sm:mt-1.5">
+                        <div className="scale-[0.85] sm:scale-100 origin-left">
+                          <PopcornRating rating={entry.rating} />
+                        </div>
+                        {entry.language && <span className="text-[10px] sm:text-[10px] opacity-40 uppercase font-bold tracking-widest truncate">• {entry.language}</span>}
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+                       <button 
+                        onClick={() => handleViewClick(entry)}
+                        className="p-2 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500 hover:text-white transition-all shadow-sm"
+                        title="View Full Details"
+                       >
+                         <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                       </button>
                        <button 
                         onClick={() => handleEditClick(entry)}
-                        className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all"
+                        className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
                        >
-                         <Edit3 className="w-4 h-4" />
+                         <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                        </button>
                        <button 
                         onClick={() => handleDelete(entry.id)}
-                        className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                        className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm"
                        >
-                         <Trash2 className="w-4 h-4" />
+                         <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                        </button>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    {entry.genres?.split(', ').map(g => (
-                      <span key={g} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 opacity-70">
+                    {entry.genres?.split(', ').slice(0, 3).map(g => (
+                      <span key={g} className="text-[10px] sm:text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 opacity-70">
                         {g.trim()}
                       </span>
                     ))}
                   </div>
 
                   {entry.synopsis && (
-                    <p className="text-sm opacity-60 line-clamp-3 italic leading-relaxed">
+                    <p className="text-xs sm:text-sm opacity-60 line-clamp-3 sm:line-clamp-3 italic leading-relaxed">
                       "{entry.synopsis}"
                     </p>
                   )}
                 </div>
 
                 {entry.reasons_for_liking && (
-                  <div className="pt-4 border-t border-[var(--border)]">
+                  <div className="hidden sm:block pt-4 border-t border-[var(--border)]">
                     <p className="text-[10px] uppercase font-bold tracking-widest opacity-30 mb-1">Personal Note</p>
                     <p className="text-xs opacity-50 line-clamp-2">{entry.reasons_for_liking}</p>
                   </div>
@@ -367,10 +384,115 @@ export default function Popcorn() {
         </div>
       )}
 
+      {/* VIEW MODAL */}
+      {showViewModal && selectedEntry && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[5px]" onClick={() => setShowViewModal(false)} />
+          <div className="relative bg-[var(--card)] w-full max-w-4xl rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col md:flex-row max-h-[90vh]">
+              {/* Left: Big Poster */}
+              <div className="w-full md:w-2/5 h-64 md:h-auto relative bg-slate-800">
+                {selectedEntry.poster_url ? (
+                  <img 
+                    src={`${selectedEntry.poster_url}?token=${token}&width=1000`} 
+                    className="w-full h-full object-cover" 
+                    alt={selectedEntry.title} 
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center opacity-10">
+                    <PopcornIcon className="w-20 h-20" />
+                  </div>
+                )}
+                <button 
+                  onClick={() => setShowViewModal(false)}
+                  className="absolute top-4 left-4 p-2 bg-black/50 text-white rounded-full md:hidden"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Right: Detailed Info */}
+              <div className="flex-1 p-8 overflow-y-auto space-y-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-3xl font-black text-[var(--text)]">{selectedEntry.title}</h2>
+                    <div className="flex items-center gap-3 mt-2">
+                      <PopcornRating rating={selectedEntry.rating} />
+                      <span className="px-3 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold uppercase tracking-widest">
+                        {selectedEntry.category}
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowViewModal(false)} className="hidden md:block p-2 hover:bg-white/5 rounded-full transition-colors">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 py-4 border-y border-[var(--border)]">
+                  <div>
+                    <p className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-1">Language</p>
+                    <p className="font-medium">{selectedEntry.language || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-1">Added On</p>
+                    <p className="font-medium">{new Date(selectedEntry.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs uppercase font-bold tracking-widest text-[var(--primary)]">Synopsis</p>
+                  <p className="text-[var(--text)] leading-relaxed text-lg italic opacity-80">
+                    "{selectedEntry.synopsis || 'No synopsis provided.'}"
+                  </p>
+                </div>
+
+                {selectedEntry.genres && (
+                  <div className="space-y-3">
+                    <p className="text-xs uppercase font-bold tracking-widest text-[var(--primary)]">Genres</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedEntry.genres.split(', ').map(g => (
+                        <span key={g} className="px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-sm opacity-90">
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedEntry.reasons_for_liking && (
+                  <div className="p-5 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 space-y-2">
+                    <p className="text-xs uppercase font-bold tracking-widest text-indigo-400">Why I Liked It</p>
+                    <p className="text-[var(--text)] opacity-90 leading-relaxed">{selectedEntry.reasons_for_liking}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-4 pt-4">
+                  <button
+                    onClick={() => { setShowViewModal(false); handleEditClick(selectedEntry); }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 border border-[var(--border)] hover:bg-white/10 transition-all font-bold"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Edit Details
+                  </button>
+                  <button
+                    onClick={() => { setShowViewModal(false); handleDelete(selectedEntry.id); }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all font-bold"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* MODAL (ADD / EDIT) */}
-      {showModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+      {showModal && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[5px]" onClick={() => setShowModal(false)} />
           <div className="relative bg-[var(--card)] w-full max-w-3xl rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
@@ -598,7 +720,8 @@ export default function Popcorn() {
 
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

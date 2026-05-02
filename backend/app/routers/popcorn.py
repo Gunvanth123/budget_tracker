@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
 import httpx
 import json
+import io
+from PIL import Image
 
 from app.database.db import get_db
 from app.models.models import User, PopcornEntry
@@ -87,7 +90,7 @@ async def create_popcorn_entry(
     return new_entry
 
 @router.get("/poster/{file_id}")
-async def get_poster(file_id: str, token: Optional[str] = Query(None), db: Session = Depends(get_db)):
+async def get_poster(file_id: str, token: Optional[str] = Query(None), width: Optional[int] = Query(None), db: Session = Depends(get_db)):
     # Manual token verification for img tags
     if not token:
         raise HTTPException(status_code=401, detail="Token required")
@@ -108,11 +111,25 @@ async def get_poster(file_id: str, token: Optional[str] = Query(None), db: Sessi
         service = gdrive_service.get_service(current_user.gdrive_token)
         content = gdrive_service.download_file(service, file_id)
         
-        # We need to know the mimetype. GDrive API can give us that.
+        # Determine original mimetype if possible
         file_metadata = service.files().get(fileId=file_id, fields='mimeType').execute()
         mimetype = file_metadata.get('mimeType', 'image/jpeg')
+
+        if width:
+            try:
+                img = Image.open(io.BytesIO(content))
+                # Maintain aspect ratio
+                if img.size[0] > width:
+                    w_percent = (width / float(img.size[0]))
+                    h_size = int((float(img.size[1]) * float(w_percent)))
+                    img = img.resize((width, h_size), Image.LANCZOS if hasattr(Image, 'LANCZOS') else Image.ANTIALIAS)
+                    
+                    buf = io.BytesIO()
+                    img.save(buf, format="WEBP", quality=85)
+                    return Response(content=buf.getvalue(), media_type="image/webp")
+            except Exception as e:
+                print(f"Image resize failed: {e}")
         
-        from fastapi.responses import Response
         return Response(content=content, media_type=mimetype)
     except Exception as e:
         print(f"Failed to fetch poster: {e}")

@@ -92,18 +92,18 @@ export default function TransactionForm({ isOpen, onClose, onSaved, editData }) 
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Type toggle */}
-        <div className="flex rounded-xl overflow-hidden border border-slate-200">
+        <div className="flex rounded-xl overflow-hidden border border-[var(--border)]">
           {['expense', 'income'].map(t => (
             <button
               key={t}
               type="button"
               onClick={() => { set('type', t); set('category_id', '') }}
-              className={`flex-1 py-2.5 text-sm font-semibold capitalize transition-colors ${
+              className={`flex-1 py-2.5 text-sm font-semibold capitalize transition-all ${
                 form.type === t
                   ? t === 'income'
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-red-500 text-white'
-                  : 'bg-white text-slate-500 hover:bg-slate-50'
+                    ? 'bg-emerald-500 text-white shadow-lg'
+                    : 'bg-red-500 text-white shadow-lg'
+                  : 'bg-transparent text-slate-500 hover:bg-white/5'
               }`}
             >
               {t === 'income' ? '↑ Income' : '↓ Expense'}

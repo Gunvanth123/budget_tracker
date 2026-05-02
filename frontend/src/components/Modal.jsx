@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }) {
@@ -15,7 +16,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
 
   const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`modal-content ${sizes[size]} w-full`}>
 
@@ -29,16 +30,8 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg transition-colors"
+            className="p-1.5 rounded-lg transition-colors hover:bg-white/5"
             style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'var(--border)'
-              e.currentTarget.style.color = 'var(--text)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = 'var(--text-muted)'
-            }}
           >
             <X className="w-5 h-5" />
           </button>
@@ -47,6 +40,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
         {/* Body */}
         <div className="p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

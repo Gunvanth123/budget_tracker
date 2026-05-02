@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { 
   Shield, Lock, Unlock, Upload, Download, Trash2, 
@@ -285,7 +286,7 @@ export default function SecureVault() {
             : 'bg-gradient-to-r from-indigo-500/10 to-blue-500/10 border-indigo-500/20'
         }`}>
           <div className="flex items-start gap-5">
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-md shrink-0">
+            <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-md shrink-0">
               {gdriveConfigured === false
                 ? <Settings className="w-8 h-8 text-amber-500" />
                 : <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-8 h-8" alt="GDrive" />}
@@ -503,40 +504,51 @@ export default function SecureVault() {
         masterPassword={masterPassword}
       />
 
-      {/* Document Preview Modal */}
-      {previewData.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="absolute top-4 right-4 flex gap-3 z-50">
-                <button 
-                    onClick={() => {
-                        const a = document.createElement('a')
-                        a.href = previewData.url
-                        a.download = previewData.filename
-                        a.click()
-                    }}
-                    className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-md"
-                >
-                    <Download className="w-5 h-5" />
-                </button>
-                <button 
-                    onClick={closePreview}
-                    className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all shadow-lg"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-            </div>
+      {previewData.isOpen && createPortal(
+        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center">
+            {/* Backdrop */}
+            <div 
+                className="absolute inset-0 bg-slate-900/98 backdrop-blur-xl cursor-pointer" 
+                onClick={closePreview} 
+            />
             
-            <div className="w-full h-full p-4 flex flex-col items-center justify-center">
-                <div className="mb-4 text-center mt-8">
-                    <h3 className="text-white font-bold text-lg">{previewData.filename}</h3>
-                    <p className="text-white/40 text-xs uppercase tracking-widest">{previewData.mimetype}</p>
+            {/* Controls Header */}
+            <div className="relative w-full flex items-center justify-between px-6 py-4 z-50 bg-slate-900/50 backdrop-blur-md border-b border-white/10">
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-bold text-lg truncate">{previewData.filename}</h3>
+                    <p className="text-white/40 text-[10px] uppercase tracking-widest">{previewData.mimetype}</p>
                 </div>
                 
-                <div className="flex-1 w-full max-w-5xl bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
+                <div className="flex items-center gap-3 ml-4">
+                    <button 
+                        onClick={() => {
+                            const a = document.createElement('a')
+                            a.href = previewData.url
+                            a.download = previewData.filename
+                            a.click()
+                        }}
+                        className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+                        title="Download"
+                    >
+                        <Download className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={closePreview}
+                        className="p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all shadow-lg"
+                        title="Close"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+            
+            {/* Preview Area */}
+            <div className="relative flex-1 w-full p-4 sm:p-8 flex items-center justify-center overflow-hidden">
+                <div className="w-full h-full max-w-6xl bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
                     {previewData.mimetype.startsWith('image/') ? (
                         <img src={previewData.url} className="w-full h-full object-contain" alt="Preview" />
                     ) : previewData.mimetype === 'application/pdf' ? (
-                        <iframe src={previewData.url} className="w-full h-full border-0" title="PDF Preview" />
+                        <iframe src={`${previewData.url}#toolbar=0`} className="w-full h-full border-0" title="PDF Preview" />
                     ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-white/60 space-y-4">
                             <FileText className="w-20 h-20 opacity-20" />
@@ -556,7 +568,8 @@ export default function SecureVault() {
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
