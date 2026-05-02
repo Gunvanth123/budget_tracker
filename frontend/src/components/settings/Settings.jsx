@@ -262,6 +262,7 @@ export default function Settings() {
               )}
             </div>
           </div>
+        </div>
       )}
       {activeTab === 'master-key' && (
         <div className="max-w-2xl mx-auto">
