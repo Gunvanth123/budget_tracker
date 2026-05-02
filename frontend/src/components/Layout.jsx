@@ -215,8 +215,8 @@ export default function Layout() {
 
           <div className="flex items-center gap-3">
             {/* Custom Animated Theme Toggle */}
-            <div className="flex items-center justify-center gap-3 mr-4">
-              <span className={`text-sm font-bold transition-opacity duration-300 tracking-wide ${!darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Light</span>
+            <div className="flex items-center justify-center gap-3 mr-1 sm:mr-4">
+              <span className={`hidden sm:inline text-sm font-bold transition-opacity duration-300 tracking-wide ${!darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Light</span>
               
               <button
                 onClick={toggleTheme}
@@ -252,7 +252,7 @@ export default function Layout() {
                 </div>
               </button>
               
-              <span className={`text-sm font-bold transition-opacity duration-300 tracking-wide ${darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Dark</span>
+              <span className={`hidden sm:inline text-sm font-bold transition-opacity duration-300 tracking-wide ${darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Dark</span>
             </div>
             
             <button
