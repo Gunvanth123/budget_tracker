@@ -113,6 +113,21 @@ export default function Transactions() {
   const [formOpen, setFormOpen] = useState(false)
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [editData, setEditData] = useState(null)
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const getTruncatedText = (text) => {
+    const str = text || 'Untitled'
+    let limit = 35 // Laptop default
+    if (windowWidth < 768) limit = 15 // Mobile
+    else if (windowWidth < 1280) limit = 25 // iPad/Tablet
+    return str.length > limit ? str.substring(0, limit) + '....' : str
+  }
 
   // Date Popover States
   const [activePicker, setActivePicker] = useState(null) // 'start' or 'end'
@@ -487,7 +502,7 @@ export default function Transactions() {
                     {/* Info */}
                     <div className="col-span-5 pl-4 flex flex-col">
                       <p className="font-bold text-sm text-[var(--text)] group-hover:text-indigo-400 transition-colors">
-                        {txn.notes || txn.category?.name}
+                        {getTruncatedText(txn.notes || txn.category?.name)}
                       </p>
                       <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-0.5 opacity-60">
                         {txn.category?.name}
@@ -539,10 +554,7 @@ export default function Transactions() {
                   </div>
                   <div className="flex-1 min-w-0 pr-2">
                     <p className="font-bold text-[13px] text-[var(--text)] leading-tight">
-                      {(() => {
-                        const note = txn.notes || txn.category?.name || 'Untitled';
-                        return note.length > 15 ? note.substring(0, 15) + '....' : note;
-                      })()}
+                      {getTruncatedText(txn.notes || txn.category?.name)}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider truncate max-w-[70px]">
