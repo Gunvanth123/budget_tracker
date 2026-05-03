@@ -515,7 +515,7 @@ export default function Transactions() {
                       </span>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(txn.id) }}
-                        className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -554,11 +554,19 @@ export default function Transactions() {
                       </span>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 min-w-[85px]">
-                    <p className="font-bold text-[14px]" style={{ color: txn.type === 'income' ? '#10B981' : '#EF4444' }}>
-                      {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
-                    </p>
-                    <p className="text-[9px] text-[var(--text-muted)] mt-0.5 font-semibold">
+                  <div className="text-right flex-shrink-0 flex flex-col items-end gap-1 min-w-[100px]">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-[14px]" style={{ color: txn.type === 'income' ? '#10B981' : '#EF4444' }}>
+                        {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
+                      </p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(txn.id) }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-[var(--text-muted)] font-semibold">
                       {formatDate(txn.date)}
                     </p>
                   </div>
