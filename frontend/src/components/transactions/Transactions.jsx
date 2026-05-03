@@ -343,113 +343,80 @@ export default function Transactions() {
 
       {/* Unified Filter Section */}
       <div className="card p-4 shadow-sm border-[var(--border)] overflow-visible">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-center">
-          
-          {/* Search Field */}
-          <div className="lg:col-span-3 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] opacity-50" />
+        <div className="flex flex-col xl:flex-row gap-4">
+          {/* Search */}
+          <div className="relative flex-1 min-w-0 xl:max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] opacity-40 pointer-events-none" />
             <input
               type="text"
               placeholder="Search history..."
               value={filters.search}
               onChange={e => setFilters(p => ({ ...p, search: e.target.value }))}
-              className="input pl-10 h-11 text-xs font-medium"
+              className="input pl-10 h-11 text-sm font-medium w-full"
             />
           </div>
 
-          {/* Custom THEMED Date Range Popovers */}
-          <div className="lg:col-span-4 flex items-center gap-1 bg-[var(--bg)] p-1 rounded-xl border border-[var(--border)] shadow-inner relative">
-            <div className="flex-1 relative">
-              <button 
-                onClick={() => setActivePicker(activePicker === 'start' ? null : 'start')}
-                className={`flex items-center gap-3 w-full h-9 px-3 rounded-lg transition-all ${
-                  activePicker === 'start' ? 'bg-[var(--card)] shadow-sm' : 'hover:bg-[var(--card)]/50'
-                }`}
+          {/* Time & Filters Group */}
+          <div className="flex flex-col md:flex-row gap-3 flex-1">
+            {/* Date Range Picker */}
+            <div className="flex items-center p-1 bg-[var(--bg)] rounded-xl border border-[var(--border)] shadow-sm min-w-[280px]">
+              <button
+                onClick={() => setActivePicker('start')}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5 rounded-lg transition-all"
               >
-                <CalendarIcon className="w-4 h-4 text-indigo-400" />
-                <span className="text-[11px] font-bold truncate">
-                  {filters.startDate ? format(new Date(filters.startDate), 'dd MMM yyyy') : 'Start Date'}
-                </span>
+                <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" />
+                {filters.startDate ? format(parseISO(filters.startDate), 'dd MMM yyyy') : 'Start Date'}
               </button>
-              <AnimatePresence>
-                {activePicker === 'start' && (
-                  <CalendarPopover 
-                    label="From"
-                    value={filters.startDate}
-                    onChange={(d) => setFilters(p => ({ ...p, startDate: d }))}
-                    onClose={() => setActivePicker(null)}
-                  />
-                )}
-              </AnimatePresence>
+              <div className="w-px h-4 bg-[var(--border)] opacity-30" />
+              <button
+                onClick={() => setActivePicker('end')}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5 rounded-lg transition-all"
+              >
+                <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" />
+                {filters.endDate ? format(parseISO(filters.endDate), 'dd MMM yyyy') : 'End Date'}
+              </button>
             </div>
 
-            <div className="h-4 w-[1px] bg-[var(--border)] opacity-50" />
+            {/* Dropdowns */}
+            <div className="flex items-center gap-2 flex-1">
+              <div className="relative flex-1">
+                <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
+                <select
+                  value={filters.type}
+                  onChange={e => setFilters(p => ({ ...p, type: e.target.value }))}
+                  className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
+                >
+                  <option value="">All Types</option>
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
+              </div>
+              
+              <div className="relative flex-1">
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
+                <select
+                  value={filters.category_id}
+                  onChange={e => setFilters(p => ({ ...p, category_id: e.target.value }))}
+                  className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
+                >
+                  <option value="">Categories</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
 
-            <div className="flex-1 relative">
-              <button 
-                onClick={() => setActivePicker(activePicker === 'end' ? null : 'end')}
-                className={`flex items-center gap-3 w-full h-9 px-3 rounded-lg transition-all ${
-                  activePicker === 'end' ? 'bg-[var(--card)] shadow-sm' : 'hover:bg-[var(--card)]/50'
-                }`}
-              >
-                <CalendarIcon className="w-4 h-4 text-indigo-400" />
-                <span className="text-[11px] font-bold truncate">
-                  {filters.endDate ? format(new Date(filters.endDate), 'dd MMM yyyy') : 'End Date'}
-                </span>
-              </button>
-              <AnimatePresence>
-                {activePicker === 'end' && (
-                  <CalendarPopover 
-                    label="To"
-                    value={filters.endDate}
-                    onChange={(d) => setFilters(p => ({ ...p, endDate: d }))}
-                    onClose={() => setActivePicker(null)}
-                  />
-                )}
-              </AnimatePresence>
+              <div className="relative flex-1">
+                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
+                <select
+                  value={filters.account_id}
+                  onChange={e => setFilters(p => ({ ...p, account_id: e.target.value }))}
+                  className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
+                >
+                  <option value="">Accounts</option>
+                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
             </div>
           </div>
-
-          {/* Select Dropdowns */}
-          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-            <div className="relative">
-              <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
-              <select
-                value={filters.type}
-                onChange={e => setFilters(p => ({ ...p, type: e.target.value }))}
-                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
-              >
-                <option value="">All Types</option>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-              </select>
-            </div>
-            
-            <div className="relative">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
-              <select
-                value={filters.category_id}
-                onChange={e => setFilters(p => ({ ...p, category_id: e.target.value }))}
-                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
-              >
-                <option value="">Categories</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-
-            <div className="relative">
-              <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
-              <select
-                value={filters.account_id}
-                onChange={e => setFilters(p => ({ ...p, account_id: e.target.value }))}
-                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
-              >
-                <option value="">Accounts</option>
-                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -477,8 +444,7 @@ export default function Transactions() {
             <div className="hidden md:block">
               <div className="grid grid-cols-12 px-6 py-4 bg-[var(--bg)]/40 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] border-b border-[var(--border)]">
                 <div className="col-span-1 text-center">Type</div>
-                <div className="col-span-5 pl-4">Description</div>
-                <div className="col-span-2">Account</div>
+                <div className="col-span-7 pl-4">Description</div>
                 <div className="col-span-2">Date</div>
                 <div className="col-span-2 text-right pr-12">Amount</div>
               </div>
@@ -500,20 +466,19 @@ export default function Transactions() {
                     </div>
 
                     {/* Info */}
-                    <div className="col-span-5 pl-4 flex flex-col">
+                    <div className="col-span-7 pl-4 flex flex-col">
                       <p className="font-bold text-sm text-[var(--text)] group-hover:text-indigo-400 transition-colors">
                         {getTruncatedText(txn.notes || txn.category?.name)}
                       </p>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-0.5 opacity-60">
-                        {txn.category?.name}
-                      </span>
-                    </div>
-
-                    {/* Account */}
-                    <div className="col-span-2">
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate block max-w-[100px]">
-                        {txn.account?.name}
-                      </span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
+                          {txn.category?.name}
+                        </span>
+                        <span className="text-[10px] opacity-20">•</span>
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
+                          {txn.account?.name}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Date */}
