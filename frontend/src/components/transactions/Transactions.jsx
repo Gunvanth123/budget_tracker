@@ -279,20 +279,20 @@ export default function Transactions() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setExportModalOpen(true)}
-            className="btn-secondary px-4 h-11 flex items-center gap-2 border-[var(--border)] shadow-sm"
+            className="btn-secondary flex-1 sm:flex-initial px-3 sm:px-4 h-11 flex items-center justify-center gap-2 border-[var(--border)] shadow-sm"
           >
             <Download className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">Export</span>
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Export</span>
           </button>
           <button
             onClick={() => { setEditData(null); setFormOpen(true) }}
-            className="btn-primary px-5 h-11 flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+            className="btn-primary flex-1 sm:flex-initial px-4 sm:px-5 h-11 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
           >
             <Plus className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">Add New</span>
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap">Add Entry</span>
           </button>
         </div>
       </div>
@@ -386,15 +386,15 @@ export default function Transactions() {
           </div>
 
           {/* Select Dropdowns */}
-          <div className="lg:col-span-5 grid grid-cols-3 gap-3">
+          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             <div className="relative">
               <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
               <select
                 value={filters.type}
                 onChange={e => setFilters(p => ({ ...p, type: e.target.value }))}
-                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider"
+                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
               >
-                <option value="">Types</option>
+                <option value="">All Types</option>
                 <option value="income">Income</option>
                 <option value="expense">Expense</option>
               </select>
@@ -405,7 +405,7 @@ export default function Transactions() {
               <select
                 value={filters.category_id}
                 onChange={e => setFilters(p => ({ ...p, category_id: e.target.value }))}
-                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider"
+                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
               >
                 <option value="">Categories</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -417,7 +417,7 @@ export default function Transactions() {
               <select
                 value={filters.account_id}
                 onChange={e => setFilters(p => ({ ...p, account_id: e.target.value }))}
-                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider"
+                className="select pl-9 h-11 text-[11px] font-bold uppercase tracking-wider w-full"
               >
                 <option value="">Accounts</option>
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -520,27 +520,35 @@ export default function Transactions() {
               {transactions.map((txn) => (
                 <div
                   key={`m-${txn.id}`}
-                  className="p-4 flex items-center gap-4 hover:bg-[var(--bg)]"
+                  className="p-4 flex items-center gap-3 hover:bg-[var(--bg)] active:bg-[var(--bg)] transition-colors"
                   onClick={() => handleEdit(txn)}
                 >
-                  <div className={`w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-sm ${
+                  <div className={`w-11 h-11 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-sm ${
                     txn.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
                   }`}>
-                    {txn.type === 'income' ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownLeft className="w-6 h-6" />}
+                    {txn.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[var(--text)] truncate">{txn.notes || txn.category?.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{txn.category?.name}</span>
-                      <span className="text-[10px] opacity-20">•</span>
-                      <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">{txn.account?.name}</span>
+                    <p className="font-bold text-[13px] text-[var(--text)] truncate leading-tight">
+                      {txn.notes || txn.category?.name}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider truncate max-w-[80px]">
+                        {txn.category?.name}
+                      </span>
+                      <span className="text-[9px] opacity-20">•</span>
+                      <span className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-wider truncate max-w-[80px]">
+                        {txn.account?.name}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm" style={{ color: txn.type === 'income' ? '#10B981' : '#EF4444' }}>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-bold text-[14px]" style={{ color: txn.type === 'income' ? '#10B981' : '#EF4444' }}>
                       {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
                     </p>
-                    <p className="text-[10px] text-[var(--text-muted)] mt-1 font-semibold">{formatDate(txn.date)}</p>
+                    <p className="text-[9px] text-[var(--text-muted)] mt-0.5 font-semibold">
+                      {formatDate(txn.date)}
+                    </p>
                   </div>
                 </div>
               ))}
