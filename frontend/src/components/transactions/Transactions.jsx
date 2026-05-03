@@ -19,7 +19,7 @@ export default function Transactions() {
   // Pagination
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
-  const LIMIT = 15
+  const LIMIT = 25
 
   // Filters
   const [filters, setFilters] = useState({
@@ -366,19 +366,11 @@ export default function Transactions() {
             ))}
             
             {/* Infinite scroll sensor */}
-            <div ref={bottomRef} className="h-20 flex items-center justify-center">
-              {loadingMore && (
-                <Loader2 className="animate-spin w-5 h-5 opacity-50" />
-              )}
-              {!loadingMore && hasMore && transactions.length > 0 && (
-                <button 
-                  onClick={() => fetchAll(true)}
-                  className="text-[10px] font-bold uppercase tracking-widest opacity-20 hover:opacity-100 transition-opacity"
-                >
-                  Load More
-                </button>
-              )}
-            </div>
+            {(hasMore || loadingMore) && (
+              <div ref={bottomRef} className="h-12 flex items-center justify-center">
+                {loadingMore && <Loader2 className="animate-spin w-5 h-5 opacity-50" />}
+              </div>
+            )}
           </div>
         )}
       </div>
