@@ -441,67 +441,69 @@ export default function Transactions() {
         ) : (
           <div>
             {/* Desktop View */}
-            <div className="hidden md:block">
-              <div className="grid grid-cols-12 px-6 py-4 bg-[var(--bg)]/40 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] border-b border-[var(--border)]">
-                <div className="col-span-1 text-center">Type</div>
-                <div className="col-span-7 pl-4">Description</div>
-                <div className="col-span-2">Date</div>
-                <div className="col-span-2 text-right pr-12">Amount</div>
-              </div>
+            <div className="hidden md:block overflow-x-auto">
+              <div className="min-w-[650px]">
+                <div className="flex items-center px-6 py-4 bg-[var(--bg)]/40 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] border-b border-[var(--border)]">
+                  <div className="w-16 text-center">Type</div>
+                  <div className="flex-1 pl-4">Description</div>
+                  <div className="w-36">Date</div>
+                  <div className="w-44 text-right pr-12">Amount</div>
+                </div>
 
-              <div className="divide-y divide-white/[0.03]">
-                {transactions.map((txn) => (
-                  <div
-                    key={txn.id}
-                    className="grid grid-cols-12 items-center px-6 py-4 group hover:bg-[var(--bg)] transition-all cursor-pointer relative"
-                    onClick={() => handleEdit(txn)}
-                  >
-                    {/* Icon */}
-                    <div className="col-span-1 flex justify-center">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm transition-all group-hover:scale-110 ${
-                        txn.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
-                      }`}>
-                        {txn.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                <div className="divide-y divide-white/[0.03]">
+                  {transactions.map((txn) => (
+                    <div
+                      key={txn.id}
+                      className="flex items-center px-6 py-4 group hover:bg-[var(--bg)] transition-all cursor-pointer relative"
+                      onClick={() => handleEdit(txn)}
+                    >
+                      {/* Icon */}
+                      <div className="w-16 flex justify-center">
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm transition-all group-hover:scale-110 ${
+                          txn.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                        }`}>
+                          {txn.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                        </div>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 pl-4 flex flex-col min-w-0">
+                        <p className="font-bold text-sm text-[var(--text)] group-hover:text-indigo-400 transition-colors truncate">
+                          {getTruncatedText(txn.notes || txn.category?.name)}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
+                            {txn.category?.name}
+                          </span>
+                          <span className="text-[10px] opacity-20">•</span>
+                          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
+                            {txn.account?.name}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Date */}
+                      <div className="w-36 text-[11px] font-semibold text-[var(--text-muted)]">
+                        {formatDate(txn.date)}
+                      </div>
+
+                      {/* Amount */}
+                      <div className="w-44 flex items-center justify-end gap-4 pr-4">
+                        <span className={`font-bold text-base whitespace-nowrap ${
+                          txn.type === 'income' ? 'text-emerald-500' : 'text-red-500'
+                        }`}>
+                          {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(txn.id) }}
+                          className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-
-                    {/* Info */}
-                    <div className="col-span-7 pl-4 flex flex-col">
-                      <p className="font-bold text-sm text-[var(--text)] group-hover:text-indigo-400 transition-colors">
-                        {getTruncatedText(txn.notes || txn.category?.name)}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
-                          {txn.category?.name}
-                        </span>
-                        <span className="text-[10px] opacity-20">•</span>
-                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
-                          {txn.account?.name}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Date */}
-                    <div className="col-span-2 text-[11px] font-semibold text-[var(--text-muted)]">
-                      {formatDate(txn.date)}
-                    </div>
-
-                    {/* Amount */}
-                    <div className="col-span-2 flex items-center justify-end gap-4 pr-4">
-                      <span className={`font-bold text-base ${
-                        txn.type === 'income' ? 'text-emerald-500' : 'text-red-500'
-                      }`}>
-                        {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
-                      </span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(txn.id) }}
-                        className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
 
