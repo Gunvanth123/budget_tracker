@@ -258,20 +258,24 @@ export default function Transactions() {
     >
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <div className="p-1 bg-[var(--bg)] rounded-xl border border-[var(--border)] flex items-center gap-1 shadow-sm">
+        <div className="w-full sm:w-auto">
+          <div className="p-1 bg-[var(--bg)] rounded-xl border border-[var(--border)] flex items-center shadow-sm w-full sm:w-auto">
             <button
               onClick={setCurrentMonth}
-              className={`px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
-                filters.startDate === defaultStart ? 'bg-indigo-500 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+              className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all ${
+                filters.startDate === defaultStart 
+                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                  : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5'
               }`}
             >
               Current Month
             </button>
             <button
               onClick={setAllTime}
-              className={`px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
-                !filters.startDate && !filters.endDate ? 'bg-indigo-500 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+              className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all ${
+                !filters.startDate && !filters.endDate 
+                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                  : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5'
               }`}
             >
               All Time
