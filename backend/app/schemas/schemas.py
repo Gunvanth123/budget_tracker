@@ -285,20 +285,19 @@ class PopcornEntryOut(PopcornEntryBase):
         from_attributes = True
 
 
- 
- #    % % %  M a s t e r   K e y   C h a n g e   S c h e m a s    % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
- c l a s s   P a s s w o r d R e E n c r y p t ( B a s e M o d e l ) :  
-         i d :   i n t  
-         e n c r y p t e d _ p a s s w o r d :   s t r  
-         b a c k u p _ c o d e s :   O p t i o n a l [ s t r ]   =   N o n e  
-  
- c l a s s   F i l e R e E n c r y p t ( B a s e M o d e l ) :  
-         i d :   i n t  
-         e n c r y p t e d _ c o n t e n t :   s t r  
-  
- c l a s s   M a s t e r K e y C h a n g e R e q ( B a s e M o d e l ) :  
-         c u r r e n t _ m a s t e r _ p a s s w o r d :   s t r  
-         n e w _ m a s t e r _ p a s s w o r d :   s t r  
-         r e e n c r y p t e d _ p a s s w o r d s :   l i s t [ P a s s w o r d R e E n c r y p t ]  
-         r e e n c r y p t e d _ f i l e s :   l i s t [ F i l e R e E n c r y p t ]  
- 
+# ─── Master Key Change Schemas ───────────────────────────────────────────────
+
+class PasswordReEncrypt(BaseModel):
+    id: int
+    encrypted_password: str
+    backup_codes: Optional[str] = None
+
+class FileReEncrypt(BaseModel):
+    id: int
+    encrypted_content: str
+
+class MasterKeyChangeReq(BaseModel):
+    current_master_password: str
+    new_master_password: str
+    reencrypted_passwords: list[PasswordReEncrypt]
+    reencrypted_files: list[FileReEncrypt]

@@ -19,7 +19,7 @@ export default function Transactions() {
   // Pagination
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
-  const LIMIT = 10
+  const LIMIT = 15
 
   // Filters
   const [filters, setFilters] = useState({
@@ -61,8 +61,10 @@ export default function Transactions() {
         setPage(prev => prev + 1)
       } else {
         setTransactions(txns)
-        setCategories(cats)
-        setAccounts(accs)
+        if (!isLoadMore) {
+          setCategories(cats)
+          setAccounts(accs)
+        }
       }
 
       if (txns.length < LIMIT) setHasMore(false)
@@ -312,7 +314,7 @@ export default function Transactions() {
               </div>
             ))}
 
-            {/* Mobile rows (stacked layout — only visible on small screens) */}
+            {/* Mobile rows (stacked layout) */}
             {transactions.map((txn, index) => (
               <div
                 key={`m-${txn.id}`}
@@ -363,6 +365,17 @@ export default function Transactions() {
             {loadingMore && (
               <div className="p-4 text-center">
                 <Loader2 className="animate-spin w-5 h-5 mx-auto opacity-50" />
+              </div>
+            )}
+
+            {!loadingMore && hasMore && transactions.length > 0 && (
+              <div className="p-4 text-center border-t border-[var(--border)]">
+                <button 
+                  onClick={() => fetchAll(true)}
+                  className="text-xs font-bold uppercase tracking-widest text-indigo-500 hover:text-indigo-600 transition-colors"
+                >
+                  Load More Transactions
+                </button>
               </div>
             )}
           </div>
