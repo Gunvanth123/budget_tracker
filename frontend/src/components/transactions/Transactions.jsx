@@ -17,6 +17,10 @@ export default function Transactions() {
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [editData, setEditData] = useState(null)
 
+  // Refs for calendar triggers
+  const startPickerRef = useRef(null)
+  const endPickerRef = useRef(null)
+
   // Summary state
   const [summary, setSummary] = useState({
     total_income: 0,
@@ -149,6 +153,16 @@ export default function Transactions() {
     setFilters(p => ({ ...p, startDate: start, endDate: end }))
   }
 
+  const openPicker = (ref) => {
+    if (ref.current) {
+      try {
+        ref.current.showPicker()
+      } catch (e) {
+        ref.current.focus()
+      }
+    }
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -163,7 +177,7 @@ export default function Transactions() {
             <button
               onClick={setCurrentMonth}
               className={`px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
-                filters.startDate === defaultStart ? 'bg-indigo-500 text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                filters.startDate === defaultStart ? 'bg-indigo-500 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
               }`}
             >
               Current Month
@@ -171,7 +185,7 @@ export default function Transactions() {
             <button
               onClick={setAllTime}
               className={`px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
-                !filters.startDate && !filters.endDate ? 'bg-indigo-500 text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                !filters.startDate && !filters.endDate ? 'bg-indigo-500 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
               }`}
             >
               All Time
@@ -225,7 +239,7 @@ export default function Transactions() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] opacity-50" />
             <input
               type="text"
-              placeholder="Search notes or categories..."
+              placeholder="Search history..."
               value={filters.search}
               onChange={e => setFilters(p => ({ ...p, search: e.target.value }))}
               className="input pl-10 h-11 text-xs font-medium"
@@ -234,9 +248,13 @@ export default function Transactions() {
 
           {/* Custom Themed Date Range Pickers */}
           <div className="lg:col-span-4 flex items-center gap-1 bg-[var(--bg)] p-1 rounded-xl border border-[var(--border)] shadow-inner">
-            <div className="flex-1 relative group">
+            <div 
+              className="flex-1 relative group cursor-pointer"
+              onClick={() => openPicker(startPickerRef)}
+            >
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-400 opacity-60 group-hover:opacity-100 transition-opacity" />
               <input
+                ref={startPickerRef}
                 type="date"
                 value={filters.startDate}
                 onChange={e => setFilters(p => ({ ...p, startDate: e.target.value }))}
@@ -245,9 +263,13 @@ export default function Transactions() {
               />
             </div>
             <div className="h-4 w-[1px] bg-[var(--border)] mx-1" />
-            <div className="flex-1 relative group">
+            <div 
+              className="flex-1 relative group cursor-pointer"
+              onClick={() => openPicker(endPickerRef)}
+            >
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-400 opacity-60 group-hover:opacity-100 transition-opacity" />
               <input
+                ref={endPickerRef}
                 type="date"
                 value={filters.endDate}
                 onChange={e => setFilters(p => ({ ...p, endDate: e.target.value }))}
@@ -319,10 +341,10 @@ export default function Transactions() {
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-[var(--border)]">
+          <div>
             {/* Desktop View */}
             <div className="hidden md:block">
-              <div className="grid grid-cols-12 px-6 py-4 bg-[var(--bg)]/30 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] border-b border-[var(--border)]">
+              <div className="grid grid-cols-12 px-6 py-4 bg-[var(--bg)]/40 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] border-b border-[var(--border)]">
                 <div className="col-span-1 text-center">Type</div>
                 <div className="col-span-5 pl-4">Description</div>
                 <div className="col-span-2">Account</div>
@@ -330,11 +352,11 @@ export default function Transactions() {
                 <div className="col-span-2 text-right pr-12">Amount</div>
               </div>
 
-              <div className="divide-y divide-[var(--border)]/50">
+              <div className="divide-y divide-white/5">
                 {transactions.map((txn) => (
                   <div
                     key={txn.id}
-                    className="grid grid-cols-12 items-center px-6 py-4 group hover:bg-[var(--bg)]/50 transition-all cursor-pointer relative"
+                    className="grid grid-cols-12 items-center px-6 py-4 group hover:bg-[var(--bg)] transition-all cursor-pointer relative"
                     onClick={() => handleEdit(txn)}
                   >
                     {/* Icon */}
@@ -358,7 +380,7 @@ export default function Transactions() {
 
                     {/* Account */}
                     <div className="col-span-2">
-                      <span className="px-2.5 py-1 rounded-lg bg-[var(--border)]/30 text-[10px] font-bold text-[var(--text-muted)] border border-[var(--border)]/50">
+                      <span className="px-2.5 py-1 rounded-lg bg-[var(--border)]/20 text-[10px] font-bold text-[var(--text-muted)] border border-[var(--border)]/30">
                         {txn.account?.name}
                       </span>
                     </div>
@@ -388,11 +410,11 @@ export default function Transactions() {
             </div>
 
             {/* Mobile View */}
-            <div className="md:hidden divide-y divide-[var(--border)]/50">
+            <div className="md:hidden divide-y divide-white/5">
               {transactions.map((txn) => (
                 <div
                   key={`m-${txn.id}`}
-                  className="p-4 flex items-center gap-4 hover:bg-[var(--bg)]/50"
+                  className="p-4 flex items-center gap-4 hover:bg-[var(--bg)]"
                   onClick={() => handleEdit(txn)}
                 >
                   <div className={`w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-sm ${
@@ -409,7 +431,7 @@ export default function Transactions() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-bold text-sm ${txn.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
+                    <p className="font-bold text-sm" style={{ color: txn.type === 'income' ? '#10B981' : '#EF4444' }}>
                       {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
                     </p>
                     <p className="text-[10px] text-[var(--text-muted)] mt-1 font-semibold">{formatDate(txn.date)}</p>
@@ -424,10 +446,10 @@ export default function Transactions() {
                 {loadingMore ? (
                   <div className="flex items-center gap-2 text-indigo-400">
                     <Loader2 className="animate-spin w-5 h-5" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Loading...</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Loading Records...</span>
                   </div>
                 ) : (
-                  <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-30">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-20">
                     Scroll for more records
                   </span>
                 )}
