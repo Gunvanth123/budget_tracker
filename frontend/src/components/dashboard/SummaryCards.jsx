@@ -1,5 +1,6 @@
 import { Wallet, TrendingUp, TrendingDown, Activity } from 'lucide-react'
 import { formatCurrency } from '../../utils/helpers'
+import { motion } from 'framer-motion'
 
 const cards = [
   {
@@ -53,14 +54,19 @@ export default function SummaryCards({ summary }) {
         const value = summary[key] ?? 0
         const isNegative = value < 0
         return (
-          <div key={key} className="card p-5 group overflow-hidden relative">
+          <motion.div 
+            key={key} 
+            whileHover={{ y: -5, scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="card p-5 group overflow-hidden relative"
+          >
             {/* Background accent blob */}
             <div
               className="absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10 group-hover:opacity-20 transition-opacity"
               style={{ background: bg }}
             />
 
-            <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} shadow-sm mb-3`}>
+            <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} shadow-sm mb-3 group-hover:rotate-6 transition-transform`}>
               <Icon className="w-5 h-5 text-white" />
             </div>
 
@@ -77,9 +83,9 @@ export default function SummaryCards({ summary }) {
             {isNegative ? (
               <span className="text-xs" style={{ color: '#EF4444' }}>Deficit</span>
             ) : key === 'forecasted_expense' ? (
-              <span className="text-xs text-indigo-400 font-medium animate-pulse">Projection</span>
+              <span className="text-xs text-indigo-400 font-medium">Projection</span>
             ) : null}
-          </div>
+          </motion.div>
         )
       })}
     </div>

@@ -18,6 +18,7 @@ def get_transactions(
     category_id: Optional[int] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    search: Optional[str] = None,
     limit: int = Query(100, le=500),
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -37,6 +38,8 @@ def get_transactions(
         query = query.filter(Transaction.date >= start_date)
     if end_date:
         query = query.filter(Transaction.date <= end_date)
+    if search:
+        query = query.filter(Transaction.notes.ilike(f"%{search}%"))
     return query.order_by(Transaction.date.desc()).offset(offset).limit(limit).all()
 
 

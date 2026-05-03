@@ -3,6 +3,7 @@ import {
   Plus, Key, Shield, Clapperboard, ChevronRight, 
   ListTodo, Bot, Wallet, Landmark 
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function QuickActions({ onAddTransaction, usage = [] }) {
   const navigate = useNavigate()
@@ -96,9 +97,12 @@ export default function QuickActions({ onAddTransaction, usage = [] }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {actions.map((item) => (
-        <button
+        <motion.button
           key={item.id}
           onClick={item.action}
+          whileHover={{ scale: 1.02, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
           className="group relative flex items-center gap-4 p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--primary)]/50 transition-all hover:shadow-xl hover:shadow-[var(--primary)]/5 overflow-hidden text-left"
         >
           {/* Subtle Background Glow */}
@@ -113,8 +117,8 @@ export default function QuickActions({ onAddTransaction, usage = [] }) {
             <p className="text-[10px] opacity-50 truncate">{item.desc}</p>
           </div>
 
-          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-30 transition-opacity" />
-        </button>
+          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-30 transition-opacity translate-x-[-10px] group-hover:translate-x-0 transition-all" />
+        </motion.button>
       ))}
     </div>
   )

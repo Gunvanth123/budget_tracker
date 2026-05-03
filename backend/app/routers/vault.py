@@ -63,25 +63,79 @@ def get_auth_url():
     return {"url": gdrive_service.get_auth_url()}
 
 @router.post("/gdrive/connect")
-def connect_gdrive(code: str = Query(...), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def connect_gdrive(
+    code: str = Query(...), 
+    migrate: bool = Query(False),
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
     if not gdrive_service:
         raise HTTPException(status_code=503, detail="Google Drive integration is not configured on the server.")
     
     try:
-        creds = gdrive_service.get_credentials(code)
-        creds_json = creds.to_json()
+        new_creds = gdrive_service.get_credentials(code)
+        new_creds_json = new_creds.to_json()
+        new_service = gdrive_service.get_service(new_creds_json)
         
-        # Initialize folder structure
-        service = gdrive_service.get_service(creds_json)
-        root_folder_id = gdrive_service.get_or_create_folder(service, "Elite Privacy Vault") # Updated name
+        # Initialize folder structure in NEW account
+        new_root_id = gdrive_service.get_or_create_folder(new_service, "Elite Privacy Vault")
         
-        current_user.gdrive_token = creds_json
-        current_user.gdrive_folder_id = root_folder_id
+        # If migration is requested and old token exists
+        if migrate and current_user.gdrive_token:
+            old_creds_json = current_user.gdrive_token
+            old_service = gdrive_service.get_service(old_creds_json)
+            
+            # Fetch all files that are in GDrive
+            gdrive_files = db.query(SecureFile).filter(
+                SecureFile.user_id == current_user.id,
+                SecureFile.storage_location == "gdrive"
+            ).all()
+            
+            # Migrate files
+            for file in gdrive_files:
+                try:
+                    # Download from old
+                    content_bytes = gdrive_service.download_file(old_service, file.gdrive_file_id)
+                    
+                    # Resolve category folder in new account
+                    folder_id = new_root_id
+                    if file.category_id:
+                        cat = db.query(VaultCategory).filter(VaultCategory.id == file.category_id).first()
+                        if cat:
+                            folder_id = gdrive_service.get_or_create_folder(new_service, cat.name, new_root_id)
+                    else:
+                        # Fallback folders
+                        folder_name = "Other"
+                        if "pdf" in file.mimetype: folder_name = "PDFs"
+                        elif "image" in file.mimetype: folder_name = "Images"
+                        folder_id = gdrive_service.get_or_create_folder(new_service, folder_name, new_root_id)
+
+                    # Upload to new
+                    new_file_id = gdrive_service.upload_file(
+                        new_service, 
+                        file.filename, 
+                        content_bytes, 
+                        file.mimetype, 
+                        folder_id
+                    )
+                    
+                    # Update DB reference
+                    file.gdrive_file_id = new_file_id
+                except Exception as migrate_err:
+                    print(f"Error migrating file {file.filename}: {migrate_err}")
+                    # Continue with other files even if one fails
+            
+            # Also migrate VaultCategory folder IDs (they need to be reset so they are recreated in new account)
+            db.query(VaultCategory).filter(VaultCategory.user_id == current_user.id).update({"gdrive_folder_id": None})
+
+        # Update user with new account info
+        current_user.gdrive_token = new_creds_json
+        current_user.gdrive_folder_id = new_root_id
         db.commit()
         
-        return {"message": "Google Drive connected successfully"}
+        return {"message": "Google Drive connected and migrated successfully" if migrate else "Google Drive connected successfully"}
     except Exception as e:
-        print(f"GDrive connection error: {e}")
+        print(f"GDrive connection/migration error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 

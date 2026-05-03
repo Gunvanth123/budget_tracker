@@ -48,18 +48,22 @@ export default function SecureVault() {
     setIsConnecting(true)
     const tid = toast.loading("Finalizing Google Drive connection...")
     try {
-      await vaultApi.connectGDrive(code)
-      toast.success("Google Drive linked successfully!", { id: tid })
+      const migrate = sessionStorage.getItem('gdrive_migrate') === 'true'
+      sessionStorage.removeItem('gdrive_migrate')
+      
+      await vaultApi.connectGDrive(code, migrate)
+      toast.success(migrate ? "Account switched and data migrated!" : "Google Drive linked successfully!", { id: tid })
       // Clear the code from URL
       setSearchParams({})
       const vStatus = await vaultApi.status()
       setVaultStatus(vStatus)
+      if (status === 'unlocked') fetchAll()
     } catch (err) {
       toast.error("Failed to link Google Drive", { id: tid })
     } finally {
       setIsConnecting(false)
     }
-  }, [setSearchParams])
+  }, [setSearchParams, status])
 
   useEffect(() => {
     const code = searchParams.get('code')
@@ -96,14 +100,20 @@ export default function SecureVault() {
     }
   }
 
-  const handleConnectGDrive = async () => {
+  const handleConnectGDrive = async (migrate = false) => {
     if (!gdriveConfigured) return
     try {
+      sessionStorage.setItem('gdrive_migrate', migrate.toString())
       const { url } = await vaultApi.getAuthUrl()
       window.location.href = url
     } catch (err) {
       toast.error("Could not initiate Google Drive connection")
     }
+  }
+
+  const handleSwitchGDrive = () => {
+    const migrate = confirm("Do you want to MOVE all your current vault files from the old Google account to the new one?\n\n- Click OK to MIGRATE data.\n- Click CANCEL to just switch accounts (old files will stay in the old account).")
+    handleConnectGDrive(migrate)
   }
 
   const handleUpload = async (e) => {
@@ -341,9 +351,19 @@ export default function SecureVault() {
                 Elite Privacy Vault
                 {vaultStatus.is_gdrive_connected && <CheckCircle2 className="w-4 h-4 text-emerald-500" title="Connected to Google Drive" />}
             </h1>
-            <p className="text-xs opacity-60">
-                {vaultStatus.is_gdrive_connected ? "Synced with Google Drive" : "Local database storage active"}
-            </p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-xs opacity-60">
+                  {vaultStatus.is_gdrive_connected ? "Synced with Google Drive" : "Local database storage active"}
+              </p>
+              {vaultStatus.is_gdrive_connected && (
+                <button 
+                  onClick={handleSwitchGDrive}
+                  className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 transition-colors bg-indigo-500/5 px-2 py-0.5 rounded"
+                >
+                  Switch Account
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

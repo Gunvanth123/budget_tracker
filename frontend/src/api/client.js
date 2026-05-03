@@ -84,7 +84,7 @@ export const vaultApi = {
   getCategories: () => api.get('/vault/categories').then(r => r.data),
   createCategory: (name) => api.post('/vault/categories', { name }).then(r => r.data),
   getAuthUrl: () => api.get('/vault/gdrive/auth-url').then(r => r.data),
-  connectGDrive: (code) => api.post(`/vault/gdrive/connect?code=${code}`).then(r => r.data),
+  connectGDrive: (code, migrate = false) => api.post(`/vault/gdrive/connect?code=${code}&migrate=${migrate}`).then(r => r.data),
   getConfigStatus: () => api.get('/vault/gdrive/config-status').then(r => r.data),
 }
 

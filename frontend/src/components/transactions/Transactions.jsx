@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { transactionsApi, categoriesApi, accountsApi } from '../../api/client'
 import { formatCurrency, formatDate } from '../../utils/helpers'
 import TransactionForm from './TransactionForm'
 import ExportModal from './ExportModal'
-import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft, Download, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Transactions() {
@@ -11,9 +11,15 @@ export default function Transactions() {
   const [categories, setCategories] = useState([])
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [editData, setEditData] = useState(null)
+
+  // Pagination
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const LIMIT = 10
 
   // Filters
   const [filters, setFilters] = useState({
@@ -23,35 +29,76 @@ export default function Transactions() {
     search: '',
   })
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true)
+  // Reset pagination when filters change
+  useEffect(() => {
+    setPage(0)
+    setHasMore(true)
+    setTransactions([])
+  }, [filters.type, filters.category_id, filters.account_id, filters.search])
+
+  const fetchAll = useCallback(async (isLoadMore = false) => {
+    if (isLoadMore) setLoadingMore(true)
+    else setLoading(true)
+
     try {
-      const params = {}
+      const params = {
+        limit: LIMIT,
+        offset: isLoadMore ? (page + 1) * LIMIT : 0
+      }
       if (filters.type) params.type = filters.type
       if (filters.category_id) params.category_id = filters.category_id
       if (filters.account_id) params.account_id = filters.account_id
+      if (filters.search) params.search = filters.search
+      
       const [txns, cats, accs] = await Promise.all([
         transactionsApi.getAll(params),
-        categoriesApi.getAll(),
-        accountsApi.getAll(),
+        isLoadMore ? Promise.resolve([]) : categoriesApi.getAll(),
+        isLoadMore ? Promise.resolve([]) : accountsApi.getAll(),
       ])
-      setTransactions(txns)
-      setCategories(cats)
-      setAccounts(accs)
+
+      if (isLoadMore) {
+        setTransactions(prev => [...prev, ...txns])
+        setPage(prev => prev + 1)
+      } else {
+        setTransactions(txns)
+        setCategories(cats)
+        setAccounts(accs)
+      }
+
+      if (txns.length < LIMIT) setHasMore(false)
+      else setHasMore(true)
+
     } catch {
       toast.error('Failed to load transactions')
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
-  }, [filters.type, filters.category_id, filters.account_id])
+  }, [filters.type, filters.category_id, filters.account_id, filters.search, page])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => { 
+    if (page === 0) fetchAll() 
+  }, [page, fetchAll])
+
+  // Infinite scroll observer
+  const observer = useRef()
+  const lastElementRef = useCallback(node => {
+    if (loading || loadingMore) return
+    if (observer.current) observer.current.disconnect()
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        fetchAll(true)
+      }
+    })
+    if (node) observer.current.observe(node)
+  }, [loading, loadingMore, hasMore, fetchAll])
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this transaction?')) return
     try {
       await transactionsApi.delete(id)
       toast.success('Transaction deleted')
+      setPage(0) // Refresh
       fetchAll()
     } catch {
       toast.error('Failed to delete')
@@ -63,18 +110,8 @@ export default function Transactions() {
     setFormOpen(true)
   }
 
-  const filtered = transactions.filter(txn => {
-    if (!filters.search) return true
-    const q = filters.search.toLowerCase()
-    return (
-      txn.notes?.toLowerCase().includes(q) ||
-      txn.category?.name?.toLowerCase().includes(q) ||
-      txn.account?.name?.toLowerCase().includes(q)
-    )
-  })
-
-  const totalIncome = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-  const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
   return (
     <div className="space-y-5">
@@ -101,7 +138,7 @@ export default function Transactions() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="card p-3 sm:p-4 text-center flex flex-row sm:flex-col items-center sm:justify-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Showing</p>
-          <p className="font-bold text-lg" style={{ color: 'var(--text)' }}>{filtered.length}</p>
+          <p className="font-bold text-lg" style={{ color: 'var(--text)' }}>{transactions.length}</p>
         </div>
         <div className="card p-3 sm:p-4 text-center flex flex-row sm:flex-col items-center sm:justify-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Income</p>
@@ -169,7 +206,7 @@ export default function Transactions() {
               </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : transactions.length === 0 ? (
           <div className="py-16 text-center" style={{ color: 'var(--text-muted)' }}>
             <p className="text-4xl mb-3">📭</p>
             <p className="font-medium">No transactions found</p>
@@ -195,9 +232,10 @@ export default function Transactions() {
               <div className="text-right">Actions</div>
             </div>
 
-            {filtered.map((txn) => (
+            {transactions.map((txn, index) => (
               <div
                 key={txn.id}
+                ref={index === transactions.length - 1 ? lastElementRef : null}
                 className="hidden md:grid items-center px-5 py-3 transition-colors"
                 style={{
                   gridTemplateColumns: '40px 1fr 130px 110px 110px 72px',
@@ -275,9 +313,10 @@ export default function Transactions() {
             ))}
 
             {/* Mobile rows (stacked layout — only visible on small screens) */}
-            {filtered.map((txn) => (
+            {transactions.map((txn, index) => (
               <div
                 key={`m-${txn.id}`}
+                ref={index === transactions.length - 1 ? lastElementRef : null}
                 className="flex md:hidden items-center gap-3 px-4 py-3 transition-colors"
                 style={{ borderBottom: '1px solid var(--border)' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(51,65,85,0.25)'}
@@ -320,6 +359,12 @@ export default function Transactions() {
                 </div>
               </div>
             ))}
+            
+            {loadingMore && (
+              <div className="p-4 text-center">
+                <Loader2 className="animate-spin w-5 h-5 mx-auto opacity-50" />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -333,7 +378,7 @@ export default function Transactions() {
       <ExportModal
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
-        transactions={filtered}
+        transactions={transactions}
       />
     </div>
   )

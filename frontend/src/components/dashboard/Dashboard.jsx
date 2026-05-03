@@ -11,6 +11,23 @@ import { Plus } from 'lucide-react'
 import TransactionForm from '../transactions/TransactionForm'
 import QuickActions from './QuickActions'
 
+import { motion } from 'framer-motion'
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } }
+}
+
 export default function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -47,8 +64,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 pb-10">
-      <div className="space-y-4">
+    <motion.div 
+      className="space-y-6 pb-10"
+      variants={container}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div variants={item} className="space-y-4">
         <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
           <span className="w-1.5 h-6 bg-indigo-500 rounded-full" />
           Quick Access
@@ -58,19 +80,19 @@ export default function Dashboard() {
           onAddTransaction={() => setFormOpen(true)} 
           usage={data?.quick_access} 
         />
-      </div>
+      </motion.div>
 
-      <div className="pt-2 space-y-4">
+      <motion.div variants={item} className="pt-2 space-y-4">
         <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
           <span className="w-1.5 h-6 bg-emerald-500 rounded-full" />
           Financial Overview
         </h2>
         {/* Summary Cards */}
         <SummaryCards summary={data?.summary} />
-      </div>
+      </motion.div>
 
       {/* Charts Row — equal width, equal height */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+      <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
         <ExpensePieChart 
           data={data?.expense_by_category} 
           selectedMonth={selectedMonth}
@@ -78,13 +100,17 @@ export default function Dashboard() {
           months={months}
         />
         <MonthlyBarChart data={data?.monthly_comparison} />
-      </div>
+      </motion.div>
 
       {/* Daily Line Chart */}
-      <DailyLineChart data={data?.daily_trends} />
+      <motion.div variants={item}>
+        <DailyLineChart data={data?.daily_trends} />
+      </motion.div>
 
       {/* Recent Transactions */}
-      <RecentTransactions />
+      <motion.div variants={item}>
+        <RecentTransactions />
+      </motion.div>
 
       {/* Modals */}
       <TransactionForm 
@@ -92,6 +118,6 @@ export default function Dashboard() {
         onClose={() => setFormOpen(false)}
         onSaved={fetchDashboard}
       />
-    </div>
+    </motion.div>
   )
 }

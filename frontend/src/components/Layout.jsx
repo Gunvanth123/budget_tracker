@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { healthApi } from '../api/client'
 import { clsx } from '../utils/helpers'
+import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import OnboardingModal from './OnboardingModal'
 
@@ -146,12 +147,12 @@ export default function Layout() {
               {user?.profile_picture ? (
                 <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <img src="/logo.png" alt="Budget Tracker" className="w-full h-full object-cover p-1.5" onError={e => { e.target.style.display='none' }} />
+                <img src="/logo.png" alt="Budget Tracker" className="w-full h-full object-cover" onError={e => { e.target.style.display='none' }} />
               )}
             </div>
             <div>
               <div className="font-semibold text-sm">{user?.name || "Budget"}</div>
-              <div className="text-xs opacity-60">Tracker Pro</div>
+              <div className="text-xs opacity-60">Budget Tracker Pro</div>
             </div>
           </div>
 
@@ -168,8 +169,8 @@ export default function Layout() {
               to={to}
               className={({ isActive }) =>
                 clsx(
-                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                   isActive ? 'font-semibold' : 'opacity-70 hover:opacity-100'
+                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative group overflow-hidden',
+                   isActive ? 'font-semibold' : 'opacity-70 hover:opacity-100 hover:bg-white/5'
                 )
               }
               style={({ isActive }) => ({
@@ -177,8 +178,22 @@ export default function Layout() {
                 color: isActive ? '#fff' : 'var(--text)'
               })}
             >
-              <Icon className="w-4 h-4" />
-              {label}
+              <motion.div
+                className="flex items-center gap-3 w-full relative z-10"
+                whileHover={{ x: 4 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </motion.div>
+              
+              {location.pathname.startsWith(to) && (
+                <motion.div
+                  layoutId="active-nav"
+                  className="absolute inset-0 bg-[var(--primary)] z-0"
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                />
+              )}
             </NavLink>
           ))}
 
@@ -226,39 +241,61 @@ export default function Layout() {
             <div className="flex items-center justify-center gap-3 mr-1 sm:mr-4">
               <span className={`hidden sm:inline text-sm font-bold transition-opacity duration-300 tracking-wide ${!darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Light</span>
               
-              <button
+              <motion.button
                 onClick={toggleTheme}
-                className="w-14 h-7 rounded-full relative flex items-center transition-colors duration-500 focus:outline-none"
-                style={{ backgroundColor: !darkMode ? '#709BFD' : '#232D3F', border: darkMode ? '1px solid #334155' : 'none' }} 
+                className="w-14 h-7 rounded-full relative flex items-center focus:outline-none overflow-hidden"
+                animate={{ 
+                  backgroundColor: !darkMode ? '#709BFD' : '#232D3F',
+                  borderColor: darkMode ? '#334155' : 'transparent'
+                }}
+                transition={{ duration: 0.5 }}
+                style={{ border: '1px solid transparent' }}
               >
                 {/* Deco Elements */}
-                <div className={`absolute inset-0 flex justify-end items-center px-2 transition-opacity duration-500 ${!darkMode ? 'opacity-100' : 'opacity-0'}`}>
-                  <div className="flex gap-0.5">
-                    <div className="w-1 h-1 bg-white rounded-full opacity-80 mt-2"></div>
-                    <div className="w-1.5 h-1.5 bg-white rounded-full opacity-90"></div>
-                  </div>
-                </div>
-                <div className={`absolute inset-0 flex justify-start items-center px-1.5 transition-opacity duration-500 ${darkMode ? 'opacity-100' : 'opacity-0'}`}>
-                  <div className="flex flex-col gap-0.5 mt-0.5">
-                    <div className="text-white opacity-80 text-[10px] leading-none ml-1">✧</div>
-                    <div className="w-0.5 h-0.5 bg-white rounded-full opacity-70 ml-2"></div>
-                  </div>
-                </div>
+                <AnimatePresence>
+                  {!darkMode && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      className="absolute inset-0 flex justify-end items-center px-2"
+                    >
+                      <div className="flex gap-0.5">
+                        <div className="w-1 h-1 bg-white rounded-full opacity-80 mt-2"></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full opacity-90"></div>
+                      </div>
+                    </motion.div>
+                  )}
+                  {darkMode && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      className="absolute inset-0 flex justify-start items-center px-1.5"
+                    >
+                      <div className="flex flex-col gap-0.5 mt-0.5">
+                        <div className="text-white opacity-80 text-[10px] leading-none ml-1">✧</div>
+                        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-70 ml-2"></div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* The Handle */}
-                <div 
-                  className={`absolute rounded-full transition-all duration-500 flex items-center justify-center`}
-                  style={{ 
-                    width: '18px',
-                    height: '18px',
-                    left: '5px', 
-                    transform: darkMode ? 'translateX(28px)' : 'translateX(0)',
+                <motion.div 
+                  className="absolute rounded-full flex items-center justify-center z-10"
+                  animate={{ 
+                    x: darkMode ? 33 : 5,
                     backgroundColor: darkMode ? 'transparent' : '#ffffff',
                     boxShadow: darkMode ? 'inset -5px -2px 0 0px #ffffff' : '0 1px 4px rgba(0,0,0,0.2)',
                   }}
-                >
-                </div>
-              </button>
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  style={{ 
+                    width: '18px',
+                    height: '18px',
+                  }}
+                />
+              </motion.button>
               
               <span className={`hidden sm:inline text-sm font-bold transition-opacity duration-300 tracking-wide ${darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Dark</span>
             </div>
@@ -277,7 +314,20 @@ export default function Layout() {
 
         <main className="flex-1 overflow-y-auto">
           <div className="responsive-container">
-            <Outlet />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 10, scale: 0.99 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 1.01 }}
+                transition={{ 
+                  duration: 0.25, 
+                  ease: [0.23, 1, 0.32, 1] // Out-quartic
+                }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
       </div>
