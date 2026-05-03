@@ -298,7 +298,7 @@ export default function Transactions() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {[
           { label: 'Transactions', value: summary.count, color: 'var(--text)' },
           { label: 'Income', value: formatCurrency(summary.total_income), color: '#10B981' },
@@ -309,9 +309,9 @@ export default function Transactions() {
             color: summary.net_balance >= 0 ? '#6366F1' : '#F59E0B' 
           }
         ].map((item, idx) => (
-          <div key={idx} className="card p-5 flex flex-col items-center justify-center gap-1 group transition-all hover:bg-[var(--bg)]/30 border-[var(--border)] shadow-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-60">{item.label}</p>
-            <p className="font-bold text-xl" style={{ color: item.color }}>{item.value}</p>
+          <div key={idx} className="card p-3 sm:p-5 flex flex-col items-center justify-center gap-0.5 sm:gap-1 group transition-all hover:bg-[var(--bg)]/30 border-[var(--border)] shadow-sm">
+            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[var(--text-muted)] opacity-60">{item.label}</p>
+            <p className="font-bold text-base sm:text-xl" style={{ color: item.color }}>{item.value}</p>
           </div>
         ))}
       </div>
@@ -515,12 +515,11 @@ export default function Transactions() {
               </div>
             </div>
 
-            {/* Mobile View */}
             <div className="md:hidden divide-y divide-white/[0.03]">
               {transactions.map((txn) => (
                 <div
                   key={`m-${txn.id}`}
-                  className="p-4 flex items-center gap-3 hover:bg-[var(--bg)] active:bg-[var(--bg)] transition-colors"
+                  className="px-3 py-4 flex items-center gap-2 hover:bg-[var(--bg)] active:bg-[var(--bg)] transition-colors overflow-hidden"
                   onClick={() => handleEdit(txn)}
                 >
                   <div className={`w-11 h-11 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-sm ${
