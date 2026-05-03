@@ -153,6 +153,55 @@ def connect_gdrive(
                     error_count += 1
                     print(f"Error migrating file {file.filename}: {migrate_err}")
             
+            # --- MIGRATE PROFILE PICTURE ---
+            if current_user.profile_picture and current_user.profile_picture.startswith("gdrive://") and old_service:
+                try:
+                    old_pic_id = current_user.profile_picture.replace("gdrive://", "")
+                    pic_content = gdrive_service.download_file(old_service, old_pic_id)
+                    
+                    # Get metadata for mimetype
+                    pic_meta = old_service.files().get(fileId=old_pic_id, fields='mimeType, name').execute()
+                    
+                    profile_folder_id = gdrive_service.get_or_create_folder(new_service, "Profile", new_root_id)
+                    new_pic_id = gdrive_service.upload_file(
+                        new_service, 
+                        pic_meta.get('name', 'profile_pic'), 
+                        pic_content, 
+                        pic_meta.get('mimeType', 'image/jpeg'), 
+                        profile_folder_id
+                    )
+                    current_user.profile_picture = f"gdrive://{new_pic_id}"
+                    db.commit()
+                except Exception as pic_err:
+                    print(f"Profile pic migration failed: {pic_err}")
+
+            # --- MIGRATE POPCORN POSTERS ---
+            from app.models.models import PopcornEntry
+            popcorn_entries = db.query(PopcornEntry).filter(
+                PopcornEntry.user_id == current_user.id,
+                PopcornEntry.gdrive_file_id.isnot(None)
+            ).all()
+            
+            if popcorn_entries and old_service:
+                popcorn_folder_id = gdrive_service.get_or_create_folder(new_service, "Popcorn Posters", new_root_id)
+                for entry in popcorn_entries:
+                    try:
+                        poster_content = gdrive_service.download_file(old_service, entry.gdrive_file_id)
+                        poster_meta = old_service.files().get(fileId=entry.gdrive_file_id, fields='mimeType, name').execute()
+                        
+                        new_poster_id = gdrive_service.upload_file(
+                            new_service,
+                            poster_meta.get('name', f"poster_{entry.id}"),
+                            poster_content,
+                            poster_meta.get('mimeType', 'image/jpeg'),
+                            popcorn_folder_id
+                        )
+                        entry.gdrive_file_id = new_poster_id
+                        entry.poster_url = f"/api/popcorn/poster/{new_poster_id}"
+                        db.commit()
+                    except Exception as pop_err:
+                        print(f"Popcorn poster migration failed for {entry.title}: {pop_err}")
+
             # Reset all VaultCategory folder IDs so they are recreated in the new account on next use
             db.query(VaultCategory).filter(VaultCategory.user_id == current_user.id).update({"gdrive_folder_id": None})
             db.commit()
@@ -164,9 +213,9 @@ def connect_gdrive(
         
         msg = "Google Drive connected successfully."
         if migrate:
-            msg = f"Migration complete. {migrated_count} files moved to new drive."
+            msg = f"Migration complete. {migrated_count} vault files and related media moved to new drive."
             if error_count > 0:
-                msg += f" {error_count} files failed."
+                msg += f" {error_count} vault files failed."
                 
         return {"message": msg}
     except Exception as e:
