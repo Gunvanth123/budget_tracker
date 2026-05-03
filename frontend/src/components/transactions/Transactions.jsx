@@ -359,7 +359,7 @@ export default function Transactions() {
           {/* Time & Filters Group */}
           <div className="flex flex-col md:flex-row gap-3 flex-1">
             {/* Date Range Picker */}
-            <div className="flex items-center p-1 bg-[var(--bg)] rounded-xl border border-[var(--border)] shadow-sm min-w-[280px]">
+            <div className="relative flex items-center p-1 bg-[var(--bg)] rounded-xl border border-[var(--border)] shadow-sm min-w-[280px]">
               <button
                 onClick={() => setActivePicker('start')}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5 rounded-lg transition-all"
@@ -375,6 +375,20 @@ export default function Transactions() {
                 <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" />
                 {filters.endDate ? format(parseISO(filters.endDate), 'dd MMM yyyy') : 'End Date'}
               </button>
+
+              <AnimatePresence>
+                {activePicker && (
+                  <CalendarPopover
+                    label={activePicker === 'start' ? 'Start Date' : 'End Date'}
+                    value={activePicker === 'start' ? filters.startDate : filters.endDate}
+                    onChange={(date) => setFilters(p => ({ 
+                      ...p, 
+                      [activePicker === 'start' ? 'startDate' : 'endDate']: date 
+                    }))}
+                    onClose={() => setActivePicker(null)}
+                  />
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Dropdowns */}

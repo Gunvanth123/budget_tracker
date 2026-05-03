@@ -79,63 +79,99 @@ def connect_gdrive(
         
         # Initialize folder structure in NEW account
         new_root_id = gdrive_service.get_or_create_folder(new_service, "Elite Privacy Vault")
+        folder_cache = {} # name -> id
         
-        # If migration is requested and old token exists
-        if migrate and current_user.gdrive_token:
-            old_creds_json = current_user.gdrive_token
-            old_service = gdrive_service.get_service(old_creds_json)
+        migrated_count = 0
+        error_count = 0
+        
+        # If migration is requested
+        if migrate:
+            # We migrate EVERYTHING: both already in GDrive (old account) and those in local database
+            all_files = db.query(SecureFile).filter(SecureFile.user_id == current_user.id).all()
             
-            # Fetch all files that are in GDrive
-            gdrive_files = db.query(SecureFile).filter(
-                SecureFile.user_id == current_user.id,
-                SecureFile.storage_location == "gdrive"
-            ).all()
-            
-            # Migrate files
-            for file in gdrive_files:
+            # Setup old service if possible
+            old_service = None
+            if current_user.gdrive_token:
                 try:
-                    # Download from old
-                    content_bytes = gdrive_service.download_file(old_service, file.gdrive_file_id)
+                    old_service = gdrive_service.get_service(current_user.gdrive_token)
+                except:
+                    print("Could not initialize old GDrive service, will skip cloud-to-cloud migration for cloud files.")
+
+            # Migrate files
+            for file in all_files:
+                try:
+                    content = None
+                    if file.storage_location == "gdrive":
+                        if old_service:
+                            # Download from old cloud account
+                            content_bytes = gdrive_service.download_file(old_service, file.gdrive_file_id)
+                            content = content_bytes.decode('utf-8')
+                        else:
+                            # Cannot migrate cloud file without old access
+                            continue
+                    else:
+                        # Get from local DB
+                        content = file.encrypted_content
                     
+                    if not content:
+                        continue
+                        
                     # Resolve category folder in new account
                     folder_id = new_root_id
+                    folder_name = "Other"
+                    
                     if file.category_id:
                         cat = db.query(VaultCategory).filter(VaultCategory.id == file.category_id).first()
-                        if cat:
-                            folder_id = gdrive_service.get_or_create_folder(new_service, cat.name, new_root_id)
-                    else:
-                        # Fallback folders
-                        folder_name = "Other"
+                        if cat: folder_name = cat.name
+                    elif file.mimetype:
                         if "pdf" in file.mimetype: folder_name = "PDFs"
                         elif "image" in file.mimetype: folder_name = "Images"
-                        folder_id = gdrive_service.get_or_create_folder(new_service, folder_name, new_root_id)
+                        elif "text" in file.mimetype: folder_name = "Documents"
 
-                    # Upload to new
+                    if folder_name not in folder_cache:
+                        folder_cache[folder_name] = gdrive_service.get_or_create_folder(new_service, folder_name, new_root_id)
+                    folder_id = folder_cache[folder_name]
+
+                    # Upload to new account
                     new_file_id = gdrive_service.upload_file(
                         new_service, 
                         file.filename, 
-                        content_bytes, 
+                        content, 
                         file.mimetype, 
                         folder_id
                     )
                     
-                    # Update DB reference
+                    # Update DB reference and move to GDrive if it was local
                     file.gdrive_file_id = new_file_id
+                    file.storage_location = "gdrive"
+                    file.encrypted_content = None # Free up DB space
+                    
+                    # Commit each file to avoid losing progress in long migrations
+                    db.commit()
+                    migrated_count += 1
                 except Exception as migrate_err:
+                    error_count += 1
                     print(f"Error migrating file {file.filename}: {migrate_err}")
-                    # Continue with other files even if one fails
             
-            # Also migrate VaultCategory folder IDs (they need to be reset so they are recreated in new account)
+            # Reset all VaultCategory folder IDs so they are recreated in the new account on next use
             db.query(VaultCategory).filter(VaultCategory.user_id == current_user.id).update({"gdrive_folder_id": None})
+            db.commit()
 
-        # Update user with new account info
+        # Finalize user connection
         current_user.gdrive_token = new_creds_json
         current_user.gdrive_folder_id = new_root_id
         db.commit()
         
-        return {"message": "Google Drive connected and migrated successfully" if migrate else "Google Drive connected successfully"}
+        msg = "Google Drive connected successfully."
+        if migrate:
+            msg = f"Migration complete. {migrated_count} files moved to new drive."
+            if error_count > 0:
+                msg += f" {error_count} files failed."
+                
+        return {"message": msg}
     except Exception as e:
         print(f"GDrive connection/migration error: {e}")
+        db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
 

@@ -66,12 +66,15 @@ export default function SecureVault() {
   }, [setSearchParams, status])
 
   useEffect(() => {
+    checkVaultStatus()
+  }, [checkVaultStatus])
+
+  useEffect(() => {
     const code = searchParams.get('code')
     if (code) {
       handleGDriveCallback(code)
     }
-    checkVaultStatus()
-  }, [checkVaultStatus, searchParams, handleGDriveCallback])
+  }, [searchParams, handleGDriveCallback])
 
   const fetchAll = async () => {
     try {
