@@ -309,9 +309,15 @@ export default function Transactions() {
             color: summary.net_balance >= 0 ? '#6366F1' : '#F59E0B' 
           }
         ].map((item, idx) => (
-          <div key={idx} className="card p-3 sm:p-5 flex flex-col items-center justify-center gap-0.5 sm:gap-1 group transition-all hover:bg-[var(--bg)]/30 border-[var(--border)] shadow-sm">
-            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[var(--text-muted)] opacity-60">{item.label}</p>
-            <p className="font-bold text-base sm:text-xl" style={{ color: item.color }}>{item.value}</p>
+          <div key={idx} className="card p-3 sm:p-5 flex flex-col items-center justify-center gap-0.5 sm:gap-1 group transition-all hover:bg-[var(--bg)]/30 border-[var(--border)] shadow-sm overflow-hidden">
+            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[var(--text-muted)] opacity-60 truncate w-full text-center">{item.label}</p>
+            <p 
+              className="font-bold text-base sm:text-xl truncate w-full text-center" 
+              style={{ color: item.color }}
+              title={item.value}
+            >
+              {item.value}
+            </p>
           </div>
         ))}
       </div>
