@@ -3,9 +3,106 @@ import { transactionsApi, categoriesApi, accountsApi } from '../../api/client'
 import { formatCurrency, formatDate } from '../../utils/helpers'
 import TransactionForm from './TransactionForm'
 import ExportModal from './ExportModal'
-import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft, Download, Loader2, Calendar, X, ChevronRight, Tag } from 'lucide-react'
+import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft, Download, Loader2, Calendar as CalendarIcon, X, ChevronRight, Tag, ChevronLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, parseISO, isSameDay, addMonths, subMonths } from 'date-fns'
+
+// Custom Themed Calendar Popover
+function CalendarPopover({ value, onChange, onClose, label }) {
+  const [currentMonth, setCurrentMonth] = useState(value ? new Date(value) : new Date())
+  const containerRef = useRef(null)
+
+  // Handle click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        onClose()
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [onClose])
+
+  const monthStart = startOfMonth(currentMonth)
+  const monthEnd = endOfMonth(currentMonth)
+  const calStart = startOfWeek(monthStart)
+  const calEnd = endOfWeek(monthEnd)
+  const days = eachDayOfInterval({ start: calStart, end: calEnd })
+
+  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+  return (
+    <motion.div
+      ref={containerRef}
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+      className="absolute top-full mt-2 z-[100] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl p-4 w-[280px]"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{label}</h4>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1 hover:bg-[var(--bg)] rounded-lg transition-colors">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-xs font-bold w-24 text-center">{format(currentMonth, 'MMMM yyyy')}</span>
+          <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1 hover:bg-[var(--bg)] rounded-lg transition-colors">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 mb-2">
+        {weekDays.map(d => (
+          <div key={d} className="text-center text-[10px] font-bold text-[var(--text-muted)] py-1">{d}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day, i) => {
+          const isSelected = value && isSameDay(day, new Date(value))
+          const isCurrentMonth = isSameMonth(day, currentMonth)
+          const isTdy = isToday(day)
+
+          return (
+            <button
+              key={i}
+              onClick={() => {
+                onChange(format(day, 'yyyy-MM-dd'))
+                onClose()
+              }}
+              className={`h-8 flex items-center justify-center rounded-lg text-xs transition-all ${
+                isSelected 
+                  ? 'bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/30' 
+                  : isCurrentMonth 
+                    ? 'hover:bg-[var(--bg)] text-[var(--text)]' 
+                    : 'text-[var(--text-muted)] opacity-30 hover:opacity-100'
+              } ${isTdy && !isSelected ? 'border border-indigo-500/50' : ''}`}
+            >
+              {format(day, 'd')}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between">
+        <button 
+          onClick={() => { onChange(format(new Date(), 'yyyy-MM-dd')); onClose() }}
+          className="text-[10px] font-bold text-indigo-400 hover:underline uppercase tracking-wider"
+        >
+          Today
+        </button>
+        <button 
+          onClick={() => { onChange(''); onClose() }}
+          className="text-[10px] font-bold text-red-400 hover:underline uppercase tracking-wider"
+        >
+          Clear
+        </button>
+      </div>
+    </motion.div>
+  )
+}
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState([])
@@ -17,9 +114,8 @@ export default function Transactions() {
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [editData, setEditData] = useState(null)
 
-  // Refs for calendar triggers
-  const startPickerRef = useRef(null)
-  const endPickerRef = useRef(null)
+  // Date Popover States
+  const [activePicker, setActivePicker] = useState(null) // 'start' or 'end'
 
   // Summary state
   const [summary, setSummary] = useState({
@@ -153,16 +249,6 @@ export default function Transactions() {
     setFilters(p => ({ ...p, startDate: start, endDate: end }))
   }
 
-  const openPicker = (ref) => {
-    if (ref.current) {
-      try {
-        ref.current.showPicker()
-      } catch (e) {
-        ref.current.focus()
-      }
-    }
-  }
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -231,8 +317,8 @@ export default function Transactions() {
       </div>
 
       {/* Unified Filter Section */}
-      <div className="card p-4 shadow-sm border-[var(--border)]">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+      <div className="card p-4 shadow-sm border-[var(--border)] overflow-visible">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-center">
           
           {/* Search Field */}
           <div className="lg:col-span-3 relative">
@@ -246,36 +332,56 @@ export default function Transactions() {
             />
           </div>
 
-          {/* Custom Themed Date Range Pickers */}
-          <div className="lg:col-span-4 flex items-center gap-1 bg-[var(--bg)] p-1 rounded-xl border border-[var(--border)] shadow-inner">
-            <div 
-              className="flex-1 relative group cursor-pointer"
-              onClick={() => openPicker(startPickerRef)}
-            >
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-400 opacity-60 group-hover:opacity-100 transition-opacity" />
-              <input
-                ref={startPickerRef}
-                type="date"
-                value={filters.startDate}
-                onChange={e => setFilters(p => ({ ...p, startDate: e.target.value }))}
-                className="bg-transparent text-[11px] font-bold w-full h-9 pl-9 outline-none cursor-pointer hover:text-indigo-400 transition-colors"
-                style={{ color: 'var(--text)' }}
-              />
+          {/* Custom THEMED Date Range Popovers */}
+          <div className="lg:col-span-4 flex items-center gap-1 bg-[var(--bg)] p-1 rounded-xl border border-[var(--border)] shadow-inner relative">
+            <div className="flex-1 relative">
+              <button 
+                onClick={() => setActivePicker(activePicker === 'start' ? null : 'start')}
+                className={`flex items-center gap-3 w-full h-9 px-3 rounded-lg transition-all ${
+                  activePicker === 'start' ? 'bg-[var(--card)] shadow-sm' : 'hover:bg-[var(--card)]/50'
+                }`}
+              >
+                <CalendarIcon className="w-4 h-4 text-indigo-400" />
+                <span className="text-[11px] font-bold truncate">
+                  {filters.startDate ? format(new Date(filters.startDate), 'dd MMM yyyy') : 'Start Date'}
+                </span>
+              </button>
+              <AnimatePresence>
+                {activePicker === 'start' && (
+                  <CalendarPopover 
+                    label="From"
+                    value={filters.startDate}
+                    onChange={(d) => setFilters(p => ({ ...p, startDate: d }))}
+                    onClose={() => setActivePicker(null)}
+                  />
+                )}
+              </AnimatePresence>
             </div>
-            <div className="h-4 w-[1px] bg-[var(--border)] mx-1" />
-            <div 
-              className="flex-1 relative group cursor-pointer"
-              onClick={() => openPicker(endPickerRef)}
-            >
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-400 opacity-60 group-hover:opacity-100 transition-opacity" />
-              <input
-                ref={endPickerRef}
-                type="date"
-                value={filters.endDate}
-                onChange={e => setFilters(p => ({ ...p, endDate: e.target.value }))}
-                className="bg-transparent text-[11px] font-bold w-full h-9 pl-9 outline-none cursor-pointer hover:text-indigo-400 transition-colors"
-                style={{ color: 'var(--text)' }}
-              />
+
+            <div className="h-4 w-[1px] bg-[var(--border)] opacity-50" />
+
+            <div className="flex-1 relative">
+              <button 
+                onClick={() => setActivePicker(activePicker === 'end' ? null : 'end')}
+                className={`flex items-center gap-3 w-full h-9 px-3 rounded-lg transition-all ${
+                  activePicker === 'end' ? 'bg-[var(--card)] shadow-sm' : 'hover:bg-[var(--card)]/50'
+                }`}
+              >
+                <CalendarIcon className="w-4 h-4 text-indigo-400" />
+                <span className="text-[11px] font-bold truncate">
+                  {filters.endDate ? format(new Date(filters.endDate), 'dd MMM yyyy') : 'End Date'}
+                </span>
+              </button>
+              <AnimatePresence>
+                {activePicker === 'end' && (
+                  <CalendarPopover 
+                    label="To"
+                    value={filters.endDate}
+                    onChange={(d) => setFilters(p => ({ ...p, endDate: d }))}
+                    onClose={() => setActivePicker(null)}
+                  />
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -325,8 +431,8 @@ export default function Transactions() {
       {/* Transactions Table Card */}
       <div className="card overflow-hidden shadow-sm border-[var(--border)]">
         {loading ? (
-          <div className="p-10 flex flex-col items-center justify-center gap-4 opacity-50">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+          <div className="p-12 flex flex-col items-center justify-center gap-4 opacity-50">
+            <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
             <p className="text-[10px] font-bold uppercase tracking-widest">Gathering records...</p>
           </div>
         ) : transactions.length === 0 ? (
@@ -352,7 +458,7 @@ export default function Transactions() {
                 <div className="col-span-2 text-right pr-12">Amount</div>
               </div>
 
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-white/[0.03]">
                 {transactions.map((txn) => (
                   <div
                     key={txn.id}
@@ -380,7 +486,7 @@ export default function Transactions() {
 
                     {/* Account */}
                     <div className="col-span-2">
-                      <span className="px-2.5 py-1 rounded-lg bg-[var(--border)]/20 text-[10px] font-bold text-[var(--text-muted)] border border-[var(--border)]/30">
+                      <span className="px-2.5 py-1 rounded-lg bg-[var(--border)]/10 text-[10px] font-bold text-[var(--text-muted)] border border-[var(--border)]/20">
                         {txn.account?.name}
                       </span>
                     </div>
@@ -410,7 +516,7 @@ export default function Transactions() {
             </div>
 
             {/* Mobile View */}
-            <div className="md:hidden divide-y divide-white/5">
+            <div className="md:hidden divide-y divide-white/[0.03]">
               {transactions.map((txn) => (
                 <div
                   key={`m-${txn.id}`}
@@ -446,11 +552,11 @@ export default function Transactions() {
                 {loadingMore ? (
                   <div className="flex items-center gap-2 text-indigo-400">
                     <Loader2 className="animate-spin w-5 h-5" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Loading Records...</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Syncing Records...</span>
                   </div>
                 ) : (
-                  <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-20">
-                    Scroll for more records
+                  <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-10">
+                    Scroll for more
                   </span>
                 )}
               </div>
