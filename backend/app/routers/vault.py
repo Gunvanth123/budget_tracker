@@ -1,28 +1,150 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import base64
 import os
 import json
 
-from app.database.db import get_db
-from app.models.models import User, SecureFile, VaultCategory
+from app.database.db import get_db, SessionLocal
+from app.models.models import User, SecureFile, VaultCategory, PopcornEntry
 from app.services.auth import get_current_user
 from app.services.gdrive import GoogleDriveService
 from app.schemas import schemas
 
 router = APIRouter()
 
+# In-memory migration status tracking
+MIGRATION_STATUS = {} # user_id -> { "total": 0, "current": 0, "status": "idle", "message": "" }
+
 # Initialize GDrive Service
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-# The redirect URI should match what's configured in Google Console
-# For local dev, usually http://localhost:5173/vault
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:5173/vault")
 
 gdrive_service = None
 if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
     gdrive_service = GoogleDriveService(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI)
+
+def run_migration(user_id: int, old_token: str, new_token: str, new_root_id: str):
+    """Background task to migrate all assets from old drive to new drive."""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user: return
+        
+        MIGRATION_STATUS[user_id]["status"] = "running"
+        
+        old_service = None
+        try:
+            old_service = gdrive_service.get_service(old_token)
+        except Exception as e:
+            print(f"Migration background task: Could not init old service: {e}")
+            MIGRATION_STATUS[user_id]["status"] = "error"
+            MIGRATION_STATUS[user_id]["message"] = "Authentication failed for old account"
+            return
+
+        new_service = gdrive_service.get_service(new_token)
+        folder_cache = {}
+        
+        # 1. Collect all files to migrate
+        all_files = db.query(SecureFile).filter(SecureFile.user_id == user_id).all()
+        popcorn_entries = db.query(PopcornEntry).filter(PopcornEntry.user_id == user_id, PopcornEntry.gdrive_file_id.isnot(None)).all()
+        
+        has_profile_pic = user.profile_picture and user.profile_picture.startswith("gdrive://")
+        
+        total_files = len(all_files) + len(popcorn_entries) + (1 if has_profile_pic else 0)
+        MIGRATION_STATUS[user_id]["total"] = total_files
+        
+        current_count = 0
+        
+        # --- MIGRATE VAULT FILES ---
+        for file in all_files:
+            try:
+                content = None
+                if file.storage_location == "gdrive":
+                    content_bytes = gdrive_service.download_file(old_service, file.gdrive_file_id)
+                    content = content_bytes.decode('utf-8')
+                else:
+                    content = file.encrypted_content
+                
+                if content:
+                    folder_name = "Other"
+                    if file.category_id:
+                        cat = db.query(VaultCategory).filter(VaultCategory.id == file.category_id).first()
+                        if cat: folder_name = cat.name
+                    elif file.mimetype:
+                        if "pdf" in file.mimetype: folder_name = "PDFs"
+                        elif "image" in file.mimetype: folder_name = "Images"
+                        elif "text" in file.mimetype: folder_name = "Documents"
+
+                    if folder_name not in folder_cache:
+                        folder_cache[folder_name] = gdrive_service.get_or_create_folder(new_service, folder_name, new_root_id)
+                    
+                    new_file_id = gdrive_service.upload_file(new_service, file.filename, content, file.mimetype, folder_cache[folder_name])
+                    
+                    file.gdrive_file_id = new_file_id
+                    file.storage_location = "gdrive"
+                    file.encrypted_content = None
+                    db.commit()
+                
+                current_count += 1
+                MIGRATION_STATUS[user_id]["current"] = current_count
+            except Exception as e:
+                print(f"Migration error for vault file {file.id}: {e}")
+                current_count += 1 # Continue
+                MIGRATION_STATUS[user_id]["current"] = current_count
+
+        # --- MIGRATE PROFILE PIC ---
+        if has_profile_pic:
+            try:
+                old_pic_id = user.profile_picture.replace("gdrive://", "")
+                pic_content = gdrive_service.download_file(old_service, old_pic_id)
+                pic_meta = old_service.files().get(fileId=old_pic_id, fields='mimeType, name').execute()
+                
+                profile_folder_id = gdrive_service.get_or_create_folder(new_service, "Profile", new_root_id)
+                new_pic_id = gdrive_service.upload_file(new_service, pic_meta.get('name', 'profile_pic'), pic_content, pic_meta.get('mimeType', 'image/jpeg'), profile_folder_id)
+                
+                user.profile_picture = f"gdrive://{new_pic_id}"
+                db.commit()
+                current_count += 1
+                MIGRATION_STATUS[user_id]["current"] = current_count
+            except:
+                current_count += 1
+                MIGRATION_STATUS[user_id]["current"] = current_count
+
+        # --- MIGRATE POPCORN POSTERS ---
+        if popcorn_entries:
+            popcorn_folder_id = gdrive_service.get_or_create_folder(new_service, "Popcorn Posters", new_root_id)
+            for entry in popcorn_entries:
+                try:
+                    poster_content = gdrive_service.download_file(old_service, entry.gdrive_file_id)
+                    poster_meta = old_service.files().get(fileId=entry.gdrive_file_id, fields='mimeType, name').execute()
+                    
+                    new_poster_id = gdrive_service.upload_file(new_service, poster_meta.get('name', f"poster_{entry.id}"), poster_content, poster_meta.get('mimeType', 'image/jpeg'), popcorn_folder_id)
+                    
+                    entry.gdrive_file_id = new_poster_id
+                    entry.poster_url = f"/api/popcorn/poster/{new_poster_id}"
+                    db.commit()
+                    current_count += 1
+                    MIGRATION_STATUS[user_id]["current"] = current_count
+                except:
+                    current_count += 1
+                    MIGRATION_STATUS[user_id]["current"] = current_count
+
+        # Reset category IDs
+        db.query(VaultCategory).filter(VaultCategory.user_id == user_id).update({"gdrive_folder_id": None})
+        db.commit()
+        
+        MIGRATION_STATUS[user_id]["status"] = "completed"
+        MIGRATION_STATUS[user_id]["message"] = f"Successfully migrated {current_count} items."
+        
+    except Exception as e:
+        print(f"Global migration task error: {e}")
+        if user_id in MIGRATION_STATUS:
+            MIGRATION_STATUS[user_id]["status"] = "error"
+            MIGRATION_STATUS[user_id]["message"] = str(e)
+    finally:
+        db.close()
 
 @router.get("/categories", response_model=List[schemas.VaultCategoryOut])
 def get_vault_categories(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -62,8 +184,14 @@ def get_auth_url():
         raise HTTPException(status_code=503, detail="Google Drive integration is not configured on the server. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to your .env file.")
     return {"url": gdrive_service.get_auth_url()}
 
+@router.get("/gdrive/migration-status")
+def get_migration_status(current_user: User = Depends(get_current_user)):
+    status = MIGRATION_STATUS.get(current_user.id, {"status": "idle", "current": 0, "total": 0})
+    return status
+
 @router.post("/gdrive/connect")
 def connect_gdrive(
+    background_tasks: BackgroundTasks,
     code: str = Query(...), 
     migrate: bool = Query(False),
     current_user: User = Depends(get_current_user), 
@@ -79,148 +207,27 @@ def connect_gdrive(
         
         # Initialize folder structure in NEW account
         new_root_id = gdrive_service.get_or_create_folder(new_service, "Elite Privacy Vault")
-        folder_cache = {} # name -> id
         
-        migrated_count = 0
-        error_count = 0
+        old_token = current_user.gdrive_token
         
-        # If migration is requested
-        if migrate:
-            # We migrate EVERYTHING: both already in GDrive (old account) and those in local database
-            all_files = db.query(SecureFile).filter(SecureFile.user_id == current_user.id).all()
-            
-            # Setup old service if possible
-            old_service = None
-            if current_user.gdrive_token:
-                try:
-                    old_service = gdrive_service.get_service(current_user.gdrive_token)
-                except:
-                    print("Could not initialize old GDrive service, will skip cloud-to-cloud migration for cloud files.")
-
-            # Migrate files
-            for file in all_files:
-                try:
-                    content = None
-                    if file.storage_location == "gdrive":
-                        if old_service:
-                            # Download from old cloud account
-                            content_bytes = gdrive_service.download_file(old_service, file.gdrive_file_id)
-                            content = content_bytes.decode('utf-8')
-                        else:
-                            # Cannot migrate cloud file without old access
-                            continue
-                    else:
-                        # Get from local DB
-                        content = file.encrypted_content
-                    
-                    if not content:
-                        continue
-                        
-                    # Resolve category folder in new account
-                    folder_id = new_root_id
-                    folder_name = "Other"
-                    
-                    if file.category_id:
-                        cat = db.query(VaultCategory).filter(VaultCategory.id == file.category_id).first()
-                        if cat: folder_name = cat.name
-                    elif file.mimetype:
-                        if "pdf" in file.mimetype: folder_name = "PDFs"
-                        elif "image" in file.mimetype: folder_name = "Images"
-                        elif "text" in file.mimetype: folder_name = "Documents"
-
-                    if folder_name not in folder_cache:
-                        folder_cache[folder_name] = gdrive_service.get_or_create_folder(new_service, folder_name, new_root_id)
-                    folder_id = folder_cache[folder_name]
-
-                    # Upload to new account
-                    new_file_id = gdrive_service.upload_file(
-                        new_service, 
-                        file.filename, 
-                        content, 
-                        file.mimetype, 
-                        folder_id
-                    )
-                    
-                    # Update DB reference and move to GDrive if it was local
-                    file.gdrive_file_id = new_file_id
-                    file.storage_location = "gdrive"
-                    file.encrypted_content = None # Free up DB space
-                    
-                    # Commit each file to avoid losing progress in long migrations
-                    db.commit()
-                    migrated_count += 1
-                except Exception as migrate_err:
-                    error_count += 1
-                    print(f"Error migrating file {file.filename}: {migrate_err}")
-            
-            # --- MIGRATE PROFILE PICTURE ---
-            if current_user.profile_picture and current_user.profile_picture.startswith("gdrive://") and old_service:
-                try:
-                    old_pic_id = current_user.profile_picture.replace("gdrive://", "")
-                    pic_content = gdrive_service.download_file(old_service, old_pic_id)
-                    
-                    # Get metadata for mimetype
-                    pic_meta = old_service.files().get(fileId=old_pic_id, fields='mimeType, name').execute()
-                    
-                    profile_folder_id = gdrive_service.get_or_create_folder(new_service, "Profile", new_root_id)
-                    new_pic_id = gdrive_service.upload_file(
-                        new_service, 
-                        pic_meta.get('name', 'profile_pic'), 
-                        pic_content, 
-                        pic_meta.get('mimeType', 'image/jpeg'), 
-                        profile_folder_id
-                    )
-                    current_user.profile_picture = f"gdrive://{new_pic_id}"
-                    db.commit()
-                except Exception as pic_err:
-                    print(f"Profile pic migration failed: {pic_err}")
-
-            # --- MIGRATE POPCORN POSTERS ---
-            from app.models.models import PopcornEntry
-            popcorn_entries = db.query(PopcornEntry).filter(
-                PopcornEntry.user_id == current_user.id,
-                PopcornEntry.gdrive_file_id.isnot(None)
-            ).all()
-            
-            if popcorn_entries and old_service:
-                popcorn_folder_id = gdrive_service.get_or_create_folder(new_service, "Popcorn Posters", new_root_id)
-                for entry in popcorn_entries:
-                    try:
-                        poster_content = gdrive_service.download_file(old_service, entry.gdrive_file_id)
-                        poster_meta = old_service.files().get(fileId=entry.gdrive_file_id, fields='mimeType, name').execute()
-                        
-                        new_poster_id = gdrive_service.upload_file(
-                            new_service,
-                            poster_meta.get('name', f"poster_{entry.id}"),
-                            poster_content,
-                            poster_meta.get('mimeType', 'image/jpeg'),
-                            popcorn_folder_id
-                        )
-                        entry.gdrive_file_id = new_poster_id
-                        entry.poster_url = f"/api/popcorn/poster/{new_poster_id}"
-                        db.commit()
-                    except Exception as pop_err:
-                        print(f"Popcorn poster migration failed for {entry.title}: {pop_err}")
-
-            # Reset all VaultCategory folder IDs so they are recreated in the new account on next use
-            db.query(VaultCategory).filter(VaultCategory.user_id == current_user.id).update({"gdrive_folder_id": None})
-            db.commit()
-
-        # Finalize user connection
+        # Update user with new account info IMMEDIATELY
         current_user.gdrive_token = new_creds_json
         current_user.gdrive_folder_id = new_root_id
         db.commit()
-        
-        msg = "Google Drive connected successfully."
+
         if migrate:
-            msg = f"Migration complete. {migrated_count} vault files and related media moved to new drive."
-            if error_count > 0:
-                msg += f" {error_count} vault files failed."
-                
-        return {"message": msg}
+            MIGRATION_STATUS[current_user.id] = {
+                "total": 0, 
+                "current": 0, 
+                "status": "pending", 
+                "message": "Initializing migration..."
+            }
+            background_tasks.add_task(run_migration, current_user.id, old_token, new_creds_json, new_root_id)
+            return {"message": "Google Drive connected. Migration started in background.", "is_migrating": True}
+        
+        return {"message": "Google Drive connected successfully.", "is_migrating": False}
     except Exception as e:
-        print(f"GDrive connection/migration error: {e}")
-        db.rollback()
+        print(f"GDrive connection error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 

@@ -44,26 +44,68 @@ export default function SecureVault() {
     }
   }, [])
 
+  const isHandlingCallback = useRef(false)
+
+  const pollMigrationStatus = useCallback(async (tid) => {
+    const interval = setInterval(async () => {
+      try {
+        const status = await vaultApi.migrationStatus()
+        
+        if (status.status === 'running' || status.status === 'pending') {
+          const progress = status.total > 0 ? ` (${status.current}/${status.total})` : ''
+          toast.loading(`Migrating your secure data...${progress}`, { id: tid })
+        } else if (status.status === 'completed') {
+          clearInterval(interval)
+          toast.success(status.message || "Migration complete!", { id: tid })
+          setIsConnecting(false)
+          fetchAll()
+          // Refresh vault status to show connection
+          vaultApi.status().then(setVaultStatus)
+        } else if (status.status === 'error') {
+          clearInterval(interval)
+          toast.error(`Migration failed: ${status.message}`, { id: tid })
+          setIsConnecting(false)
+        }
+      } catch (e) {
+        console.error("Polling error:", e)
+      }
+    }, 1500)
+
+    return () => clearInterval(interval)
+  }, [])
+
   const handleGDriveCallback = useCallback(async (code) => {
+    if (isHandlingCallback.current) return
+    isHandlingCallback.current = true
+
     setIsConnecting(true)
     const tid = toast.loading("Finalizing Google Drive connection...")
     try {
       const migrate = sessionStorage.getItem('gdrive_migrate') === 'true'
       sessionStorage.removeItem('gdrive_migrate')
       
-      await vaultApi.connectGDrive(code, migrate)
-      toast.success(migrate ? "Account switched and data migrated!" : "Google Drive linked successfully!", { id: tid })
-      // Clear the code from URL
+      const res = await vaultApi.connectGDrive(code, migrate)
+      
+      // Clear the code from URL immediately
       setSearchParams({})
-      const vStatus = await vaultApi.status()
-      setVaultStatus(vStatus)
-      if (status === 'unlocked') fetchAll()
+
+      if (res.is_migrating) {
+        // Start polling for progress
+        pollMigrationStatus(tid)
+      } else {
+        toast.success(res.message || "Google Drive linked successfully!", { id: tid })
+        setIsConnecting(false)
+        const vStatus = await vaultApi.status()
+        setVaultStatus(vStatus)
+        if (status === 'unlocked') fetchAll()
+      }
     } catch (err) {
       toast.error("Failed to link Google Drive", { id: tid })
-    } finally {
       setIsConnecting(false)
+    } finally {
+      isHandlingCallback.current = false
     }
-  }, [setSearchParams, status])
+  }, [setSearchParams, status, pollMigrationStatus])
 
   useEffect(() => {
     checkVaultStatus()
