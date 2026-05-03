@@ -528,8 +528,11 @@ export default function Transactions() {
                     {txn.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
                   </div>
                   <div className="flex-1 min-w-0 pr-2">
-                    <p className="font-bold text-[13px] text-[var(--text)] truncate leading-tight">
-                      {txn.notes || txn.category?.name}
+                    <p className="font-bold text-[13px] text-[var(--text)] leading-tight">
+                      {(() => {
+                        const note = txn.notes || txn.category?.name || 'Untitled';
+                        return note.length > 15 ? note.substring(0, 15) + '....' : note;
+                      })()}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider truncate max-w-[70px]">
