@@ -35,6 +35,7 @@ export const categoriesApi = {
 
 export const transactionsApi = {
   getAll: (params) => api.get('/transactions/', { params }).then(r => r.data),
+  getSummary: (params) => api.get('/transactions/summary', { params }).then(r => r.data),
   create: (data) => api.post('/transactions/', data).then(r => r.data),
   update: (id, data) => api.put(`/transactions/${id}`, data).then(r => r.data),
   delete: (id) => api.delete(`/transactions/${id}`),
