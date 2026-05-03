@@ -527,21 +527,21 @@ export default function Transactions() {
                   }`}>
                     {txn.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-2">
                     <p className="font-bold text-[13px] text-[var(--text)] truncate leading-tight">
                       {txn.notes || txn.category?.name}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider truncate max-w-[80px]">
+                      <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider truncate max-w-[70px]">
                         {txn.category?.name}
                       </span>
                       <span className="text-[9px] opacity-20">•</span>
-                      <span className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-wider truncate max-w-[80px]">
+                      <span className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-wider truncate max-w-[70px]">
                         {txn.account?.name}
                       </span>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right flex-shrink-0 min-w-[85px]">
                     <p className="font-bold text-[14px]" style={{ color: txn.type === 'income' ? '#10B981' : '#EF4444' }}>
                       {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
                     </p>
