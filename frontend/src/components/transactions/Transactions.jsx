@@ -3,7 +3,7 @@ import { transactionsApi, categoriesApi, accountsApi } from '../../api/client'
 import { formatCurrency, formatDate } from '../../utils/helpers'
 import TransactionForm from './TransactionForm'
 import ExportModal from './ExportModal'
-import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft, Download, Loader2, Calendar as CalendarIcon, X, ChevronRight, Tag, ChevronLeft } from 'lucide-react'
+import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft, Download, Loader2, Calendar as CalendarIcon, X, ChevronRight, Tag, ChevronLeft, Wallet, Layers } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, parseISO, isSameDay, addMonths, subMonths } from 'date-fns'
@@ -388,7 +388,7 @@ export default function Transactions() {
           {/* Select Dropdowns */}
           <div className="lg:col-span-5 grid grid-cols-3 gap-3">
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
+              <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
               <select
                 value={filters.type}
                 onChange={e => setFilters(p => ({ ...p, type: e.target.value }))}
@@ -413,7 +413,7 @@ export default function Transactions() {
             </div>
 
             <div className="relative">
-              <Download className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
+              <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-40 pointer-events-none" />
               <select
                 value={filters.account_id}
                 onChange={e => setFilters(p => ({ ...p, account_id: e.target.value }))}
