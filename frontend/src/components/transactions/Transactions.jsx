@@ -84,14 +84,19 @@ export default function Transactions() {
 
   // Infinite scroll observer
   const observer = useRef()
-  const lastElementRef = useCallback(node => {
+  const bottomRef = useCallback(node => {
     if (loading || loadingMore) return
     if (observer.current) observer.current.disconnect()
+    
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
+      if (entries[0].isIntersecting && hasMore && !loadingMore) {
         fetchAll(true)
       }
+    }, {
+      rootMargin: '200px', // Start loading before user reaches the very bottom
+      threshold: 0.1
     })
+    
     if (node) observer.current.observe(node)
   }, [loading, loadingMore, hasMore, fetchAll])
 
@@ -234,10 +239,9 @@ export default function Transactions() {
               <div className="text-right">Actions</div>
             </div>
 
-            {transactions.map((txn, index) => (
+            {transactions.map((txn) => (
               <div
                 key={txn.id}
-                ref={index === transactions.length - 1 ? lastElementRef : null}
                 className="hidden md:grid items-center px-5 py-3 transition-colors"
                 style={{
                   gridTemplateColumns: '40px 1fr 130px 110px 110px 72px',
@@ -315,10 +319,9 @@ export default function Transactions() {
             ))}
 
             {/* Mobile rows (stacked layout) */}
-            {transactions.map((txn, index) => (
+            {transactions.map((txn) => (
               <div
                 key={`m-${txn.id}`}
-                ref={index === transactions.length - 1 ? lastElementRef : null}
                 className="flex md:hidden items-center gap-3 px-4 py-3 transition-colors"
                 style={{ borderBottom: '1px solid var(--border)' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(51,65,85,0.25)'}
@@ -362,22 +365,20 @@ export default function Transactions() {
               </div>
             ))}
             
-            {loadingMore && (
-              <div className="p-4 text-center">
-                <Loader2 className="animate-spin w-5 h-5 mx-auto opacity-50" />
-              </div>
-            )}
-
-            {!loadingMore && hasMore && transactions.length > 0 && (
-              <div className="p-4 text-center border-t border-[var(--border)]">
+            {/* Infinite scroll sensor */}
+            <div ref={bottomRef} className="h-20 flex items-center justify-center">
+              {loadingMore && (
+                <Loader2 className="animate-spin w-5 h-5 opacity-50" />
+              )}
+              {!loadingMore && hasMore && transactions.length > 0 && (
                 <button 
                   onClick={() => fetchAll(true)}
-                  className="text-xs font-bold uppercase tracking-widest text-indigo-500 hover:text-indigo-600 transition-colors"
+                  className="text-[10px] font-bold uppercase tracking-widest opacity-20 hover:opacity-100 transition-opacity"
                 >
-                  Load More Transactions
+                  Load More
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
