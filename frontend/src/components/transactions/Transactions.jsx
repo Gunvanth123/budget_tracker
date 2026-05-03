@@ -125,7 +125,7 @@ export default function Transactions() {
     const str = text || 'Untitled'
     let limit = 35 // Laptop default
     if (windowWidth < 768) limit = 15 // Mobile
-    else if (windowWidth < 1280) limit = 25 // iPad/Tablet
+    else if (windowWidth < 1280) limit = 20 // iPad/Tablet
     return str.length > limit ? str.substring(0, limit) + '....' : str
   }
 
@@ -511,7 +511,7 @@ export default function Transactions() {
 
                     {/* Account */}
                     <div className="col-span-2">
-                      <span className="px-2.5 py-1 rounded-lg bg-[var(--border)]/10 text-[10px] font-bold text-[var(--text-muted)] border border-[var(--border)]/20">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate block max-w-[100px]">
                         {txn.account?.name}
                       </span>
                     </div>
