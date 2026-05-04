@@ -7,7 +7,7 @@ from app.models.models import PasswordEntry, PasswordCategory, User, SecureFile
 from app.schemas.schemas import (
     PasswordEntryCreate, PasswordEntryOut, MasterPasswordSetup, 
     MasterPasswordVerify, PasswordEntryUpdate,
-    PasswordCategoryCreate, PasswordCategoryOut, MasterKeyChangeReq
+    PasswordCategoryCreate, PasswordCategoryUpdate, PasswordCategoryOut, MasterKeyChangeReq
 )
 from app.services.auth import get_current_user
 from passlib.context import CryptContext
@@ -115,6 +115,17 @@ def get_categories(db: Session = Depends(get_db), current_user: User = Depends(g
 def create_category(cat: PasswordCategoryCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db_cat = PasswordCategory(**cat.model_dump(), user_id=current_user.id)
     db.add(db_cat)
+    db.commit()
+    db.refresh(db_cat)
+    return db_cat
+
+@router.put("/categories/{cat_id}", response_model=PasswordCategoryOut)
+def update_category(cat_id: int, cat_data: PasswordCategoryUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    db_cat = db.query(PasswordCategory).filter(PasswordCategory.id == cat_id, PasswordCategory.user_id == current_user.id).first()
+    if not db_cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    db_cat.name = cat_data.name
     db.commit()
     db.refresh(db_cat)
     return db_cat

@@ -166,6 +166,29 @@ def create_vault_category(category: schemas.VaultCategoryCreate, current_user: U
     db.refresh(new_cat)
     return new_cat
 
+@router.put("/categories/{cat_id}", response_model=schemas.VaultCategoryOut)
+def update_vault_category(cat_id: int, category: schemas.VaultCategoryUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_cat = db.query(VaultCategory).filter(VaultCategory.id == cat_id, VaultCategory.user_id == current_user.id).first()
+    if not db_cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    db_cat.name = category.name
+    db.commit()
+    db.refresh(db_cat)
+    return db_cat
+
+@router.delete("/categories/{cat_id}", status_code=204)
+def delete_vault_category(cat_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_cat = db.query(VaultCategory).filter(VaultCategory.id == cat_id, VaultCategory.user_id == current_user.id).first()
+    if not db_cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    # Nullify files in this category
+    db.query(SecureFile).filter(SecureFile.category_id == cat_id).update({"category_id": None})
+    
+    db.delete(db_cat)
+    db.commit()
+
 @router.get("/status")
 def get_vault_status(current_user: User = Depends(get_current_user)):
     return {

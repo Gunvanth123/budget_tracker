@@ -121,6 +121,32 @@ export default function PasswordManager() {
     }
   }
 
+  const handleDeleteCategory = async (e, id) => {
+    e.stopPropagation()
+    if (!confirm('Delete this category? Associated passwords will become uncategorized.')) return
+    try {
+      await passwordsApi.deleteCategory(id)
+      toast.success('Category deleted')
+      if (selectedCategory === id) setSelectedCategory('all')
+      fetchAll()
+    } catch {
+      toast.error('Failed to delete category')
+    }
+  }
+
+  const handleEditCategory = async (e, cat) => {
+    e.stopPropagation()
+    const newName = prompt('Enter new category name:', cat.name)
+    if (!newName || newName === cat.name) return
+    try {
+      await passwordsApi.updateCategory(cat.id, { name: newName })
+      toast.success('Category updated')
+      fetchAll()
+    } catch {
+      toast.error('Failed to update category')
+    }
+  }
+
   const handleDelete = async (id) => {
     if (!confirm('Delete this password entry?')) return
     try {
@@ -360,13 +386,31 @@ export default function PasswordManager() {
                     All Credentials
                   </button>
                   {categories.map(cat => (
-                    <button
+                    <div 
                       key={cat.id}
-                      onClick={() => { setSelectedCategory(cat.id); setIsCatDropdownOpen(false); }}
-                      className={`w-full text-left px-4 py-3 text-xs font-bold transition-colors ${selectedCategory === cat.id ? 'bg-teal-500 text-white' : 'hover:bg-[var(--bg)]'}`}
+                      className={`group/cat flex items-center w-full transition-colors ${selectedCategory === cat.id ? 'bg-teal-500 text-white' : 'hover:bg-[var(--bg)]'}`}
                     >
-                      {cat.name}
-                    </button>
+                      <button
+                        onClick={() => { setSelectedCategory(cat.id); setIsCatDropdownOpen(false); }}
+                        className="flex-1 text-left px-4 py-3 text-xs font-bold"
+                      >
+                        {cat.name}
+                      </button>
+                      <div className="flex items-center gap-1 pr-2 opacity-0 group-hover/cat:opacity-100 transition-opacity">
+                        <button 
+                          onClick={(e) => handleEditCategory(e, cat)}
+                          className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'hover:bg-white/20' : 'hover:bg-[var(--border)]'}`}
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={(e) => handleDeleteCategory(e, cat.id)}
+                          className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'hover:bg-red-400' : 'hover:bg-red-500/10 text-red-500'}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
                   ))}
                   <button
                     onClick={() => { setSelectedCategory('uncategorized'); setIsCatDropdownOpen(false); }}

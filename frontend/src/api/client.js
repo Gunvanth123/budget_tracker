@@ -66,6 +66,8 @@ export const passwordsApi = {
   delete: (id) => api.delete(`/passwords/${id}`),
   getCategories: () => api.get('/passwords/categories').then(r => r.data),
   createCategory: (data) => api.post('/passwords/categories', data).then(r => r.data),
+  updateCategory: (id, data) => api.put(`/passwords/categories/${id}`, data).then(r => r.data),
+  deleteCategory: (id) => api.delete(`/passwords/categories/${id}`),
   changeMasterKey: (data) => api.put('/passwords/change-master-password', data).then(r => r.data),
 }
 
@@ -84,6 +86,8 @@ export const vaultApi = {
   status: () => api.get('/vault/status').then(r => r.data),
   getCategories: () => api.get('/vault/categories').then(r => r.data),
   createCategory: (name) => api.post('/vault/categories', { name }).then(r => r.data),
+  updateCategory: (id, name) => api.put(`/vault/categories/${id}`, { name }).then(r => r.data),
+  deleteCategory: (id) => api.delete(`/vault/categories/${id}`),
   getAuthUrl: () => api.get('/vault/gdrive/auth-url').then(r => r.data),
   connectGDrive: (code, migrate = false) => api.post(`/vault/gdrive/connect?code=${code}&migrate=${migrate}`).then(r => r.data),
   migrationStatus: () => api.get('/vault/gdrive/migration-status').then(r => r.data),

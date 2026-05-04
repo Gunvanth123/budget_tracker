@@ -166,6 +166,9 @@ class PasswordCategoryBase(BaseModel):
 class PasswordCategoryCreate(PasswordCategoryBase):
     pass
 
+class PasswordCategoryUpdate(PasswordCategoryBase):
+    pass
+
 class PasswordCategoryOut(PasswordCategoryBase):
     id: int
     user_id: int
@@ -225,6 +228,9 @@ class VaultCategoryBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
 
 class VaultCategoryCreate(VaultCategoryBase):
+    pass
+
+class VaultCategoryUpdate(VaultCategoryBase):
     pass
 
 class VaultCategoryOut(VaultCategoryBase):

@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams } from 'react-router-dom'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 import { 
-  Shield, Lock, Unlock, Upload, Download, Trash2, 
+  Shield, Lock, Unlock, Upload, Download, Trash2, Pencil,
   File, FileText, FileImage,
   Loader2, Search,
   CheckCircle2, Settings, ExternalLink, Info,
@@ -30,6 +32,11 @@ export default function SecureVault() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [previewData, setPreviewData] = useState({ isOpen: false, url: '', filename: '', mimetype: '' })
   const [collapsedCategories, setCollapsedCategories] = useState({})
+  
+  // Multi-select states
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedFileIds, setSelectedFileIds] = useState(new Set())
+  const [isExporting, setIsExporting] = useState(false)
 
   const checkVaultStatus = useCallback(async () => {
     try {
@@ -195,28 +202,80 @@ export default function SecureVault() {
     reader.readAsArrayBuffer(file)
   }
 
-  const handleDownload = async (fileInfo) => {
-    toast.loading(`Decrypting ${fileInfo.filename}...`, { id: 'dec' })
-    try {
-      const res = await vaultApi.download(fileInfo.id)
-      const decrypted = CryptoJS.AES.decrypt(res.encrypted_content, masterPassword)
-      
-      const typedArray = new Uint8Array(decrypted.sigBytes)
-      const words = decrypted.words
-      for (let i = 0; i < decrypted.sigBytes; i++) {
-        typedArray[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
-      }
+  const decryptFile = async (fileInfo) => {
+    const res = await vaultApi.download(fileInfo.id)
+    const decrypted = CryptoJS.AES.decrypt(res.encrypted_content, masterPassword)
+    
+    const typedArray = new Uint8Array(decrypted.sigBytes)
+    const words = decrypted.words
+    for (let i = 0; i < decrypted.sigBytes; i++) {
+      typedArray[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
+    }
 
-      const blob = new Blob([typedArray], { type: res.mimetype })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = res.filename
-      a.click()
+    return new Blob([typedArray], { type: res.mimetype })
+  }
+
+  const handleDownload = async (fileInfo) => {
+    toast.loading("Decrypting...", { id: 'dec' })
+    try {
+      const blob = await decryptFile(fileInfo)
+      saveAs(blob, fileInfo.filename)
       toast.success("Downloaded & Decrypted", { id: 'dec' })
     } catch (err) {
       toast.error("Decryption failed. Wrong key?", { id: 'dec' })
     }
+  }
+
+  const handleBulkDownload = async () => {
+    // Determine which files to download
+    let filesToExport = []
+    if (selectionMode && selectedFileIds.size > 0) {
+      filesToExport = files.filter(f => selectedFileIds.has(f.id))
+    } else {
+      // Export current filtered view
+      filesToExport = groupedFiles.flatMap(g => g.files)
+    }
+
+    if (filesToExport.length === 0) {
+      return toast.error("No files selected or found in current view")
+    }
+
+    setIsExporting(true)
+    const tid = toast.loading(`Preparing ZIP with ${filesToExport.length} files...`)
+    
+    try {
+      const zip = new JSZip()
+      
+      for (const file of filesToExport) {
+        try {
+          const blob = await decryptFile(file)
+          const catName = file.category?.name || 'Uncategorized'
+          // Add to category subfolder
+          zip.file(`${catName}/${file.filename}`, blob)
+        } catch (err) {
+          console.error(`Failed to decrypt ${file.filename}`, err)
+        }
+      }
+
+      const content = await zip.generateAsync({ type: "blob" })
+      saveAs(content, `vault_export_${new Date().toISOString().split('T')[0]}.zip`)
+      toast.success("Export complete!", { id: tid })
+      setSelectionMode(false)
+      setSelectedFileIds(new Set())
+    } catch (err) {
+      toast.error("Bulk export failed", { id: tid })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const toggleFileSelection = (id) => {
+    setSelectedFileIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   const handlePreview = async (fileInfo) => {
@@ -248,6 +307,32 @@ export default function SecureVault() {
   const closePreview = () => {
     if (previewData.url) URL.revokeObjectURL(previewData.url)
     setPreviewData({ isOpen: false, url: '', filename: '', mimetype: '' })
+  }
+
+  const handleDeleteCategory = async (e, id) => {
+    e.stopPropagation()
+    if (!confirm('Delete this category? Associated files will become uncategorized.')) return
+    try {
+      await vaultApi.deleteCategory(id)
+      toast.success('Category deleted')
+      if (selectedCategory === id) setSelectedCategory('all')
+      fetchAll()
+    } catch {
+      toast.error('Failed to delete category')
+    }
+  }
+
+  const handleEditCategory = async (e, cat) => {
+    e.stopPropagation()
+    const newName = prompt('Enter new category name:', cat.name)
+    if (!newName || newName === cat.name) return
+    try {
+      await vaultApi.updateCategory(cat.id, newName)
+      toast.success('Category updated')
+      fetchAll()
+    } catch {
+      toast.error('Failed to update category')
+    }
   }
 
   const handleDelete = async (id) => {
@@ -414,13 +499,30 @@ export default function SecureVault() {
                     onChange={e => setSearchQuery(e.target.value)}
                 />
             </div>
-            <button 
-                onClick={() => setUploadModalOpen(true)}
-                className="p-2 sm:px-6 sm:py-2.5 rounded-xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 flex items-center gap-2 active:scale-95 transition-all shrink-0"
-            >
-                <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline text-xs font-bold">Add Documents</span>
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+                <button 
+                  onClick={() => { setSelectionMode(!selectionMode); setSelectedFileIds(new Set()); }}
+                  className={`p-2 sm:p-2.5 rounded-xl transition-all ${selectionMode ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-[var(--bg)] hover:bg-[var(--border)]'}`}
+                  title="Toggle Select Mode"
+                >
+                  <CheckCircle2 className={`w-4 h-4 sm:w-5 sm:h-5 ${selectionMode ? 'opacity-100' : 'opacity-40'}`} />
+                </button>
+                <button 
+                  onClick={handleBulkDownload} 
+                  disabled={isExporting}
+                  className="p-2 sm:p-2.5 rounded-xl bg-[var(--bg)] hover:bg-[var(--border)] transition-colors disabled:opacity-30"
+                  title="Download All / Selected as ZIP"
+                >
+                  <Download className={`w-4 h-4 sm:w-5 sm:h-5 opacity-60 ${isExporting ? 'animate-bounce' : ''}`} />
+                </button>
+                <button 
+                    onClick={() => setUploadModalOpen(true)}
+                    className="p-2 sm:px-6 sm:py-2.5 rounded-xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 flex items-center gap-2 active:scale-95 transition-all shrink-0"
+                >
+                    <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline text-xs font-bold">Add Documents</span>
+                </button>
+            </div>
         </div>
       </div>
 
@@ -469,13 +571,31 @@ export default function SecureVault() {
                     All Vault
                   </button>
                   {categories.map(cat => (
-                    <button
+                    <div 
                       key={cat.id}
-                      onClick={() => { setSelectedCategory(cat.id); setIsCatDropdownOpen(false); }}
-                      className={`w-full text-left px-4 py-3 text-xs font-bold transition-colors ${selectedCategory === cat.id ? 'bg-indigo-500 text-white' : 'hover:bg-[var(--bg)]'}`}
+                      className={`group/cat flex items-center w-full transition-colors ${selectedCategory === cat.id ? 'bg-indigo-500 text-white' : 'hover:bg-[var(--bg)]'}`}
                     >
-                      {cat.name}
-                    </button>
+                      <button
+                        onClick={() => { setSelectedCategory(cat.id); setIsCatDropdownOpen(false); }}
+                        className="flex-1 text-left px-4 py-3 text-xs font-bold"
+                      >
+                        {cat.name}
+                      </button>
+                      <div className="flex items-center gap-1 pr-2 opacity-0 group-hover/cat:opacity-100 transition-opacity">
+                        <button 
+                          onClick={(e) => handleEditCategory(e, cat)}
+                          className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'hover:bg-white/20' : 'hover:bg-[var(--border)]'}`}
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={(e) => handleDeleteCategory(e, cat.id)}
+                          className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'hover:bg-indigo-400' : 'hover:bg-red-500/10 text-red-500'}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
                   ))}
                 </motion.div>
               </>
@@ -516,8 +636,25 @@ export default function SecureVault() {
 
               {!collapsedCategories[group.id] && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 animate-in fade-in duration-500">
-                  {group.files.map(file => (
-                    <div key={file.id} className="group p-3 rounded-2xl bg-gradient-to-br from-[var(--card)] to-[var(--bg)]/50 border border-[var(--border)] hover:border-indigo-500/50 transition-all flex flex-col gap-3 min-w-0 overflow-hidden shadow-sm">
+                  {group.files.map(file => {
+                    const isSelected = selectedFileIds.has(file.id)
+                    return (
+                      <div 
+                        key={file.id} 
+                        onClick={() => selectionMode && toggleFileSelection(file.id)}
+                        className={`group p-3 rounded-2xl bg-gradient-to-br from-[var(--card)] to-[var(--bg)]/50 border transition-all flex flex-col gap-3 min-w-0 overflow-hidden shadow-sm relative ${
+                          isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-[var(--border)] hover:border-indigo-500/50'
+                        } ${selectionMode ? 'cursor-pointer' : ''}`}
+                      >
+                        {/* Selection Checkbox */}
+                        {selectionMode && (
+                          <div className={`absolute top-2 right-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-black/10 border-white/20'
+                          }`}>
+                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                          </div>
+                        )}
+                        
                         <div className="flex items-center justify-between min-w-0 gap-2">
                             <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center border border-[var(--border)] shadow-sm shrink-0">
                                 {getFileIcon(file.mimetype)}
@@ -550,7 +687,8 @@ export default function SecureVault() {
                             </button>
                         </div>
                     </div>
-                  ))}
+                  )
+                })}
                 </div>
               )}
             </div>
