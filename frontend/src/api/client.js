@@ -128,7 +128,7 @@ export const popcornApi = {
 }
 
 export const usageApi = {
-  track: (feature_id) => api.post('/usage/track', { feature_id }).then(r => r.data),
+  track: (feature_id) => api.post('/usage/track', { feature_id }).then(r => r.data).catch(() => ({})),
   getTop: () => api.get('/usage/top').then(r => r.data),
 }
 

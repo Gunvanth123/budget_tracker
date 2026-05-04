@@ -110,15 +110,15 @@ export default function PasswordForm({ isOpen, onClose, onSaved, masterPassword,
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-[var(--card)] z-10" style={{ borderColor: 'var(--border)' }}>
-          <h2 className="text-lg font-bold">{editData ? 'Edit Password' : 'Add Password'}</h2>
-          <button onClick={onClose} className="p-2 opacity-70 hover:opacity-100 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b sticky top-0 bg-[var(--card)] z-10" style={{ borderColor: 'var(--border)' }}>
+          <h2 className="text-base sm:text-lg font-bold">{editData ? 'Edit Security Entry' : 'Add Security Entry'}</h2>
+          <button onClick={onClose} className="p-2 opacity-70 hover:opacity-100 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Website / App *</label>
               <input
@@ -210,11 +210,11 @@ export default function PasswordForm({ isOpen, onClose, onSaved, masterPassword,
             />
           </div>
 
-          <div className="pt-2 flex gap-3">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">
+          <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row gap-3">
+            <button type="button" onClick={onClose} className="btn-secondary order-2 sm:order-1 py-3 sm:py-2.5 flex-1">
               Cancel
             </button>
-            <button type="submit" disabled={saving} className="btn-primary flex-1 flex items-center justify-center gap-2">
+            <button type="submit" disabled={saving} className="btn-primary order-1 sm:order-2 py-3 sm:py-2.5 flex-1 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/10">
               <Save className="w-4 h-4" />
               {saving ? 'Saving...' : 'Save Security Entry'}
             </button>

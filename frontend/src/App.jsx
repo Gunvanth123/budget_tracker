@@ -45,10 +45,10 @@ function LoadingScreen() {
           {showWakeMessage && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
               <p className="text-sm opacity-60">
-                Waking up the server on Render Free Tier...
+                Waking up the server...
               </p>
               <p className="text-xs opacity-40 mt-1">
-                This typically takes 30-45 seconds after inactivity.
+                This typically takes 5-10 seconds.
               </p>
             </div>
           )}

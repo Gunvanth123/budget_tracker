@@ -229,17 +229,17 @@ export default function Layout() {
           className="h-16 flex items-center justify-between px-4 lg:px-6 shadow-sm z-10 relative"
           style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
         >
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 overflow-hidden">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0">
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="font-semibold text-lg">{currentPage}</h1>
+            <h1 className="font-semibold text-base sm:text-lg truncate">{currentPage}</h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Custom Animated Theme Toggle */}
-            <div className="flex items-center justify-center gap-3 mr-1 sm:mr-4">
-              <span className={`hidden sm:inline text-sm font-bold transition-opacity duration-300 tracking-wide ${!darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Light</span>
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mr-0 sm:mr-4">
+              <span className={`hidden md:inline text-sm font-bold transition-opacity duration-300 tracking-wide ${!darkMode ? 'opacity-100' : 'opacity-40'}`} style={{ color: 'var(--text)' }}>Light</span>
               
               <motion.button
                 onClick={toggleTheme}
@@ -312,7 +312,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="responsive-container">
             <AnimatePresence mode="wait">
               <motion.div
@@ -320,6 +320,7 @@ export default function Layout() {
                 initial={{ opacity: 0, y: 10, scale: 0.99 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 1.01 }}
+                className="w-full max-w-full"
                 transition={{ 
                   duration: 0.25, 
                   ease: [0.23, 1, 0.32, 1] // Out-quartic
