@@ -131,7 +131,7 @@ class TodoList(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="todo_lists")
-    tasks = relationship("TodoTask", back_populates="todo_list", cascade="all, delete-orphan", order_by="TodoTask.created_at")
+    tasks = relationship("TodoTask", back_populates="todo_list", cascade="all, delete-orphan", order_by="TodoTask.position")
 
 
 class TodoTask(Base):
@@ -140,6 +140,7 @@ class TodoTask(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(500), nullable=False)
     completed = Column(Boolean, nullable=False, default=False)
+    position = Column(Integer, default=0, nullable=False)
     todo_list_id = Column(Integer, ForeignKey("todo_lists.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

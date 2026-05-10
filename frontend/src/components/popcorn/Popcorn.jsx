@@ -790,7 +790,18 @@ export default function Popcorn() {
                   <div className="space-y-3 p-4 rounded-2xl bg-white/5 border border-[var(--border)]">
                     <div className="flex justify-between items-center">
                       <label className="text-sm font-semibold opacity-70">Rating</label>
-                      <span className="text-lg font-black text-yellow-500">{Number(formData.rating).toFixed(1)}</span>
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="5" 
+                          step="0.1"
+                          value={formData.rating}
+                          onChange={(e) => setFormData(prev => ({ ...prev, rating: Math.min(5, Math.max(0, parseFloat(e.target.value) || 0)) }))}
+                          className="w-16 px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-center font-black text-yellow-500 outline-none focus:ring-1 focus:ring-yellow-500/50"
+                        />
+                        <span className="text-xs opacity-40 font-bold">/ 5.0</span>
+                      </div>
                     </div>
                     <input
                       type="range"
@@ -801,7 +812,7 @@ export default function Popcorn() {
                       onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
                       className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
                     />
-                    <div className="flex justify-center">
+                    <div className="flex justify-center pt-2">
                       <PopcornRating rating={formData.rating} />
                     </div>
                   </div>
