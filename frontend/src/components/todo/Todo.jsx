@@ -340,7 +340,11 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
               <Reorder.Group 
                 axis="y" 
                 values={tasks} 
-                onReorder={setTasks}
+                onReorder={(newTasks) => {
+                  setTasks(newTasks)
+                  todoApi.reorderTasks(list.id, newTasks.map(t => t.id))
+                    .catch(() => toast.error('Failed to save task order'))
+                }}
                 className="space-y-1 mb-2"
               >
                 <AnimatePresence mode="popLayout">

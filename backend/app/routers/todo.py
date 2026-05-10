@@ -118,3 +118,23 @@ def delete_task(list_id: int, task_id: int, db: Session = Depends(get_db), curre
         raise HTTPException(status_code=404, detail="Task not found")
     db.delete(task)
     db.commit()
+
+
+class ReorderRequest(BaseModel):
+    task_ids: List[int]
+
+@router.put("/{list_id}/reorder")
+def reorder_tasks(list_id: int, req: ReorderRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    lst = db.query(TodoList).filter(TodoList.id == list_id, TodoList.user_id == current_user.id).first()
+    if not lst:
+        raise HTTPException(status_code=404, detail="List not found")
+    
+    # Bulk update positions
+    for index, task_id in enumerate(req.task_ids):
+        db.query(TodoTask).filter(
+            TodoTask.id == task_id, 
+            TodoTask.todo_list_id == list_id
+        ).update({"position": index})
+    
+    db.commit()
+    return {"status": "success"}

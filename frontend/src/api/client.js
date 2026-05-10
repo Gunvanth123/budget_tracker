@@ -54,6 +54,7 @@ export const todoApi = {
   createTask: (listId, title) => api.post(`/todo/${listId}/tasks`, { title }).then(r => r.data),
   updateTask: (listId, taskId, data) => api.put(`/todo/${listId}/tasks/${taskId}`, data).then(r => r.data),
   deleteTask: (listId, taskId) => api.delete(`/todo/${listId}/tasks/${taskId}`),
+  reorderTasks: (listId, taskIds) => api.put(`/todo/${listId}/reorder`, { task_ids: taskIds }).then(r => r.data),
 }
 
 export const passwordsApi = {
