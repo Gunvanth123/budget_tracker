@@ -17,30 +17,53 @@ router = APIRouter()
 @router.get("/", response_model=DashboardOut)
 def get_dashboard(
     month_year: Optional[str] = Query(None, regex=r"^(\d{4}-\d{2}|last_3_months)$"),
+    timeframe: Optional[str] = Query(None, regex=r"^(7D|30D|3M|6M|1Y)$"),
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
     now = datetime.utcnow()
     uid = current_user.id
     
-    is_range = month_year == "last_3_months"
+    days_count = 30
+    history_count = 2
+    is_range = (month_year == "last_3_months") or (timeframe is not None)
     
-    if is_range:
-        start_of_month = (now - timedelta(days=90)).replace(hour=0, minute=0, second=0, microsecond=0)
+    if timeframe:
         end_of_month = now
-        last_day = 30 # fallback for daily trends loop
+        if timeframe == "7D":
+            days_count = 7
+            history_count = 2
+        elif timeframe == "30D":
+            days_count = 30
+            history_count = 2
+        elif timeframe == "3M":
+            days_count = 90
+            history_count = 2
+        elif timeframe == "6M":
+            days_count = 180
+            history_count = 5
+        elif timeframe == "1Y":
+            days_count = 365
+            history_count = 11
+        start_of_month = (now - timedelta(days=days_count)).replace(hour=0, minute=0, second=0, microsecond=0)
+        last_day = days_count
     else:
-        # If no month provided, use current
-        if not month_year:
-            target_date = now
-            month_year = now.strftime("%Y-%m")
+        if is_range:
+            days_count = 90
+            start_of_month = (now - timedelta(days=90)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_of_month = now
+            last_day = 30
         else:
-            target_date = datetime.strptime(month_year, "%Y-%m")
+            if not month_year:
+                target_date = now
+                month_year = now.strftime("%Y-%m")
+            else:
+                target_date = datetime.strptime(month_year, "%Y-%m")
 
-        # Start and end of the target month
-        start_of_month = target_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        last_day = calendar.monthrange(target_date.year, target_date.month)[1]
-        end_of_month = target_date.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+            start_of_month = target_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_day = calendar.monthrange(target_date.year, target_date.month)[1]
+            end_of_month = target_date.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+            days_count = last_day
 
     # ── Summary ────────────────────────────────────────────────────────────────
     m_income = db.query(func.sum(Transaction.amount)).filter(
@@ -128,8 +151,7 @@ def get_dashboard(
     c_year, c_month = now.year, now.month
     month_keys = []
     
-    # Show last 3 months for the overview
-    history_count = 2
+    # Show history count set dynamically (default 2)
     
     for i in range(history_count, -1, -1):
         m = c_month - i
@@ -170,7 +192,11 @@ def get_dashboard(
 
     # ── Daily trends ───────────────────────────────────────────────────────────
     daily: dict = {}
-    if is_range:
+    if timeframe:
+        for i in range(days_count - 1, -1, -1):
+            day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+            daily[day] = {"income": 0.0, "expense": 0.0}
+    elif is_range:
         for i in range(29, -1, -1):
             day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
             daily[day] = {"income": 0.0, "expense": 0.0}
