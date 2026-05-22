@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { accountsApi, usageApi } from '../../api/client'
 import { formatCurrency, ACCOUNT_TYPES, ACCOUNT_TYPE_ICONS, CATEGORY_COLORS } from '../../utils/helpers'
 import Modal from '../Modal'
-import { Plus, Pencil, Trash2, Wallet } from 'lucide-react'
+import { Plus, Pencil, Trash2, Wallet, Star } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { motion } from 'framer-motion'
 
 const EMPTY = { name: '', type: 'bank', balance: '', color: '#6366f1', currency: 'INR', is_default: false }
 
@@ -29,6 +30,11 @@ export default function Accounts() {
   useEffect(() => { 
     fetchAccounts() 
     usageApi.track('accounts')
+
+    // Sync on transaction additions
+    const handler = () => fetchAccounts();
+    window.addEventListener('transaction-saved', handler);
+    return () => window.removeEventListener('transaction-saved', handler);
   }, [])
 
   const openCreate = () => { setEditData(null); setForm(EMPTY); setFormOpen(true) }
@@ -71,110 +77,121 @@ export default function Accounts() {
   }
 
   const totalBalance = accounts.reduce((s, a) => s + a.balance, 0)
-
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 pb-12">
       {/* Total balance banner */}
-      <div
-        className="card p-5 text-white border-0"
-        style={{ background: 'linear-gradient(135deg, #00A19B 0%, #007A75 100%)' }}
+      <motion.div
+        initial={{ scale: 0.99, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="card p-6 text-white border-0 overflow-hidden relative"
+        style={{ 
+          background: 'var(--balance-grad)',
+          boxShadow: '0 15px 35px -10px rgba(59, 130, 246, 0.35)'
+        }}
       >
-        <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>Total Balance Across All Accounts</p>
-        <p className="font-bold text-3xl mt-1">{formatCurrency(totalBalance)}</p>
-        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{accounts.length} account{accounts.length !== 1 ? 's' : ''}</p>
-      </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+        
+        <p className="text-xs font-bold uppercase tracking-wider opacity-85">Total Balance Across All Accounts</p>
+        <p className="font-extrabold text-3xl mt-2 tracking-tight">{formatCurrency(totalBalance)}</p>
+        <p className="text-[10px] uppercase font-bold tracking-wider opacity-60 mt-3">{accounts.length} active account{accounts.length !== 1 ? 's' : ''}</p>
+      </motion.div>
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold" style={{ color: 'var(--text)' }}>Your Accounts</h2>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2">
+        <div>
+          <h2 className="font-bold text-sm uppercase tracking-wider" style={{ color: 'var(--text)' }}>Your Accounts</h2>
+          <p className="text-[10px] opacity-40 font-semibold mt-0.5">Manage your banks, cards and cash wallets</p>
+        </div>
+        <button onClick={openCreate} className="btn-primary flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-bold">
           <Plus className="w-4 h-4" />
-          New Account
+          Add Account
         </button>
       </div>
 
       {/* Account cards */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1,2,3].map(i => (
-            <div key={i} className="card p-5 animate-pulse h-36" />
+            <div key={i} className="card p-5 animate-pulse h-36 bg-slate-200 dark:bg-slate-800" />
           ))}
         </div>
       ) : accounts.length === 0 ? (
         <div className="card p-12 text-center" style={{ color: 'var(--text-muted)' }}>
-          <Wallet className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No accounts yet</p>
-          <p className="text-sm mt-1">Create your first account to start tracking</p>
+          <Wallet className="w-10 h-10 mx-auto mb-3 opacity-30 text-indigo-500" />
+          <p className="font-bold text-sm">No accounts found</p>
+          <p className="text-xs mt-1 opacity-70">Add your first wallet or bank account to begin tracking</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {accounts.map((acc) => (
-            <div key={acc.id} className="card p-5 group relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  {acc.is_default && (
-                    <div className="absolute -top-2 -right-2 bg-yellow-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 flex items-center gap-1">
-                      ⭐ Default
-                    </div>
-                  )}
+            <div key={acc.id} className="card p-5 group relative overflow-hidden flex flex-col justify-between min-h-[160px]">
+              
+              {/* Star Default Badge */}
+              {acc.is_default && (
+                <div 
+                  className="absolute top-0 right-0 bg-gradient-to-br from-yellow-400 to-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-bl-xl rounded-tr-[23px] shadow-md flex items-center gap-1 uppercase tracking-widest z-10"
+                >
+                  <Star className="w-2.5 h-2.5 fill-white" /> Default
+                </div>
+              )}
+
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm"
-                    style={{ background: `${acc.color}20`, border: `1.5px solid ${acc.color}40` }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm font-semibold shrink-0"
+                    style={{ background: `${acc.color}15`, border: `1px solid ${acc.color}25` }}
                   >
                     {ACCOUNT_TYPE_ICONS[acc.type] || '💼'}
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>{acc.name}</p>
-                    <p className="text-xs capitalize" style={{ color: 'var(--text-muted)' }}>{acc.type.replace('_', ' ')}</p>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs truncate" style={{ color: 'var(--text)' }}>{acc.name}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: 'var(--text-muted)' }}>{acc.type.replace('_', ' ')}</p>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 bottom-4 lg:static">
                   <button
                     onClick={() => openEdit(acc)}
-                    className="p-1.5 rounded-lg transition-colors"
-                    style={{ color: 'var(--text-muted)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--border)'; e.currentTarget.style.color = 'var(--primary)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                    className="p-1.5 rounded-lg border border-slate-500/10 hover:border-slate-500/30 hover:bg-white/5 transition-all text-slate-400 hover:text-indigo-400"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(acc.id)}
-                    className="p-1.5 rounded-lg transition-colors"
-                    style={{ color: 'var(--text-muted)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                    className="p-1.5 rounded-lg border border-red-500/10 hover:border-red-500/30 hover:bg-red-500/5 transition-all text-slate-400 hover:text-red-500"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Balance</p>
+              <div className="mt-4">
+                <span className="text-[9px] font-bold uppercase tracking-wider opacity-40 block">Available Balance</span>
                 <p
-                  className="font-bold text-2xl"
+                  className="font-extrabold text-xl mt-0.5 tracking-tight"
                   style={{ color: acc.balance < 0 ? '#EF4444' : 'var(--text)' }}
                 >
                   {formatCurrency(acc.balance)}
                 </p>
               </div>
 
-              <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+              {/* Progress bar */}
+              <div className="mt-4 pt-3 border-t border-slate-500/5">
+                <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(100, Math.max(0, (acc.balance / (totalBalance || 1)) * 100))}%`,
-                      background: acc.color
+                      background: acc.color || 'var(--primary)'
                     }}
                   />
                 </div>
-                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                  {totalBalance > 0 ? ((acc.balance / totalBalance) * 100).toFixed(1) : 0}% of total
-                </p>
+                <div className="flex justify-between items-center mt-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  <span>Usage Ratio</span>
+                  <span>{totalBalance > 0 ? ((acc.balance / totalBalance) * 100).toFixed(1) : 0}%</span>
+                </div>
               </div>
             </div>
           ))}
@@ -206,7 +223,7 @@ export default function Accounts() {
           <div>
             <label className="label">Opening Balance (₹)</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono" style={{ color: 'var(--text-muted)' }}>₹</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
               <input
                 type="number"
                 step="0.01"
@@ -218,28 +235,28 @@ export default function Accounts() {
             </div>
           </div>
           <div>
-            <label className="label">Color</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="label">Card Accent Color</label>
+            <div className="flex flex-wrap gap-2.5">
               {CATEGORY_COLORS.map(c => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => set('color', c)}
-                  className={`w-7 h-7 rounded-full transition-transform ${form.color === c ? 'scale-125 ring-2 ring-offset-2 ring-[var(--primary)]' : 'hover:scale-110'}`}
+                  className={`w-7 h-7 rounded-full transition-transform ${form.color === c ? 'scale-125 ring-2 ring-offset-2 ring-indigo-500' : 'hover:scale-110'}`}
                   style={{ background: c }}
                 />
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 pt-1">
             <input 
               type="checkbox" 
               id="is_default" 
               checked={form.is_default} 
               onChange={e => set('is_default', e.target.checked)}
-              className="w-4 h-4 text-[var(--primary)] focus:ring-[var(--primary)] border-gray-300 rounded"
+              className="w-4 h-4 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
             />
-            <label htmlFor="is_default" className="text-sm font-medium cursor-pointer" style={{ color: 'var(--text)' }}>
+            <label htmlFor="is_default" className="text-xs font-bold uppercase tracking-wider cursor-pointer" style={{ color: 'var(--text-muted)' }}>
               Set as Default Account
             </label>
           </div>

@@ -88,7 +88,7 @@ export default function Dashboard() {
           Financial Overview
         </h2>
         {/* Summary Cards */}
-        <SummaryCards summary={data?.summary} />
+        <SummaryCards summary={data?.summary} dailyTrends={data?.daily_trends} />
       </motion.div>
 
       {/* Charts Row — equal width, equal height */}

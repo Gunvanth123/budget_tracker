@@ -16,6 +16,7 @@ import AIChatbot from './components/ai/AIChatbot'
 import Settings from './components/settings/Settings'
 import SecureVault from './components/vault/SecureVault'
 import Popcorn from './components/popcorn/Popcorn'
+import Analytics from './components/analytics/Analytics'
 
 
 function LoadingScreen() {
@@ -91,6 +92,7 @@ export default function App() {
         <Route path="vault" element={<SecureVault />} />
         <Route path="popcorn" element={<Popcorn />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="analytics" element={<Analytics />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

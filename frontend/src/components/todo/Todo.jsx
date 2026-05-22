@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { todoApi, usageApi } from '../../api/client'
 import { 
-  Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, ListTodo, 
+  Plus, Trash2, Pencil, Check, X, ChevronRight, ListTodo, 
   Filter, ArrowUpDown, Search, Calendar, CheckCircle2, Circle, Clock,
-  MoreVertical, LayoutGrid, List, GripVertical
+  LayoutGrid, List, GripVertical
 } from 'lucide-react'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -22,7 +22,9 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
       const updated = await todoApi.updateTask(listId, task.id, { completed: !task.completed })
       onUpdated(updated)
       if (!task.completed) toast.success('Task completed!', { icon: '🎉', duration: 1000 })
-    } catch { toast.error('Failed to update task') }
+    } catch { 
+      toast.error('Failed to update task') 
+    }
   }
 
   const saveEdit = async () => {
@@ -32,7 +34,9 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
       const updated = await todoApi.updateTask(listId, task.id, { title: title.trim() })
       onUpdated(updated)
       setEditing(false)
-    } catch { toast.error('Failed to rename task') }
+    } catch { 
+      toast.error('Failed to rename task') 
+    }
   }
 
   const handleKeyDown = (e) => {
@@ -44,7 +48,9 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
     try {
       await todoApi.deleteTask(listId, task.id)
       onDeleted(task.id)
-    } catch { toast.error('Failed to delete task') }
+    } catch { 
+      toast.error('Failed to delete task') 
+    }
   }
 
   return (
@@ -56,26 +62,26 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
       exit={{ opacity: 0, scale: 0.95 }}
       className="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 select-none"
       style={{ 
-        background: task.completed ? 'rgba(0,161,155,0.04)' : 'transparent',
+        background: task.completed ? 'rgba(16, 185, 129, 0.04)' : 'transparent',
         border: '1px solid transparent'
       }}
       whileHover={{ 
-        backgroundColor: task.completed ? 'rgba(0,161,155,0.08)' : 'var(--border)',
-        borderColor: 'rgba(0,161,155,0.1)'
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderColor: 'var(--border)'
       }}
     >
       {/* Drag Handle */}
-      <div className="cursor-grab active:cursor-grabbing p-1 -ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-[var(--text-muted)] opacity-0 group-hover:opacity-60 transition-opacity">
         <GripVertical className="w-3.5 h-3.5" />
       </div>
 
-      {/* Checkbox */}
+      {/* Checkbox (Round, iOS style) */}
       <button
         onClick={toggleComplete}
-        className="flex-shrink-0 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-300 relative overflow-hidden"
+        className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 relative overflow-hidden active:scale-90"
         style={task.completed
           ? { background: 'var(--primary)', borderColor: 'var(--primary)' }
-          : { borderColor: 'var(--border)' }
+          : { borderColor: 'var(--border)', background: 'rgba(255,255,255,0.03)' }
         }
       >
         <AnimatePresence mode="wait">
@@ -86,7 +92,7 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 45 }}
             >
-              <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+              <Check className="w-3 text-white stroke-[3.5]" />
             </motion.div>
           ) : (
             <motion.div
@@ -107,16 +113,15 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
           onChange={e => setTitle(e.target.value)}
           onBlur={saveEdit}
           onKeyDown={handleKeyDown}
-          className="flex-1 text-sm rounded-lg px-2 py-1 focus:outline-none ring-2 ring-primary/20"
-          style={{ background: 'var(--card)', border: '1px solid var(--primary)', color: 'var(--text)' }}
+          className="flex-1 text-sm rounded-xl px-3 py-1 bg-[var(--bg)] border border-[var(--primary)] text-[var(--text)] focus:outline-none"
         />
       ) : (
         <span
           onDoubleClick={() => setEditing(true)}
-          className="flex-1 text-sm cursor-default transition-all duration-300 relative"
+          className="flex-1 text-sm cursor-default transition-all duration-300 relative font-medium"
           style={{ 
             color: task.completed ? 'var(--text-muted)' : 'var(--text)',
-            opacity: task.completed ? 0.6 : 1
+            opacity: task.completed ? 0.5 : 1
           }}
         >
           {task.title}
@@ -124,7 +129,7 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: '100%' }}
-              className="absolute left-0 top-1/2 h-[1px] bg-current opacity-30"
+              className="absolute left-0 top-1/2 h-[1px] bg-[var(--text-muted)] opacity-40"
               style={{ pointerEvents: 'none' }}
             />
           )}
@@ -136,14 +141,14 @@ function TaskItem({ task, listId, onUpdated, onDeleted }) {
         {!editing && (
           <button
             onClick={() => setEditing(true)}
-            className="p-1.5 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors text-slate-400"
+            className="p-1.5 rounded-lg hover:bg-[var(--bg)] hover:text-[var(--primary)] transition-colors text-[var(--text-muted)]"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
         )}
         <button
           onClick={handleDelete}
-          className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-colors text-slate-400"
+          className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-colors text-[var(--text-muted)]"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -179,18 +184,14 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
   const filteredAndSortedTasks = useMemo(() => {
     let result = [...tasks]
     
-    // Global search filter
     if (globalSearchQuery.trim()) {
       const query = globalSearchQuery.toLowerCase();
-      // Only show tasks that match the query
       result = result.filter(t => t.title.toLowerCase().includes(query))
     }
 
-    // Filter
     if (taskFilter === 'active') result = result.filter(t => !t.completed)
     if (taskFilter === 'completed') result = result.filter(t => t.completed)
     
-    // Sort
     if (taskSort === 'status') {
       result.sort((a, b) => (a.completed === b.completed) ? 0 : a.completed ? 1 : -1)
     } else if (taskSort === 'alpha') {
@@ -207,7 +208,9 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
       const task = await todoApi.createTask(list.id, newTask.trim())
       setTasks(prev => [...prev, task])
       setNewTask('')
-    } catch { toast.error('Failed to add task') }
+    } catch { 
+      toast.error('Failed to add task') 
+    }
   }
 
   const handleAddKeyDown = (e) => {
@@ -222,7 +225,9 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
       const updated = await todoApi.updateList(list.id, listTitle.trim())
       onListUpdated(updated)
       setEditingTitle(false)
-    } catch { toast.error('Failed to rename list') }
+    } catch { 
+      toast.error('Failed to rename list') 
+    }
   }
 
   const deleteList = async () => {
@@ -231,25 +236,22 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
       await todoApi.deleteList(list.id)
       onListDeleted(list.id)
       toast.success('List deleted')
-    } catch { toast.error('Failed to delete list') }
+    } catch { 
+      toast.error('Failed to delete list') 
+    }
   }
 
   return (
     <motion.div 
       layout
-      className="card overflow-hidden transition-all duration-300 break-inside-avoid mb-5"
-      style={{ 
-        border: '1px solid var(--border)',
-        boxShadow: collapsed ? 'none' : '0 10px 30px -15px rgba(0,0,0,0.1)'
-      }}
+      className="card overflow-hidden transition-all duration-300 break-inside-avoid mb-5 shadow-sm border-[var(--border)] bg-[var(--card)]"
     >
       {/* List Header */}
-      <div
-        className="flex items-center gap-2 p-4"
-        style={{ borderBottom: collapsed ? 'none' : '1px solid var(--border)', background: 'var(--card)' }}
-      >
-        <button onClick={() => setCollapsed(p => !p)}
-          className="p-1.5 rounded-lg hover:bg-slate-500/10 text-slate-400 transition-colors flex-shrink-0">
+      <div className="flex items-center gap-2 p-4 border-b border-[var(--border)]/35">
+        <button 
+          onClick={() => setCollapsed(p => !p)}
+          className="p-1.5 rounded-lg hover:bg-[var(--bg)] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors flex-shrink-0"
+        >
           <motion.div animate={{ rotate: collapsed ? 0 : 90 }}>
             <ChevronRight className="w-4 h-4" />
           </motion.div>
@@ -262,46 +264,42 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
             onChange={e => setListTitle(e.target.value)}
             onBlur={saveListTitle}
             onKeyDown={e => { if (e.key === 'Enter') saveListTitle(); if (e.key === 'Escape') { setListTitle(list.title); setEditingTitle(false) } }}
-            className="flex-1 font-bold rounded-lg px-2 py-1 focus:outline-none text-base ring-2 ring-primary/20"
-            style={{ background: 'var(--card)', border: '1px solid var(--primary)', color: 'var(--text)' }}
+            className="flex-1 font-bold rounded-xl px-3 py-1 bg-[var(--bg)] border border-[var(--primary)] text-sm focus:outline-none"
           />
         ) : (
           <h3
             onDoubleClick={() => setEditingTitle(true)}
-            className="flex-1 font-bold cursor-default select-none group flex items-center gap-2"
-            style={{ color: 'var(--text)' }}
+            className="flex-1 font-bold cursor-default select-none group flex items-center gap-2 text-sm text-[var(--text)]"
           >
             {list.title}
-            <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-40 transition-opacity" />
+            <Pencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity text-[var(--text-muted)]" />
           </h3>
         )}
 
         {/* Action icons */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {totalCount > 0 && (
-            <div className="flex items-center rounded-lg p-0.5 border mr-2" style={{ background: 'rgba(0,0,0,0.05)', borderColor: 'var(--border)' }}>
+            <div className="flex items-center rounded-xl p-0.5 border border-[var(--border)] bg-black/10">
               <button 
                 onClick={() => setTaskFilter(p => p === 'all' ? 'active' : p === 'active' ? 'completed' : 'all')}
-                className="p-1 rounded hover:shadow-sm transition-all"
-                style={{ background: taskFilter !== 'all' ? 'var(--card)' : 'transparent' }}
+                className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-all"
                 title={`Filter: ${taskFilter}`}
               >
-                <Filter className={`w-3.5 h-3.5 ${taskFilter !== 'all' ? 'text-primary' : 'text-slate-400'}`} />
+                <Filter className={`w-3.5 h-3.5 ${taskFilter !== 'all' ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`} />
               </button>
               <button 
                 onClick={() => setTaskSort(p => p === 'manual' ? 'status' : p === 'status' ? 'alpha' : 'manual')}
-                className="p-1 rounded hover:shadow-sm transition-all"
-                style={{ background: taskSort !== 'manual' ? 'var(--card)' : 'transparent' }}
+                className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-all"
                 title={`Sort: ${taskSort}`}
               >
-                <ArrowUpDown className={`w-3.5 h-3.5 ${taskSort !== 'manual' ? 'text-primary' : 'text-slate-400'}`} />
+                <ArrowUpDown className={`w-3.5 h-3.5 ${taskSort !== 'manual' ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`} />
               </button>
             </div>
           )}
           
           <button
             onClick={deleteList}
-            className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-colors text-slate-400"
+            className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-colors text-[var(--text-muted)]"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -310,13 +308,12 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
 
       {/* Progress bar */}
       {totalCount > 0 && !collapsed && (
-        <div className="h-1.5 relative overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)' }}>
+        <div className="h-1 bg-black/15 relative overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${(completedCount / totalCount) * 100}%` }}
             transition={{ duration: 1.2, ease: "circOut" }}
-            className="h-full rounded-full"
-            style={{ background: 'linear-gradient(90deg, #4FD1C5, var(--primary))' }}
+            className="h-full rounded-full bg-[var(--primary)]"
           />
         </div>
       )}
@@ -331,8 +328,8 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
             className="p-3"
           >
             {filteredAndSortedTasks.length === 0 && !addingTask ? (
-              <div className="text-center py-8">
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              <div className="text-center py-6">
+                <p className="text-xs text-[var(--text-muted)] font-medium">
                   {taskFilter !== 'all' ? `No ${taskFilter} tasks found` : 'No tasks yet. Add one below!'}
                 </p>
               </div>
@@ -366,29 +363,27 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
               <motion.div
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl ring-2 ring-primary/30"
-                style={{ background: 'rgba(0,161,155,0.05)', border: '1px solid var(--primary)' }}
+                className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl border border-[var(--primary)]/40 bg-[var(--primary)]/5"
               >
-                <div className="w-5 h-5 rounded-lg border-2 border-dashed flex-shrink-0" style={{ borderColor: 'var(--border)' }} />
+                <div className="w-5 h-5 rounded-full border-2 border-dashed border-[var(--border)] flex-shrink-0" />
                 <input
                   ref={addInputRef}
                   value={newTask}
                   onChange={e => setNewTask(e.target.value)}
                   onKeyDown={handleAddKeyDown}
                   placeholder="What needs to be done?"
-                  className="flex-1 text-sm bg-transparent focus:outline-none"
-                  style={{ color: 'var(--text)' }}
+                  className="flex-1 text-sm bg-transparent focus:outline-none text-[var(--text)] placeholder-[var(--text-muted)]/60 font-semibold"
                 />
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   <button
                     onClick={addTask}
-                    className="p-1 rounded-lg text-white transition-colors bg-primary shadow-sm shadow-primary/30 hover:scale-105 active:scale-95"
+                    className="p-1.5 rounded-lg text-white bg-[var(--primary)] shadow-sm hover:scale-105 active:scale-95 transition-all"
                   >
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   </button>
                   <button
                     onClick={() => { setNewTask(''); setAddingTask(false) }}
-                    className="p-1 rounded-lg hover:bg-slate-500/10 transition-colors text-slate-500"
+                    className="p-1.5 rounded-lg hover:bg-slate-500/10 text-[var(--text-muted)]"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -397,13 +392,12 @@ function TodoListCard({ list, onListUpdated, onListDeleted, globalSearchQuery = 
             ) : (
               <button
                 onClick={() => setAddingTask(true)}
-                className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm transition-all duration-300 group"
-                style={{ color: 'var(--text-muted)' }}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm transition-all duration-200 group text-[var(--text-muted)] hover:bg-[var(--bg)]/40"
               >
-                <div className="w-5 h-5 rounded-lg border-2 border-dashed flex items-center justify-center group-hover:border-primary/50 transition-colors" style={{ borderColor: 'var(--border)' }}>
-                  <Plus className="w-3 h-3 group-hover:text-primary" />
+                <div className="w-5 h-5 rounded-full border border-dashed border-[var(--border)] flex items-center justify-center group-hover:border-[var(--primary)] transition-colors">
+                  <Plus className="w-3 h-3 group-hover:text-[var(--primary)]" />
                 </div>
-                <span className="group-hover:text-primary transition-colors font-medium">Add task</span>
+                <span className="group-hover:text-[var(--primary)] transition-colors text-xs font-bold uppercase tracking-wider">Add task</span>
               </button>
             )}
           </motion.div>
@@ -445,7 +439,9 @@ export default function Todo() {
       setNewListTitle('')
       setCreatingList(false)
       toast.success('List created!', { icon: '✨' })
-    } catch { toast.error('Failed to create list') }
+    } catch { 
+      toast.error('Failed to create list') 
+    }
   }
 
   const filteredAndSortedLists = useMemo(() => {
@@ -466,7 +462,6 @@ export default function Todo() {
         return getProgress(b) - getProgress(a)
       })
     } else {
-      // Default: newest (assuming ID or creation order)
       result.sort((a, b) => b.id - a.id)
     }
 
@@ -483,66 +478,64 @@ export default function Todo() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <motion.div 
           whileHover={{ y: -2 }}
-          className="card p-5 relative overflow-hidden group"
+          className="card p-5 relative overflow-hidden group border-[var(--border)] bg-[var(--card)] shadow-sm"
         >
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <ListTodo className="w-12 h-12" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Active Lists</p>
-          <p className="font-bold text-3xl" style={{ color: 'var(--text)' }}>{lists.length}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-[var(--text-muted)]">Active Lists</p>
+          <p className="font-extrabold text-3xl text-[var(--text)]">{lists.length}</p>
         </motion.div>
 
         <motion.div 
           whileHover={{ y: -2 }}
-          className="card p-5 relative overflow-hidden group"
+          className="card p-5 relative overflow-hidden group border-[var(--border)] bg-[var(--card)] shadow-sm"
         >
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <Clock className="w-12 h-12" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Total Tasks</p>
-          <p className="font-bold text-3xl" style={{ color: 'var(--text)' }}>{totalTasks}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-[var(--text-muted)]">Total Tasks</p>
+          <p className="font-extrabold text-3xl text-[var(--text)]">{totalTasks}</p>
         </motion.div>
+
         <motion.div 
           whileHover={{ y: -2 }}
-          className="card p-5 relative overflow-hidden group border-none"
-          style={{ background: 'linear-gradient(135deg, var(--card) 0%, rgba(0,161,155,0.05) 100%)', boxShadow: '0 4px 20px -5px rgba(0,0,0,0.1)' }}
+          className="card p-5 relative overflow-hidden group border-none bg-gradient-to-br from-indigo-500/20 to-[var(--primary)]/10 shadow-sm"
         >
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <CheckCircle2 className="w-12 h-12" />
+            <CheckCircle2 className="w-12 h-12 text-[var(--primary)]" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Completion</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-[var(--text-muted)]">Completion</p>
           <div className="flex items-end gap-2">
-            <p className="font-bold text-3xl" style={{ color: 'var(--primary)' }}>{Math.round(progress)}%</p>
-            <p className="text-xs mb-1.5 font-medium" style={{ color: 'var(--text-muted)' }}>{completedTasks}/{totalTasks}</p>
+            <p className="font-extrabold text-3xl text-[var(--primary)]">{Math.round(progress)}%</p>
+            <p className="text-xs mb-1.5 font-bold text-[var(--text-muted)]">{completedTasks}/{totalTasks}</p>
           </div>
-          <div className="mt-3 h-2 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)' }}>
+          <div className="mt-3 h-2 w-full rounded-full bg-[var(--bg)]/50 overflow-hidden border border-[var(--border)]/20 shadow-inner">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 1.2, ease: "circOut" }}
-              className="h-full rounded-full shadow-[0_0_10px_rgba(0,161,155,0.3)]"
-              style={{ background: 'linear-gradient(90deg, #4FD1C5, var(--primary))' }}
+              className="h-full rounded-full bg-[var(--primary)]"
             />
           </div>
         </motion.div>
       </div>
 
       {/* Controls Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-500/5 p-2 rounded-2xl border border-slate-500/10 backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between card p-3 border-[var(--border)] shadow-sm">
         <div className="relative w-full sm:w-64 group">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] opacity-50 group-focus-within:text-[var(--primary)] transition-colors" />
           <input 
             type="text"
             placeholder="Search lists..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary text-sm transition-all shadow-sm"
-            style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--text)' }}
+            className="input pl-11 h-10 text-sm font-semibold"
           />
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="flex items-center border rounded-xl p-1 shadow-inner" style={{ background: 'rgba(0,0,0,0.1)', borderColor: 'var(--border)' }}>
+          <div className="flex items-center border border-[var(--border)] rounded-2xl p-1 bg-black/10">
             {[
               { id: 'newest', label: 'Newest' },
               { id: 'alpha', label: 'A-Z' },
@@ -552,12 +545,12 @@ export default function Todo() {
               <button 
                 key={btn.id}
                 onClick={() => setListSort(btn.id)}
-                className={`relative px-4 py-2 text-xs font-bold rounded-lg transition-all duration-300 z-10 ${listSort === btn.id ? 'text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`relative px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all duration-300 z-10 ${listSort === btn.id ? 'text-white' : 'text-[var(--text-muted)]'}`}
               >
                 {listSort === btn.id && (
                   <motion.div 
                     layoutId="activeSort"
-                    className="absolute inset-0 bg-primary rounded-lg -z-10 shadow-lg shadow-primary/20"
+                    className="absolute inset-0 bg-[var(--primary)] rounded-lg -z-10 shadow-md"
                     transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                   />
                 )}
@@ -566,14 +559,13 @@ export default function Todo() {
             ))}
           </div>
 
-          <div className="h-8 w-[1px] mx-1 hidden sm:block opacity-20" style={{ background: 'var(--text-muted)' }} />
+          <div className="h-8 w-[1px] mx-1 hidden sm:block bg-[var(--border)]" />
 
           <button 
             onClick={() => setViewMode(v => v === 'list' ? 'grid' : 'list')}
-            className="p-2.5 rounded-xl border transition-all text-slate-400 hover:text-primary hover:border-primary active:scale-95 shadow-sm"
-            style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+            className="p-2 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] active:scale-95 transition-all bg-[var(--card)] text-[var(--text-muted)] hover:text-[var(--primary)]"
           >
-            {viewMode === 'list' ? <LayoutGrid className="w-5 h-5" /> : <List className="w-5 h-5" />}
+            {viewMode === 'list' ? <LayoutGrid className="w-4.5 h-4.5" /> : <List className="w-4.5 h-4.5" />}
           </button>
         </div>
       </div>
@@ -583,9 +575,9 @@ export default function Todo() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="card p-6 border-2 border-primary/30 border-dashed bg-primary/[0.02]"
+          className="card p-6 border border-dashed border-[var(--primary)]/50 bg-[var(--primary)]/5"
         >
-          <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Create New List</p>
+          <p className="text-[10px] font-bold text-[var(--primary)] uppercase tracking-wider mb-3">Create New List</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               ref={newListRef}
@@ -593,14 +585,13 @@ export default function Todo() {
               onChange={e => setNewListTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') createList(); if (e.key === 'Escape') { setNewListTitle(''); setCreatingList(false) } }}
               placeholder="List name (e.g. Weekend Trip, Grocery, Work...)"
-              className="flex-1 px-4 py-2.5 rounded-xl border focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm transition-all shadow-sm"
-              style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--text)' }}
+              className="input flex-1 text-sm font-semibold h-11"
             />
             <div className="flex gap-2">
-              <button onClick={createList} className="flex-1 sm:flex-none px-6 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+              <button onClick={createList} className="btn-primary text-xs uppercase tracking-wider px-5 py-3 flex-1 sm:flex-none">
                 Create List
               </button>
-              <button onClick={() => { setNewListTitle(''); setCreatingList(false) }} className="px-6 py-2.5 border text-slate-600 font-bold rounded-xl hover:bg-slate-500/10 transition-all" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+              <button onClick={() => { setNewListTitle(''); setCreatingList(false) }} className="btn-secondary text-xs uppercase tracking-wider px-5 py-3">
                 Cancel
               </button>
             </div>
@@ -609,15 +600,14 @@ export default function Todo() {
       ) : (
         <button
           onClick={() => setCreatingList(true)}
-          className="flex items-center gap-3 w-full p-5 rounded-2xl border-2 border-dashed transition-all duration-300 group"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-muted)', background: 'var(--card)' }}
+          className="flex items-center gap-3 w-full p-5 rounded-2xl border-2 border-dashed transition-all duration-300 group border-[var(--border)] text-[var(--text-muted)] bg-[var(--card)] hover:border-[var(--primary)]"
         >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-500/10 group-hover:bg-primary/10 group-hover:text-primary transition-all shadow-sm">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-500/10 group-hover:bg-[var(--primary)]/10 group-hover:text-[var(--primary)] transition-all">
             <Plus className="w-5 h-5" />
           </div>
           <div className="text-left">
-            <span className="font-bold text-sm block group-hover:text-primary transition-colors">Add new list</span>
-            <span className="text-xs opacity-60">Create a new category for your tasks</span>
+            <span className="font-bold text-xs uppercase tracking-wider block group-hover:text-[var(--primary)] transition-colors">Add new list</span>
+            <span className="text-[10px] opacity-60">Create a new category for your tasks</span>
           </div>
         </button>
       )}
@@ -626,29 +616,28 @@ export default function Todo() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="card p-5 h-48 animate-pulse" style={{ background: 'var(--card)', opacity: 0.5 }} />
+            <div key={i} className="card p-5 h-48 animate-pulse border-[var(--border)] opacity-50" />
           ))}
         </div>
       ) : filteredAndSortedLists.length === 0 ? (
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="card py-20 text-center backdrop-blur-sm shadow-sm"
-          style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+          className="card py-20 text-center border-[var(--border)] shadow-sm"
         >
-          <div className="w-20 h-20 bg-slate-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
+          <div className="w-20 h-20 bg-slate-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[var(--text-muted)]">
             <ListTodo className="w-10 h-10" />
           </div>
-          <p className="font-bold text-xl mb-2" style={{ color: 'var(--text)' }}>
+          <p className="font-bold text-xl mb-2 text-[var(--text)]">
             {searchQuery ? 'No results found' : 'Ready to organize?'}
           </p>
-          <p className="text-sm max-w-xs mx-auto mb-8" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm max-w-xs mx-auto mb-8 text-[var(--text-muted)]">
             {searchQuery ? `We couldn't find any lists matching "${searchQuery}"` : 'Create your first todo list to keep track of your goals and daily tasks.'}
           </p>
           {!searchQuery && (
             <button 
               onClick={() => setCreatingList(true)}
-              className="px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+              className="btn-primary text-xs uppercase tracking-wider px-6 py-3"
             >
               Get Started
             </button>

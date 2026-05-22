@@ -64,7 +64,7 @@ export default function DailyLineChart({ data }) {
           className="text-xs px-2 py-1 rounded-full"
           style={{ color: 'var(--text-muted)', background: 'var(--border)' }}
         >
-          Last 30 days
+          Last {data.length} days
         </span>
       </div>
       <div className="h-56">

@@ -135,7 +135,7 @@ export default function AIChatbot() {
       {/* Floating Button */}
       <button 
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform ${isOpen ? 'hidden' : 'block'} z-50`}
+        className={`fixed bottom-24 lg:bottom-6 right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform ${isOpen ? 'hidden' : 'block'} z-[35]`}
         style={{ background: 'var(--primary)', color: '#ffffff' }}
       >
         <MessageSquare className="w-6 h-6" />
@@ -143,7 +143,7 @@ export default function AIChatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[32rem] bg-[var(--card)] rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-[var(--border)]">
+        <div className="fixed bottom-24 lg:bottom-6 right-6 left-6 lg:left-auto w-auto lg:w-96 h-[32rem] bg-[var(--card)] rounded-2xl shadow-2xl flex flex-col z-[35] overflow-hidden border border-[var(--border)]">
           {/* Header */}
           <div className="p-4 text-white flex justify-between items-center" style={{ background: 'var(--primary)' }}>
             <div className="flex flex-col">

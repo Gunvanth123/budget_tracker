@@ -4,6 +4,7 @@ import { X, Upload, Plus, FolderPlus, Loader2, FileCheck, Edit3 } from 'lucide-r
 import toast from 'react-hot-toast'
 import CryptoJS from 'crypto-js'
 import { vaultApi } from '../../api/client'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function VaultUploadModal({ isOpen, onClose, onSaved, categories, masterPassword }) {
   const [selectedFiles, setSelectedFiles] = useState([]) // Array of { file, customName }
@@ -11,14 +12,36 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
   const [newCategoryName, setNewCategoryName] = useState('')
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [isDragOver, setIsDragOver] = useState(false)
 
   if (!isOpen) return null
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files)
-    // Removed limit: if (files.length > 5) return toast.error("Max 5 files at once")
-    
-    // Initialize with original filenames (without extension for custom name)
+    if (files.length === 0) return
+
+    const newFiles = files.map(f => ({
+      file: f,
+      customName: f.name.substring(0, f.name.lastIndexOf('.')) || f.name
+    }))
+    setSelectedFiles(newFiles)
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length === 0) return
+
     const newFiles = files.map(f => ({
       file: f,
       customName: f.name.substring(0, f.name.lastIndexOf('.')) || f.name
@@ -70,7 +93,7 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
     if (selectedFiles.length === 0) return toast.error("Please select files")
     if (categoryId === 'new' && !newCategoryName) return toast.error("Enter category name")
     
@@ -101,99 +124,145 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-[5px] animate-in fade-in duration-300">
-      <div className="bg-[var(--card)] w-full max-w-xl rounded-t-[2.5rem] sm:rounded-3xl border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 duration-500">
-        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-indigo-500/5 shrink-0">
-          <div>
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Upload className="w-5 h-5 text-indigo-500" />
-              Secure Upload
-            </h2>
-            <p className="text-xs opacity-50 mt-1">Files are encrypted locally before transit</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-500/10 rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <AnimatePresence>
+      <div className="modal-overlay backdrop-blur-xl bg-slate-950/60 flex items-center justify-center p-4 z-[99999]">
+        {/* Overlay Click-out */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0"
+          onClick={onClose}
+        />
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ type: "spring", duration: 0.4 }}
+          className="modal-content w-full max-w-xl max-h-[90vh] overflow-y-auto relative z-10 flex flex-col bg-white/70 dark:bg-[#0f1628]/70 border border-white/20 dark:border-white/10 shadow-2xl rounded-3xl"
+        >
+          {/* Ambient glows inside modal */}
+          <div className="absolute top-0 left-10 w-32 h-32 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-10 w-32 h-32 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
-          {/* File Input */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider opacity-60">Step 1: Select Files</label>
-            <div className={`relative border-2 border-dashed rounded-2xl p-8 transition-all flex flex-col items-center justify-center gap-4 text-center ${
-              selectedFiles.length > 0 ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-[var(--border)] hover:border-indigo-500/50 bg-[var(--bg)]'
-            }`}>
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                selectedFiles.length > 0 ? 'bg-emerald-500 text-white' : 'bg-indigo-500/10 text-indigo-500'
-              }`}>
-                {selectedFiles.length > 0 ? <FileCheck className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-black/5 dark:border-white/5 sticky top-0 bg-transparent backdrop-blur-md z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-md">
+                <Upload className="w-4.5 h-4.5" />
               </div>
               <div>
-                <p className="font-bold text-sm">
-                  {selectedFiles.length > 0 ? `${selectedFiles.length} files selected` : "Drag & drop or click to upload"}
-                </p>
-                <p className="text-[10px] opacity-50 mt-1">PDF, JPG, PNG, DOC (Secure Storage)</p>
+                <h2 className="text-lg font-extrabold text-[var(--text)] tracking-tight">
+                  Secure Document Upload
+                </h2>
+                <p className="text-[10px] text-[var(--text-muted)] font-medium mt-0.5">Files are encrypted locally on your device via AES-256</p>
               </div>
-              <input 
-                type="file" 
-                multiple 
-                onChange={handleFileChange} 
-                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                disabled={uploading}
-              />
             </div>
+            <button 
+              onClick={onClose} 
+              className="p-2 text-[var(--text-muted)] opacity-70 hover:opacity-100 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Naming Section */}
-          {selectedFiles.length > 0 && (
-            <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-              <label className="text-xs font-bold uppercase tracking-wider opacity-60">Step 2: Name Your Documents</label>
-              <div className="space-y-3">
-                {selectedFiles.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0">
-                      <FileCheck className="w-4 h-4 text-indigo-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-[10px] opacity-40 truncate mb-1">Original: {item.file.name}</p>
-                        <div className="relative">
-                            <Edit3 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-40" />
-                            <input 
-                                type="text"
-                                className="input-sm w-full pl-8 py-1.5 text-xs"
-                                placeholder="Enter document name..."
-                                value={item.customName}
-                                onChange={(e) => updateFileName(i, e.target.value)}
-                                disabled={uploading}
-                            />
-                        </div>
-                    </div>
-                  </div>
-                ))}
+          <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+            {/* Step 1: Select Files (Drag & Drop Zone) */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Step 1: Select Files</label>
+              <div 
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`relative border-2 border-dashed rounded-2xl p-8 transition-all flex flex-col items-center justify-center gap-4 text-center cursor-pointer ${
+                  selectedFiles.length > 0 
+                    ? 'border-emerald-500/50 bg-emerald-500/5' 
+                    : isDragOver
+                      ? 'border-indigo-500 bg-indigo-500/10'
+                      : 'border-[var(--border)] hover:border-indigo-500/50 bg-black/5 dark:bg-black/20'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+                  selectedFiles.length > 0 
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                    : 'bg-indigo-500/10 text-indigo-500'
+                }`}>
+                  {selectedFiles.length > 0 ? <FileCheck className="w-6 h-6" /> : <Upload className="w-6 h-6 animate-pulse" />}
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-[var(--text)]">
+                    {selectedFiles.length > 0 ? `${selectedFiles.length} files selected` : "Drag & drop or click to upload"}
+                  </p>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1">PDF, JPG, PNG, DOC (Encrypted Storage)</p>
+                </div>
+                <input 
+                  type="file" 
+                  multiple 
+                  onChange={handleFileChange} 
+                  className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                  disabled={uploading}
+                />
               </div>
             </div>
-          )}
 
-          {/* Category Selection */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider opacity-60">Step 3: Assign Category</label>
-            <div className="flex flex-col gap-3">
-              <select
-                className="select"
-                value={categoryId}
-                onChange={e => setCategoryId(e.target.value)}
-                disabled={uploading}
+            {/* Step 2: Naming Section */}
+            {selectedFiles.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="space-y-2 overflow-hidden"
               >
-                <option value="">No Category</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-                <option value="new">+ Add New Category</option>
-              </select>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Step 2: Name Your Documents</label>
+                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                  {selectedFiles.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-black/5 dark:bg-black/25 rounded-2xl border border-black/5 dark:border-white/5">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
+                        <FileCheck className="w-4 h-4 text-indigo-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] text-[var(--text-muted)] truncate mb-1">Original: {item.file.name}</p>
+                        <div className="relative">
+                          <Edit3 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] opacity-50" />
+                          <input 
+                            type="text"
+                            className="input-sm w-full pl-8 py-1.5 text-xs bg-white/50 dark:bg-black/20"
+                            placeholder="Enter document name..."
+                            value={item.customName}
+                            onChange={(e) => updateFileName(i, e.target.value)}
+                            disabled={uploading}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
-              {categoryId === 'new' && (
-                <div className="flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
-                  <div className="relative flex-1">
+            {/* Step 3: Category Selection */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Step 3: Assign Category</label>
+              <div className="flex flex-col gap-3">
+                <select
+                  className="select"
+                  value={categoryId}
+                  onChange={e => setCategoryId(e.target.value)}
+                  disabled={uploading}
+                >
+                  <option value="">No Category</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                  <option value="new">+ Add New Category</option>
+                </select>
+
+                {categoryId === 'new' && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="relative flex-1 overflow-hidden"
+                  >
                     <FolderPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
                     <input
                       type="text"
@@ -203,50 +272,59 @@ export default function VaultUploadModal({ isOpen, onClose, onSaved, categories,
                       onChange={e => setNewCategoryName(e.target.value)}
                       autoFocus
                     />
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </div>
             </div>
+
+            {/* Progress Bar */}
+            {uploading && (
+              <div className="space-y-2 pt-2 shrink-0">
+                <div className="flex justify-between text-[10px] font-bold uppercase">
+                  <span className="text-indigo-500 animate-pulse">Encrypting & Uploading...</span>
+                  <span className="text-[var(--text)]">{progress}%</span>
+                </div>
+                <div className="h-2 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-300" 
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Progress Bar */}
-          {uploading && (
-            <div className="space-y-2 shrink-0">
-              <div className="flex justify-between text-[10px] font-bold uppercase">
-                <span className="text-indigo-500">Encrypting & Uploading...</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-[var(--border)] rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-indigo-500 transition-all duration-300" 
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </form>
-
-        <div className="p-6 border-t border-[var(--border)] shrink-0">
-            <button
-                onClick={handleSubmit}
-                disabled={uploading || selectedFiles.length === 0}
-                className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/20 disabled:opacity-50"
+          {/* Footer Action */}
+          <div className="p-5 border-t border-black/5 dark:border-white/5 bg-transparent backdrop-blur-md z-10 flex flex-col sm:flex-row gap-3">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              disabled={uploading}
+              className="btn-secondary order-2 sm:order-1 py-3 flex-1 flex items-center justify-center text-xs uppercase tracking-wider disabled:opacity-50"
             >
-                {uploading ? (
-                <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Processing...
-                </>
-                ) : (
-                <>
-                    <Plus className="w-5 h-5" />
-                    Encrypt & Store {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}
-                </>
-                )}
+              Cancel
             </button>
-        </div>
+            <button
+              onClick={handleSubmit}
+              disabled={uploading || selectedFiles.length === 0}
+              className="btn-primary order-1 sm:order-2 py-3 flex-1 flex items-center justify-center gap-2 text-xs uppercase tracking-wider bg-gradient-to-r from-indigo-500 to-indigo-600 border-none shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Encrypting...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Encrypt & Store {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}
+                </>
+              )}
+            </button>
+          </div>
+        </motion.div>
       </div>
-    </div>,
+    </AnimatePresence>,
     document.body
   )
 }

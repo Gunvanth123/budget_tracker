@@ -42,7 +42,7 @@ export const transactionsApi = {
 }
 
 export const dashboardApi = {
-  get: (month_year) => api.get('/dashboard/', { params: { month_year } }).then(r => r.data),
+  get: (month_year, timeframe) => api.get('/dashboard/', { params: { month_year, timeframe } }).then(r => r.data),
   getCalendar: () => api.get('/dashboard/calendar').then(r => r.data),
 }
 

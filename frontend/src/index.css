@@ -1,72 +1,79 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ================================================
-   THEME VARIABLES
-   Default: Dark Mode
+   THEME VARIABLES - iOS 26 GLASSMORPHIC REDESIGN
    ================================================ */
 
 :root {
-  /* LIGHT MODE */
-  --bg:         #F3F4F6;
-  --card:       #FFFFFF;
-  --primary:    #00A19B;
-  --secondary:  #4FD1C5;
-  --text:       #1F2937;
-  --text-muted: #6B7280;
-  --border:     #D1D5DB;
+  /* LIGHT MODE — Aurora Light (Premium Lavender-Violet) */
+  --bg: #EEF0FF;
+  --card: rgba(255, 255, 255, 0.78);
+  --border: rgba(99, 102, 241, 0.18);
+  --glass-border: rgba(124, 58, 237, 0.22);
+  --glass-shadow: 0 12px 40px -10px rgba(99, 102, 241, 0.14);
 
-  /* Chart Colors - Light */
-  --chart-1: #00A19B;
-  --chart-2: #3B82F6;
+  --primary: #6366F1;
+  --primary-glow: rgba(99, 102, 241, 0.22);
+  --text: #1E1B4B;
+  --text-muted: #6B6FA8;
+
+  /* Gradients */
+  --balance-grad: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%);
+  --income-grad: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  --expense-grad: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+  --forecast-grad: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+
+  /* Chart Colors */
+  --chart-1: #6366F1;
+  --chart-2: #A855F7;
   --chart-3: #F59E0B;
-  --chart-4: #22C55E;
-  --chart-5: #EF4444;
-  --chart-grid: #E5E7EB;
+  --chart-4: #10B981;
+  --chart-5: #F43F5E;
+  --chart-grid: rgba(99, 102, 241, 0.07);
 }
 
 .dark {
-  /* DARK MODE */
-  --bg:         #0F172A;
-  --card:       #1E293B;
-  --primary:    #00A19B;
-  --secondary:  #14B8A6;
-  --text:       #E2E8F0;
-  --text-muted: #94A3B8;
-  --border:     #334155;
+  /* DARK MODE GLASS */
+  --bg: #090D16;
+  --card: rgba(15, 22, 40, 0.6);
+  --border: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 16px 45px -15px rgba(0, 0, 0, 0.6);
 
-  /* Chart Colors - Dark (more vibrant) */
-  --chart-1: #00A19B;
-  --chart-2: #22D3EE;
+  --primary: #6366F1;
+  --primary-glow: rgba(99, 102, 241, 0.2);
+  --text: #F8FAFC;
+  --text-muted: #94A3B8;
+
+  /* Gradients */
+  --balance-grad: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 50%, #7C3AED 100%);
+  --income-grad: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  --expense-grad: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+  --forecast-grad: linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%);
+
+  /* Chart Colors */
+  --chart-1: #6366F1;
+  --chart-2: #06B6D4;
   --chart-3: #F59E0B;
-  --chart-4: #22C55E;
+  --chart-4: #10B981;
   --chart-5: #EF4444;
-  --chart-grid: #334155;
+  --chart-grid: rgba(255, 255, 255, 0.05);
 }
 
 @layer base {
   * {
     box-sizing: border-box;
-
-    /* SMOOTH THEME TRANSITION */
+    /* Smooth 0.5s transition for theme switches */
     transition:
-      background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      fill 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      stroke 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .smooth-transition {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .premium-spring {
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   html {
@@ -74,354 +81,419 @@
     background-color: var(--bg);
   }
 
+  /* Premium gradient background for light mode */
+  html:not(.dark) body {
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(139, 92, 246, 0.13) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 90% 10%, rgba(99, 102, 241, 0.11) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 50% 100%, rgba(168, 85, 247, 0.10) 0%, transparent 60%),
+      #EEF0FF;
+    background-attachment: fixed;
+  }
+
   body {
     margin: 0;
     padding: 0;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Outfit', sans-serif;
     background-color: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
-    will-change: background-color, color;
     overflow-x: hidden;
     overscroll-behavior: none;
-    
-    /* MOBILE FONT SIZE BOOST */
-    font-size: 16px; 
+    font-size: 15px;
   }
 
-  @media (min-width: 1024px) {
-    body {
-      font-size: 14px; /* Slightly smaller on desktop for more content density */
-    }
-  }
-
-  /* Scrollbar */
+  /* Beautiful iOS-style rounded scrollbar */
   ::-webkit-scrollbar {
-    width: 5px;
+    width: 6px;
+    height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: rgba(120, 120, 120, 0.25);
     border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 120, 120, 0.45);
   }
 }
 
 @layer components {
 
-  /* ---- Card ---- */
+  /* ---- Card (Glassmorphic) ---- */
   .card {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    transition:
-      background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* Light mode cards get a subtle elevation shadow */
-  :root .card {
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-  }
-  .dark .card {
-    box-shadow: none;
+  .card:hover {
+    box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.1);
   }
 
-  /* ---- Primary Button ---- */
+  .dark .card:hover {
+    box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  /* ---- Buttons ---- */
   .btn-primary {
-    background: var(--primary);
+    background: var(--primary-gradient, var(--primary));
     color: white;
-    padding: 10px 16px;
-    border-radius: 12px;
-    font-weight: 500;
-    transition:
-      background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-      opacity 0.2s ease,
-      box-shadow 0.2s ease;
+    padding: 12px 20px;
+    border-radius: 18px;
+    font-weight: 600;
+    box-shadow: 0 4px 20px -4px var(--primary-glow);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
+
   .btn-primary:hover {
-    opacity: 0.88;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(0,161,155,0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -4px var(--primary-glow);
+    filter: brightness(1.05);
   }
+
   .btn-primary:active {
+    transform: scale(0.96);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: 18px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary:active {
     transform: scale(0.97);
   }
 
-  /* ---- Input ---- */
+  /* ---- Input Fields ---- */
   .input {
-    background: var(--card);
+    background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 12px 16px;
+    border-radius: 16px;
     width: 100%;
-    transition:
-      background-color 0.3s ease,
-      border-color 0.3s ease,
-      box-shadow 0.2s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
   .input::placeholder {
     color: var(--text-muted);
+    opacity: 0.7;
   }
+
   .input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0,161,155,0.15);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px var(--primary-glow);
   }
+
   .input-sm {
-    background: var(--bg);
+    background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 6px 10px;
-    border-radius: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
     width: 100%;
     transition: all 0.2s ease;
   }
+
   .input-sm:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(0,161,155,0.1);
+    box-shadow: 0 0 0 3px var(--primary-glow);
   }
 
-  /* ---- Label ---- */
-  .label {
-    display: block;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 6px;
-  }
-
-  /* ---- Select ---- */
+  /* ---- Dropdowns (Selects) ---- */
   .select {
     background: var(--card);
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 12px 16px;
+    border-radius: 16px;
     width: 100%;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 32px;
+    background-position: right 16px center;
+    padding-right: 44px;
     cursor: pointer;
-    transition:
-      background-color 0.3s ease,
-      border-color 0.3s ease,
-      box-shadow 0.2s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
   .select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0,161,155,0.15);
+    box-shadow: 0 0 0 4px var(--primary-glow);
   }
-  /* ---- Select Pill (Dashboard Filter) ---- */
+
   .select-pill {
-    background: var(--bg);
+    background: var(--card);
     border: 1px solid var(--border);
-    color: var(--text-muted);
-    padding: 6px 14px;
+    color: var(--text);
+    padding: 8px 16px;
     border-radius: 999px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 500;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     padding-right: 32px;
     cursor: pointer;
     transition: all 0.2s ease;
     outline: none;
-    min-width: 110px;
   }
+
   .select-pill:hover {
     border-color: var(--primary);
-    color: var(--text);
-    background: var(--card);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  }
-  .select-pill:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0,161,155,0.1);
-  }
-  .select-pill option {
-    background-color: var(--card);
-    color: var(--text);
-  }
-  .dark .select-pill option {
-    background-color: #1E293B; /* Hardcoded dark bg for better browser support */
-    color: #F8FAFC; /* White-ish text */
-  }
-
-  /* Native dropdown options follow system theme; force bg/color for webkit */
-  .select option {
-    background: var(--card);
-    color: var(--text);
-  }
-
-  /* ---- Secondary Button ---- */
-  .btn-secondary {
-    background: var(--border);
-    color: var(--text);
-    padding: 10px 16px;
-    border-radius: 12px;
-    font-weight: 500;
-    border: 1px solid var(--border);
-    transition:
-      background-color 0.2s ease,
-      transform 0.15s ease;
-  }
-  .btn-secondary:hover {
-    opacity: 0.85;
     transform: translateY(-1px);
+  }
+
+  /* ---- Labels ---- */
+  .label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+    opacity: 0.9;
+  }
+
+  /* ---- Custom Modal Styling ---- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 16, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 9999;
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal-content {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35);
+    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 85vh;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  @media (max-width: 640px) {
+    .modal-overlay {
+      align-items: flex-end;
+      padding: 0;
+    }
+
+    .modal-content {
+      border-radius: 32px 32px 0 0;
+      max-height: 92vh;
+      animation: slideUpMobile 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
   }
 
   /* ---- Badges ---- */
   .badge-income {
     display: inline-flex;
     align-items: center;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
-    padding: 2px 8px;
+    padding: 4px 10px;
     border-radius: 999px;
-    color: #22C55E;
-    background: rgba(34,197,94,0.12);
+    color: #10B981;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.15);
   }
+
   .badge-expense {
     display: inline-flex;
     align-items: center;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 999px;
-    color: #EF4444;
-    background: rgba(239,68,68,0.12);
-  }
-
-  /* ---- Modal ---- */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    z-index: 99999;
-    animation: fadeIn 0.2s ease-out;
-  }
-
-  .modal-content {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    max-height: 90vh;
-    overflow-y: auto;
-    width: 100%;
-    margin: 1rem;
-  }
-
-  @media (max-width: 640px) {
-    .modal-overlay {
-      align-items: flex-end;
-    }
-    .modal-content {
-      margin: 0;
-      border-radius: 24px 24px 0 0;
-      max-height: 92vh;
-    }
-  }
-
-  /* ---- Chart Tooltip ---- */
-  .chart-tooltip {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 14px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    color: var(--text);
-    font-family: 'Poppins', sans-serif;
-    font-size: 12px;
-    min-width: 150px;
-  }
-  .chart-tooltip-label {
-    color: var(--text-muted);
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: #F43F5E;
+    background: rgba(244, 63, 94, 0.12);
+    border: 1px solid rgba(244, 63, 94, 0.15);
+  }
+
+  /* ---- Chart Tooltips ---- */
+  .chart-tooltip {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    color: #F8FAFC;
+    font-size: 12px;
+    min-width: 140px;
+  }
+
+  .chart-tooltip-label {
+    color: #94A3B8;
+    font-weight: 600;
     margin-bottom: 6px;
   }
-  .chart-tooltip-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 3px;
-  }
-  .chart-tooltip-name {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-muted);
-    font-size: 11px;
-  }
-  .chart-tooltip-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .chart-tooltip-value {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-  }
 
-  /* ---- Responsive Utilities ---- */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
+  /* ---- Container Overrides ---- */
   .responsive-container {
-    padding: 0.75rem;
-    max-width: 1400px;
+    padding: 16px;
+    max-width: 1200px;
     margin: 0 auto;
     width: 100%;
-    overflow-x: hidden;
   }
 
   @media (min-width: 768px) {
     .responsive-container {
-      padding: 1.5rem;
+      padding: 24px;
     }
   }
 
   @media (min-width: 1024px) {
     .responsive-container {
-      padding: 2rem;
+      padding: 32px;
     }
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
-/* Keyframes */
+/* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
+
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideUpMobile {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ================================================
+   VIEW TRANSITION — Modern zoom-blur morph
+   ================================================ */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-fill-mode: both;
+  mix-blend-mode: normal;
+}
+
+/* Outgoing: blur out + scale up + fade */
+::view-transition-old(root) {
+  animation: vt-blur-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Incoming: emerge from blur + scale from slightly small */
+::view-transition-new(root) {
+  animation: vt-blur-in 0.28s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+
+@keyframes vt-blur-out {
+  0% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1);
+  }
+
+  30% {
+    opacity: 0.6;
+    filter: blur(6px);
+    transform: scale(1.02);
+  }
+
+  100% {
+    opacity: 0;
+    filter: blur(16px);
+    transform: scale(1.06);
+  }
+}
+
+@keyframes vt-blur-in {
+  0% {
+    opacity: 0;
+    filter: blur(20px);
+    transform: scale(0.94) translateY(6px);
+  }
+
+  40% {
+    opacity: 0.7;
+    filter: blur(6px);
+    transform: scale(0.97) translateY(2px);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1) translateY(0px);
+  }
 }

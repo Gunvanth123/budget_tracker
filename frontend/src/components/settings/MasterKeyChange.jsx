@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { passwordsApi, vaultApi } from '../../api/client'
 import toast from 'react-hot-toast'
 import CryptoJS from 'crypto-js'
-import { Key, Lock, ShieldAlert, Loader2, CheckCircle2 } from 'lucide-react'
+import { Key, Lock, ShieldAlert, Loader2, CheckCircle2, RefreshCw } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function MasterKeyChange() {
   const [loading, setLoading] = useState(false)
@@ -34,12 +35,6 @@ export default function MasterKeyChange() {
       // 2. Fetch all data for re-encryption
       setStep('reencrypting')
       const passwords = await passwordsApi.getAll()
-      const vaultStatus = await vaultApi.status()
-      
-      // Note: vaultApi.getAll() might not return encrypted_content for GDrive files, 
-      // but if storage_location is 'database', we need it. 
-      // Actually vaultApi.getAll() returns metadata. We might need a special endpoint for this or just rely on metadata if encrypted_content is small.
-      // Re-checking SecureFile model: encrypted_content is a Column(Text).
       
       const reencrypted_passwords = []
       const reencrypted_files = []
@@ -77,7 +72,7 @@ export default function MasterKeyChange() {
         current_master_password: formData.oldKey,
         new_master_password: formData.newKey,
         reencrypted_passwords,
-        reencrypted_files // Add file logic if needed, but for now focus on passwords
+        reencrypted_files
       })
 
       setStep('complete')
@@ -91,117 +86,161 @@ export default function MasterKeyChange() {
     }
   }
 
-  if (step === 'complete') {
-    return (
-      <div className="card p-8 text-center space-y-4 animate-in fade-in zoom-in-95">
-        <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-10 h-10" />
-        </div>
-        <h3 className="text-xl font-bold">Success!</h3>
-        <p className="opacity-60">Your Master Key has been changed and all your data has been re-encrypted with the new key.</p>
-        <button onClick={() => setStep('form')} className="btn-primary">Go Back</button>
-      </div>
-    )
-  }
-
-  if (step === 'verifying' || step === 'reencrypting') {
-    return (
-      <div className="card p-8 text-center space-y-6">
-        <div className="w-16 h-16 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mx-auto">
-          <Loader2 className="w-10 h-10 animate-spin" />
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-xl font-bold">
-            {step === 'verifying' ? 'Verifying Current Key...' : 'Re-encrypting Data...'}
-          </h3>
-          <p className="text-sm opacity-60">
-            Please do not close this window. We are updating your security keys.
-          </p>
-        </div>
-        {step === 'reencrypting' && (
-          <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
-            <div 
-              className="bg-indigo-500 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${(progress.current / progress.total) * 100}%` }}
-            />
-          </div>
-        )}
-      </div>
-    )
-  }
-
   return (
-    <div className="card p-6 space-y-6">
-      <div className="flex items-center gap-3 border-b pb-4">
-        <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
-          <ShieldAlert className="w-5 h-5" />
-        </div>
-        <div>
-          <h3 className="font-bold">Change Master Key</h3>
-          <p className="text-xs opacity-50">This key protects your passwords and secure vault.</p>
-        </div>
-      </div>
+    <div className="relative overflow-hidden card p-6 sm:p-8 bg-white/40 dark:bg-[#0f1628]/45 border border-white/20 dark:border-white/10 shadow-2xl rounded-3xl">
+      {/* Ambient glows inside card */}
+      <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-      <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-xl text-xs text-amber-600 dark:text-amber-400 leading-relaxed">
-        <strong>Important:</strong> Changing your Master Key requires decrypting and re-encrypting all your stored credentials. 
-        This process happens securely in your browser. Make sure you remember your new key, as it cannot be recovered if lost.
-      </div>
-
-      <form onSubmit={handleChange} className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="label">Current Master Key</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
-            <input 
-              type="password" 
-              className="input pl-10" 
-              placeholder="••••••••"
-              value={formData.oldKey}
-              onChange={e => setFormData({...formData, oldKey: e.target.value})}
-              required 
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          <div className="space-y-1.5">
-            <label className="label">New Master Key</label>
-            <div className="relative">
-              <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
-              <input 
-                type="password" 
-                className="input pl-10" 
-                placeholder="Minimum 4 chars"
-                value={formData.newKey}
-                onChange={e => setFormData({...formData, newKey: e.target.value})}
-                required 
-              />
+      <AnimatePresence mode="wait">
+        {step === 'complete' && (
+          <motion.div 
+            key="complete"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="text-center space-y-5 py-6"
+          >
+            <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle2 className="w-10 h-10" />
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className="label">Confirm New Key</label>
-            <div className="relative">
-              <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
-              <input 
-                type="password" 
-                className="input pl-10" 
-                placeholder="Confirm new key"
-                value={formData.confirmKey}
-                onChange={e => setFormData({...formData, confirmKey: e.target.value})}
-                required 
-              />
+            <div className="space-y-2">
+              <h3 className="text-xl font-extrabold text-[var(--text)] tracking-tight">Success!</h3>
+              <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">
+                Your Master Key has been changed and all vault credentials have been re-encrypted with the new key.
+              </p>
             </div>
-          </div>
-        </div>
+            <button 
+              onClick={() => {
+                setFormData({ oldKey: '', newKey: '', confirmKey: '' })
+                setStep('form')
+              }} 
+              className="btn-primary px-8"
+            >
+              Go Back
+            </button>
+          </motion.div>
+        )}
 
-        <button 
-          type="submit" 
-          disabled={loading}
-          className="btn-primary w-full py-4 mt-4 shadow-xl shadow-indigo-500/20"
-        >
-          Update Master Key & Re-encrypt Data
-        </button>
-      </form>
+        {(step === 'verifying' || step === 'reencrypting') && (
+          <motion.div 
+            key="processing"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="text-center space-y-6 py-8"
+          >
+            <div className="w-16 h-16 bg-indigo-500/10 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto shadow-inner relative">
+              <Loader2 className="w-10 h-10 animate-spin" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-[var(--text)] tracking-tight">
+                {step === 'verifying' ? 'Verifying Current Key...' : 'Re-encrypting Vault Data...'}
+              </h3>
+              <p className="text-xs text-[var(--text-muted)] max-w-xs mx-auto leading-relaxed">
+                Please do not close or reload this page. We are securely updating your encryption keys.
+              </p>
+            </div>
+            {step === 'reencrypting' && (
+              <div className="space-y-2 max-w-sm mx-auto">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  <span>Re-encrypting</span>
+                  <span>{progress.current} / {progress.total}</span>
+                </div>
+                <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-indigo-500 h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {step === 'form' && (
+          <motion.div 
+            key="form"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-6"
+          >
+            <div className="flex items-center gap-3 border-b border-black/5 dark:border-white/5 pb-4">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-[var(--text)] tracking-tight">Change Master Key</h3>
+                <p className="text-[10px] text-[var(--text-muted)] font-medium">This key protects your passwords and secure vault items.</p>
+              </div>
+            </div>
+
+            <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/15 p-4 rounded-2xl text-[11px] text-amber-600 dark:text-amber-400 leading-relaxed font-medium">
+              <strong>Crucial Notice:</strong> Changing your Master Key requires decrypting and re-encrypting all credentials. 
+              This process occurs fully client-side in your browser. Be sure to note down your new key; it cannot be recovered or reset.
+            </div>
+
+            <form onSubmit={handleChange} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Current Master Key</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] opacity-50" />
+                  <input 
+                    type="password" 
+                    className="input pl-10" 
+                    placeholder="••••••••"
+                    value={formData.oldKey}
+                    onChange={e => setFormData({...formData, oldKey: e.target.value})}
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">New Master Key</label>
+                  <div className="relative">
+                    <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] opacity-50" />
+                    <input 
+                      type="password" 
+                      className="input pl-10" 
+                      placeholder="Min 4 characters"
+                      value={formData.newKey}
+                      onChange={e => setFormData({...formData, newKey: e.target.value})}
+                      required 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Confirm New Key</label>
+                  <div className="relative">
+                    <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] opacity-50" />
+                    <input 
+                      type="password" 
+                      className="input pl-10" 
+                      placeholder="Confirm new key"
+                      value={formData.confirmKey}
+                      onChange={e => setFormData({...formData, confirmKey: e.target.value})}
+                      required 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="btn-primary w-full py-3.5 mt-4 bg-gradient-to-r from-amber-500 to-amber-600 border-none shadow-lg shadow-amber-500/20 text-xs uppercase tracking-wider font-bold"
+              >
+                Update Master Key & Re-encrypt
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

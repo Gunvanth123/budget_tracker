@@ -9,7 +9,7 @@ import {
   File, FileText, FileImage,
   Loader2, Search,
   CheckCircle2, Settings, ExternalLink, Info,
-  FolderOpen, ChevronDown, ChevronRight, Plus, Eye, X
+  FolderOpen, ChevronDown, ChevronRight, Plus, Eye, X, Check, Cloud
 } from 'lucide-react'
 import { vaultApi, passwordsApi, usageApi } from '../../api/client'
 import toast from 'react-hot-toast'
@@ -170,38 +170,6 @@ export default function SecureVault() {
     handleConnectGDrive(migrate)
   }
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    // Removed limit: if (file.size > 5 * 1024 * 1024) return toast.error("Files must be under 5MB")
-
-    setIsUploading(true)
-    const reader = new FileReader()
-    
-    reader.onload = async (event) => {
-      try {
-        const arrayBuffer = event.target.result
-        const wa = CryptoJS.lib.WordArray.create(arrayBuffer)
-        const encrypted = CryptoJS.AES.encrypt(wa, masterPassword).toString()
-
-        const formData = new FormData()
-        formData.append('filename', file.name)
-        formData.append('mimetype', file.type)
-        formData.append('size', file.size)
-        formData.append('encrypted_content', encrypted)
-
-        await vaultApi.upload(formData)
-        toast.success(`${file.name} encrypted and stored!`)
-        fetchFiles()
-      } catch (err) {
-        toast.error("Encryption failed")
-      } finally {
-        setIsUploading(false)
-      }
-    }
-    reader.readAsArrayBuffer(file)
-  }
-
   const decryptFile = async (fileInfo) => {
     const res = await vaultApi.download(fileInfo.id)
     const decrypted = CryptoJS.AES.decrypt(res.encrypted_content, masterPassword)
@@ -227,12 +195,10 @@ export default function SecureVault() {
   }
 
   const handleBulkDownload = async () => {
-    // Determine which files to download
     let filesToExport = []
     if (selectionMode && selectedFileIds.size > 0) {
       filesToExport = files.filter(f => selectedFileIds.has(f.id))
     } else {
-      // Export current filtered view
       filesToExport = groupedFiles.flatMap(g => g.files)
     }
 
@@ -250,7 +216,6 @@ export default function SecureVault() {
         try {
           const blob = await decryptFile(file)
           const catName = file.category?.name || 'Uncategorized'
-          // Add to category subfolder
           zip.file(`${catName}/${file.filename}`, blob)
         } catch (err) {
           console.error(`Failed to decrypt ${file.filename}`, err)
@@ -354,8 +319,8 @@ export default function SecureVault() {
   }
 
   const getFileIcon = (mimetype) => {
-    if (mimetype.startsWith('image/')) return <FileImage className="w-5 h-5 text-pink-500" />
-    if (mimetype.includes('pdf') || mimetype.includes('text')) return <FileText className="w-5 h-5 text-blue-500" />
+    if (mimetype.startsWith('image/')) return <FileImage className="w-5 h-5 text-pink-400 dark:text-pink-300" />
+    if (mimetype.includes('pdf') || mimetype.includes('text')) return <FileText className="w-5 h-5 text-blue-400 dark:text-blue-300" />
     return <File className="w-5 h-5 text-slate-400" />
   }
 
@@ -364,7 +329,6 @@ export default function SecureVault() {
       f.filename.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    // Apply category filter if not 'all'
     if (selectedCategory !== 'all') {
         filtered = filtered.filter(f => {
             if (selectedCategory === 'uncategorized') return !f.category_id
@@ -384,324 +348,430 @@ export default function SecureVault() {
     return Object.values(groups)
   }, [files, searchQuery, selectedCategory])
 
+  // Count files for dashboard stats
+  const totalFiles = files.length
+  const totalStorageKB = useMemo(() => {
+    return Math.round(files.reduce((sum, f) => sum + (f.size || 0), 0) / 1024)
+  }, [files])
+
   if (status === 'loading' || isConnecting) {
-    return <div className="p-12 text-center opacity-50 flex flex-col items-center justify-center gap-4">
-      <Loader2 className="animate-spin w-8 h-8 text-indigo-500"/>
-      <p className="font-medium">Securing connection to storage protocols...</p>
-    </div>
+    return (
+      <div className="p-12 text-center opacity-70 flex flex-col items-center justify-center gap-4 min-h-[400px]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+          className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full flex items-center justify-center"
+        >
+          <Shield className="w-5 h-5 text-indigo-500" />
+        </motion.div>
+        <p className="font-semibold text-sm tracking-wide text-[var(--text)]">Connecting to encrypted storage protocols...</p>
+      </div>
+    )
   }
 
   if (status === 'locked') {
     return (
-      <div className="max-w-md mx-auto mt-20 card p-8 space-y-6 shadow-2xl border-t-4 border-[var(--primary)]">
-        <div className="flex flex-col items-center text-center space-y-3">
-          <div className="w-16 h-16 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full flex items-center justify-center shadow-inner">
-            <Shield className="w-8 h-8" />
+      <div className="relative min-h-[70vh] flex items-center justify-center p-4">
+        {/* Glow decoration */}
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-indigo-500/10 blur-[80px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full bg-violet-500/10 blur-[80px] pointer-events-none" />
+
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="w-full max-w-md card p-8 space-y-6 shadow-2xl relative overflow-hidden"
+        >
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shadow-inner border border-indigo-500/20">
+              <Shield className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-extrabold text-[var(--text)]">Secure Vault</h2>
+            <p className="text-xs text-[var(--text-muted)] font-medium max-w-[280px]">Your documents are end-to-end encrypted. Enter your master password to unlock your storage.</p>
           </div>
-          <h2 className="text-2xl font-bold">Secure Vault Access</h2>
-          <p className="text-sm opacity-60">Your files are end-to-end encrypted. Enter your Master Password to decrypt your storage.</p>
-        </div>
-        <form onSubmit={handleUnlock} className="space-y-4 pt-4">
-          <input
-            type="password"
-            autoFocus
-            required
-            placeholder="Master Password"
-            value={masterPassword}
-            onChange={e => setMasterPassword(e.target.value)}
-            className="input w-full p-4 text-center tracking-[0.3em] font-bold text-lg"
-          />
-          <button type="submit" className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20">
-            <Unlock className="w-5 h-5" /> Open Vault
-          </button>
-        </form>
+          <form onSubmit={handleUnlock} className="space-y-4 pt-2">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Master Key</label>
+              <input
+                type="password"
+                autoFocus
+                required
+                placeholder="••••••••"
+                value={masterPassword}
+                onChange={e => setMasterPassword(e.target.value)}
+                className="input text-center tracking-[0.3em] font-bold text-lg"
+              />
+            </div>
+            <button type="submit" className="btn-primary w-full py-4 flex items-center justify-center gap-3 text-sm font-bold uppercase tracking-widest bg-gradient-to-r from-indigo-500 to-violet-600 border-none shadow-lg shadow-indigo-500/20">
+              <Unlock className="w-4 h-4" /> Unlock Storage
+            </button>
+          </form>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="w-full max-w-full space-y-6 overflow-hidden">
-      {/* Google Drive Connection Banner */}
-      {/* Google Drive Connection Banner - Mobile First */}
+    <div className="w-full max-w-5xl mx-auto space-y-6 relative">
+      
+      {/* Background ambient glow blobs */}
+      <div className="absolute top-0 left-10 w-96 h-96 rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-violet-500/5 blur-[120px] pointer-events-none" />
+
+      {/* Cloud Integration Banner */}
       {!vaultStatus.is_gdrive_connected && (
-        <div className={`p-4 sm:p-6 rounded-2xl border flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-500 overflow-hidden ${
-          gdriveConfigured === false
-            ? 'bg-amber-500/5 border-amber-500/20'
-            : 'bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-transparent border-indigo-500/10'
-        }`}>
-          <div className="flex gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-5 rounded-3xl border flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden relative card bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent ${
+            gdriveConfigured === false ? 'border-amber-500/20 bg-amber-500/5' : 'border-indigo-500/10'
+          }`}
+        >
+          <div className="flex gap-4 items-start">
+            <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-md shrink-0 border border-black/5 dark:border-white/5">
               {gdriveConfigured === false
-                ? <Settings className="w-5 h-5 sm:w-8 sm:h-8 text-amber-500" />
-                : <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-6 h-6 sm:w-8 sm:h-8" alt="GDrive" />}
+                ? <Settings className="w-6 h-6 text-amber-500" />
+                : <Cloud className="w-6 h-6 text-indigo-500" />
+              }
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="space-y-1">
               {gdriveConfigured === false ? (
                 <>
-                  <h2 className="text-xs sm:text-base font-bold text-amber-600 dark:text-amber-400">Google Drive Required</h2>
-                  <p className="text-[10px] sm:text-xs opacity-70 mt-1 leading-relaxed">Configure API credentials in your backend <code className="bg-black/10 dark:bg-white/10 px-1 rounded">.env</code> to enable cloud sync.</p>
-                  <div className="mt-2 bg-black/10 dark:bg-white/5 rounded-lg p-2 font-mono text-[9px] sm:text-[10px] overflow-x-auto no-scrollbar">
-                    <p className="whitespace-nowrap"><span className="text-emerald-500">GOOGLE_CLIENT_ID</span>=...</p>
-                  </div>
+                  <h3 className="text-sm font-extrabold text-amber-500">Google Drive Configuration Needed</h3>
+                  <p className="text-xs text-[var(--text-muted)] max-w-xl">To enable cloud backup, please configure your client credentials in the backend environment file.</p>
                 </>
               ) : (
                 <>
-                  <h2 className="text-sm sm:text-lg font-bold">Cloud Encryption</h2>
-                  <p className="text-[11px] sm:text-sm opacity-70 leading-relaxed">Securely sync your vault with Google Drive. Files are encrypted before they leave your device.</p>
+                  <h3 className="text-sm font-extrabold text-[var(--text)]">Sync Vault with Google Drive</h3>
+                  <p className="text-xs text-[var(--text-muted)] max-w-xl">Store your documents securely in your private cloud. Files are fully encrypted locally before upload.</p>
                 </>
               )}
             </div>
           </div>
           {gdriveConfigured !== false && (
             <button
-              onClick={handleConnectGDrive}
-              className="btn-primary w-full py-3 text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+              onClick={() => handleConnectGDrive(false)}
+              className="btn-primary py-2.5 px-5 text-xs uppercase tracking-wider bg-gradient-to-r from-indigo-500 to-indigo-600 border-none shrink-0"
             >
-              <ExternalLink className="w-4 h-4" /> Connect Drive
+              Link Cloud Drive
             </button>
           )}
-        </div>
+        </motion.div>
       )}
 
-      {/* Header Panel - Mobile Optimized */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-sm space-y-4 min-w-0 overflow-hidden">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 shrink-0">
-            <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
+      {/* Storage Dashboard Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <motion.div 
+          whileHover={{ y: -2 }}
+          className="card p-5 relative overflow-hidden group border-[var(--border)] bg-[var(--card)] shadow-sm"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <FileText className="w-12 h-12 text-[var(--primary)]" />
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 min-w-0">
-                <h1 className="text-sm sm:text-xl font-bold truncate">Elite Vault</h1>
-                {vaultStatus.is_gdrive_connected && <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />}
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0">
-              <span className="text-[10px] sm:text-xs opacity-50 truncate shrink-0">
-                  {vaultStatus.is_gdrive_connected ? "GDrive Linked" : "Local Only"}
-              </span>
-              {vaultStatus.is_gdrive_connected && (
-                <button onClick={handleSwitchGDrive} className="text-[9px] font-black uppercase text-indigo-500 px-1.5 py-0.5 bg-indigo-500/5 rounded shrink-0">Switch</button>
-              )}
-            </div>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-[var(--text-muted)]">Encrypted Files</p>
+          <p className="font-extrabold text-3xl text-[var(--text)]">{totalFiles}</p>
+          <div className="mt-2 text-[10px] text-[var(--text-muted)] font-medium flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-500" /> E2E Zero-knowledge active
           </div>
-          <button onClick={() => { setStatus('locked'); setMasterPassword(''); setFiles([]); }} className="p-2 opacity-30 hover:opacity-100 hover:text-red-500 shrink-0 self-start">
-            <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -2 }}
+          className="card p-5 relative overflow-hidden group border-[var(--border)] bg-[var(--card)] shadow-sm"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Cloud className="w-12 h-12 text-indigo-500" />
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-[var(--text-muted)]">Encrypted Volume</p>
+          <p className="font-extrabold text-3xl text-[var(--text)]">
+            {totalStorageKB > 1024 ? `${(totalStorageKB / 1024).toFixed(1)} MB` : `${totalStorageKB} KB`}
+          </p>
+          <div className="mt-2 text-[10px] text-[var(--text-muted)] font-medium">
+            Storage consumption in secure database
+          </div>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -2 }}
+          className="card p-5 relative overflow-hidden group border-none bg-gradient-to-br from-indigo-500/20 to-violet-500/10 shadow-sm"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Shield className="w-12 h-12 text-indigo-500" />
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-[var(--text-muted)]">Cloud Status</p>
+          <div className="flex items-center gap-2 mt-1">
+            <div className={`w-2.5 h-2.5 rounded-full ${vaultStatus.is_gdrive_connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+            <p className="font-extrabold text-lg text-[var(--text)]">
+              {vaultStatus.is_gdrive_connected ? "Google Drive Connected" : "Local Sync Only"}
+            </p>
+          </div>
+          <p className="mt-3 text-[10px] text-[var(--text-muted)] font-medium">
+            {vaultStatus.is_gdrive_connected ? "Auto-syncing encrypts copy to GDrive App Folder" : "Connect cloud account to sync secure storage"}
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Control panel and searching */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between card p-3 border-[var(--border)] shadow-sm">
+        <div className="relative w-full sm:w-72 group">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] opacity-50 group-focus-within:text-indigo-500 transition-colors" />
+          <input 
+            type="text"
+            placeholder="Search vault documents..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="input pl-11 h-11 text-sm font-semibold"
+          />
         </div>
 
-        <div className="flex items-center gap-2">
-            <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30" />
-                <input 
-                    type="text" 
-                    placeholder="Search..." 
-                    className="w-full bg-[var(--bg)] border-none rounded-xl pl-8 sm:pl-9 pr-4 py-2 sm:py-2.5 text-[11px] sm:text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                />
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-                <button 
-                  onClick={() => { setSelectionMode(!selectionMode); setSelectedFileIds(new Set()); }}
-                  className={`p-2 sm:p-2.5 rounded-xl transition-all ${selectionMode ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-[var(--bg)] hover:bg-[var(--border)]'}`}
-                  title="Toggle Select Mode"
-                >
-                  <CheckCircle2 className={`w-4 h-4 sm:w-5 sm:h-5 ${selectionMode ? 'opacity-100' : 'opacity-40'}`} />
-                </button>
-                <button 
-                  onClick={handleBulkDownload} 
-                  disabled={isExporting}
-                  className="p-2 sm:p-2.5 rounded-xl bg-[var(--bg)] hover:bg-[var(--border)] transition-colors disabled:opacity-30"
-                  title="Download All / Selected as ZIP"
-                >
-                  <Download className={`w-4 h-4 sm:w-5 sm:h-5 opacity-60 ${isExporting ? 'animate-bounce' : ''}`} />
-                </button>
-                <button 
-                    onClick={() => setUploadModalOpen(true)}
-                    className="p-2 sm:px-6 sm:py-2.5 rounded-xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 flex items-center gap-2 active:scale-95 transition-all shrink-0"
-                >
-                    <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline text-xs font-bold">Add Documents</span>
-                </button>
-            </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Custom dropdown for categories */}
+          <div className="relative z-30 flex-1 sm:flex-none">
+            <button
+              onClick={() => setIsCatDropdownOpen(!isCatDropdownOpen)}
+              className="flex items-center justify-between gap-3 w-full sm:w-48 bg-black/5 dark:bg-white/5 border border-[var(--border)] rounded-2xl px-4 py-2.5 text-xs font-bold transition-all hover:bg-black/10 dark:hover:bg-white/10"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <FolderOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="truncate">
+                  {selectedCategory === 'all' ? 'All Folders' : selectedCategory === 'uncategorized' ? 'Uncategorized' : categories.find(c => c.id === selectedCategory)?.name || 'Folder'}
+                </span>
+              </div>
+              <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform shrink-0 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {isCatDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsCatDropdownOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -5, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 4, scale: 1 }}
+                    exit={{ opacity: 0, y: -5, scale: 0.98 }}
+                    className="absolute right-0 top-full w-56 z-20 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden py-1.5 backdrop-blur-xl"
+                  >
+                    <button
+                      onClick={() => { setSelectedCategory('all'); setIsCatDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${selectedCategory === 'all' ? 'bg-indigo-500 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 text-[var(--text)]'}`}
+                    >
+                      All Folders
+                    </button>
+                    {categories.map(cat => (
+                      <div 
+                        key={cat.id}
+                        className={`group/cat flex items-center w-full transition-colors ${selectedCategory === cat.id ? 'bg-indigo-500 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                      >
+                        <button
+                          onClick={() => { setSelectedCategory(cat.id); setIsCatDropdownOpen(false); }}
+                          className="flex-1 text-left px-4 py-2.5 text-xs font-bold truncate"
+                        >
+                          {cat.name}
+                        </button>
+                        <div className="flex items-center gap-1 pr-2 shrink-0">
+                          <button 
+                            onClick={(e) => handleEditCategory(e, cat)}
+                            className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
+                          >
+                            <Pencil className="w-3 h-3 text-[var(--text-muted)]" />
+                          </button>
+                          <button 
+                            onClick={(e) => handleDeleteCategory(e, cat.id)}
+                            className="p-1 rounded hover:bg-red-500/20 text-red-500"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => { setSelectedCategory('uncategorized'); setIsCatDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${selectedCategory === 'uncategorized' ? 'bg-indigo-500 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 text-[var(--text)]'}`}
+                    >
+                      Uncategorized
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="h-8 w-[1px] bg-[var(--border)] hidden sm:block" />
+
+          {/* Export and Add buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button 
+              onClick={() => { setSelectionMode(!selectionMode); setSelectedFileIds(new Set()); }}
+              className={`p-2.5 rounded-2xl border transition-all ${selectionMode ? 'bg-indigo-500 text-white border-indigo-500' : 'border-[var(--border)] bg-black/5 dark:bg-white/5 hover:border-indigo-500'}`}
+              title="Bulk Actions"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={handleBulkDownload} 
+              className="p-2.5 rounded-2xl border border-[var(--border)] bg-black/5 dark:bg-white/5 hover:border-indigo-500 transition-all"
+              title="Secure ZIP Export"
+              disabled={isExporting}
+            >
+              <Download className={`w-4 h-4 text-[var(--text-muted)] ${isExporting ? 'animate-bounce' : ''}`} />
+            </button>
+            <button 
+              onClick={() => setUploadModalOpen(true)} 
+              className="btn-primary py-2.5 text-xs uppercase tracking-wider flex items-center gap-1.5 px-4 bg-gradient-to-r from-indigo-500 to-indigo-600 border-none"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" /> Add Files
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Floating Action Button (Mobile) - Portal ensures it's always on top */}
+      {/* Floating Action Button (Mobile) */}
       {createPortal(
         <button 
-            onClick={() => setUploadModalOpen(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-indigo-500 text-white shadow-2xl shadow-indigo-500/40 flex items-center justify-center z-[9999] sm:hidden active:scale-95 transition-transform"
+          onClick={() => setUploadModalOpen(true)}
+          className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-indigo-500 text-white shadow-2xl flex items-center justify-center z-[999] sm:hidden active:scale-95 transition-transform"
         >
-            <Plus className="w-6 h-6" />
+          <Plus className="w-6 h-6" />
         </button>,
         document.body
       )}
-      {/* Category Filter - Universal Custom Dropdown (All Screens) */}
-      <div className="mb-6 w-full">
-        <div className="relative w-full z-30">
-          <button
-            onClick={() => setIsCatDropdownOpen(!isCatDropdownOpen)}
-            className="flex items-center justify-between w-full bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 text-xs font-bold transition-all focus:ring-2 focus:ring-indigo-500/20 shadow-sm hover:border-indigo-500/30"
-          >
-            <div className="flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-indigo-500" />
-              <span>{selectedCategory === 'all' ? 'All Vault' : categories.find(c => c.id === selectedCategory)?.name || 'Select Category'}</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 opacity-50 transition-transform duration-300 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
-          </button>
 
-          <AnimatePresence>
-            {isCatDropdownOpen && (
-              <>
-                {/* Backdrop to close on click outside */}
-                <div 
-                  className="fixed inset-0 z-10" 
-                  onClick={() => setIsCatDropdownOpen(false)} 
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 4, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className="absolute top-full left-0 right-0 z-20 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden py-1"
-                >
-                  <button
-                    onClick={() => { setSelectedCategory('all'); setIsCatDropdownOpen(false); }}
-                    className={`w-full text-left px-4 py-3 text-xs font-bold transition-colors ${selectedCategory === 'all' ? 'bg-indigo-500 text-white' : 'hover:bg-[var(--bg)]'}`}
-                  >
-                    All Vault
-                  </button>
-                  {categories.map(cat => (
-                    <div 
-                      key={cat.id}
-                      className={`group/cat flex items-center w-full transition-colors ${selectedCategory === cat.id ? 'bg-indigo-500 text-white' : 'hover:bg-[var(--bg)]'}`}
-                    >
-                      <button
-                        onClick={() => { setSelectedCategory(cat.id); setIsCatDropdownOpen(false); }}
-                        className="flex-1 text-left px-4 py-3 text-xs font-bold"
-                      >
-                        {cat.name}
-                      </button>
-                      <div className="flex items-center gap-1 pr-2 opacity-0 group-hover/cat:opacity-100 transition-opacity">
-                        <button 
-                          onClick={(e) => handleEditCategory(e, cat)}
-                          className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'hover:bg-white/20' : 'hover:bg-[var(--border)]'}`}
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
-                        <button 
-                          onClick={(e) => handleDeleteCategory(e, cat.id)}
-                          className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'hover:bg-indigo-400' : 'hover:bg-red-500/10 text-red-500'}`}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
+      {/* Lock Storage Button */}
+      <div className="flex justify-end pr-2">
+        <button 
+          onClick={() => { setStatus('locked'); setMasterPassword(''); setFiles([]); }} 
+          className="text-xs font-semibold text-[var(--text-muted)] hover:text-red-500 flex items-center gap-1.5 transition-colors"
+        >
+          <Lock className="w-3.5 h-3.5" /> Lock Vault
+        </button>
       </div>
 
-      {/* Files Content */}
-      {groupedFiles.length === 0 ? (
-        <div className="card py-24 text-center space-y-4">
-          <div className="w-20 h-20 bg-[var(--bg)] rounded-full flex items-center justify-center mx-auto opacity-40">
-            <Upload className="w-10 h-10" />
-          </div>
-          <div>
-            <p className="font-semibold text-lg opacity-80">No secure files found</p>
-            <p className="text-sm opacity-50">Upload your sensitive documents to store them with 256-bit encryption.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {groupedFiles.map(group => (
-            <div key={group.id} className="space-y-4">
+      {/* Vault Files Groups */}
+      <div className="space-y-6">
+        {groupedFiles.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="card py-16 text-center border-[var(--border)] shadow-sm"
+          >
+            <div className="w-16 h-16 bg-slate-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--text-muted)]">
+              <Shield className="w-8 h-8" />
+            </div>
+            <p className="font-bold text-lg text-[var(--text)]">Your vault is empty</p>
+            <p className="text-xs text-[var(--text-muted)] max-w-xs mx-auto mb-6">
+              Encrypted storage keeps your files safe. All uploads are encrypted using client-side AES-256 keys.
+            </p>
+            <button 
+              onClick={() => setUploadModalOpen(true)}
+              className="btn-primary text-xs uppercase tracking-wider px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 border-none"
+            >
+              Upload Documents
+            </button>
+          </motion.div>
+        ) : (
+          groupedFiles.map(group => (
+            <div key={group.id} className="space-y-3">
               <button 
                 onClick={() => toggleCategory(group.id)}
                 className="flex items-center gap-2 group w-full text-left"
               >
-                <div className="p-1 rounded bg-[var(--border)] group-hover:bg-indigo-500/20 transition-colors">
-                  {collapsedCategories[group.id] ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <div className="p-1 rounded-lg bg-black/5 dark:bg-white/5 border border-[var(--border)] group-hover:bg-indigo-500/20 transition-colors">
+                  {collapsedCategories[group.id] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </div>
-                <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4 text-indigo-500" />
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] flex items-center gap-1.5">
+                  <FolderOpen className="w-3.5 h-3.5 text-indigo-500" />
                   {group.name}
-                  <span className="text-[10px] font-medium bg-[var(--border)] px-1.5 py-0.5 rounded-full">{group.files.length}</span>
+                  <span className="text-[9px] font-bold bg-black/10 dark:bg-white/10 text-[var(--text-muted)] px-1.5 py-0.5 rounded-full shrink-0">
+                    {group.files.length}
+                  </span>
                 </h3>
-                <div className="flex-1 h-px bg-[var(--border)]" />
+                <div className="flex-1 h-[1px] bg-[var(--border)]" />
               </button>
 
               {!collapsedCategories[group.id] && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 animate-in fade-in duration-500">
-                  {group.files.map(file => {
-                    const isSelected = selectedFileIds.has(file.id)
-                    return (
-                      <div 
-                        key={file.id} 
-                        onClick={() => selectionMode && toggleFileSelection(file.id)}
-                        className={`group p-3 rounded-2xl bg-gradient-to-br from-[var(--card)] to-[var(--bg)]/50 border transition-all flex flex-col gap-3 min-w-0 overflow-hidden shadow-sm relative ${
-                          isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-[var(--border)] hover:border-indigo-500/50'
-                        } ${selectionMode ? 'cursor-pointer' : ''}`}
-                      >
-                        {/* Selection Checkbox */}
-                        {selectionMode && (
-                          <div className={`absolute top-2 right-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                            isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-black/10 border-white/20'
-                          }`}>
-                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between min-w-0 gap-2">
-                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center border border-[var(--border)] shadow-sm shrink-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <AnimatePresence mode="popLayout">
+                    {group.files.map(file => {
+                      const isSelected = selectedFileIds.has(file.id)
+                      return (
+                        <motion.div 
+                          key={file.id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.97 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.97 }}
+                          onClick={() => selectionMode && toggleFileSelection(file.id)}
+                          className={`card p-4 border transition-all flex flex-col gap-4 shadow-sm relative overflow-hidden ${
+                            isSelected 
+                              ? 'border-indigo-500 bg-indigo-500/5 dark:bg-indigo-500/10' 
+                              : 'border-[var(--border)] bg-[var(--card)] hover:border-indigo-500/40'
+                          } ${selectionMode ? 'cursor-pointer select-none' : ''}`}
+                        >
+                          <div className="flex justify-between items-start gap-2 min-w-0">
+                            <div className="flex gap-3 items-center min-w-0">
+                              <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm shrink-0 border border-black/5 dark:border-white/5">
                                 {getFileIcon(file.mimetype)}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="font-bold text-[13px] truncate" title={file.filename}>{file.filename}</p>
-                                <div className="flex items-center gap-2 mt-0.5 min-w-0">
-                                    <span className="text-[9px] font-black opacity-30 uppercase tracking-widest shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
-                                    <span className="text-[9px] font-black opacity-30 uppercase tracking-widest shrink-0">•</span>
-                                    <span className="text-[9px] font-black opacity-30 uppercase tracking-widest truncate">{new Date(file.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-extrabold text-[13px] text-[var(--text)] truncate tracking-tight">{file.filename}</h4>
+                                <div className="flex items-center gap-1.5 mt-0.5 text-[9px] text-[var(--text-muted)] font-semibold uppercase">
+                                  <span>{(file.size / 1024).toFixed(0)} KB</span>
+                                  <span>•</span>
+                                  <span className="truncate">{new Date(file.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                                 </div>
+                              </div>
                             </div>
-                            <button onClick={() => handleDelete(file.id)} className="p-2 text-red-500/40 hover:text-red-500 transition-colors shrink-0">
+                            
+                            {!selectionMode && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDelete(file.id); }} 
+                                className="p-1 rounded hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-500 transition-colors shrink-0"
+                              >
                                 <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
+                              </button>
+                            )}
 
-                        <div className="flex gap-2">
-                            <button 
+                            {selectionMode && (
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-[var(--border)] bg-black/5 dark:bg-white/5'
+                              }`}>
+                                {isSelected && <Check className="w-3.5 h-3.5 stroke-[3.5]" />}
+                              </div>
+                            )}
+                          </div>
+
+                          {!selectionMode && (
+                            <div className="flex gap-2 shrink-0">
+                              <button 
                                 onClick={() => handlePreview(file)}
-                                className="flex-1 py-2.5 flex items-center justify-center gap-2 text-[11px] font-bold bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
-                            >
-                                <Eye className="w-4 h-4" /> View
-                            </button>
-                            <button 
+                                className="flex-1 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/10"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> Quick Look
+                              </button>
+                              <button 
                                 onClick={() => handleDownload(file)}
-                                className="flex-1 py-2.5 flex items-center justify-center gap-2 text-[11px] font-bold bg-[var(--bg)] hover:bg-[var(--border)] rounded-xl border border-[var(--border)] active:scale-95 transition-all"
-                            >
-                                <Download className="w-4 h-4" /> Save
-                            </button>
-                        </div>
-                    </div>
-                  )
-                })}
+                                className="flex-1 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-[var(--border)] text-[var(--text)] text-[11px] font-bold flex items-center justify-center gap-1.5"
+                              >
+                                <Download className="w-3.5 h-3.5 text-[var(--text-muted)]" /> Save File
+                              </button>
+                            </div>
+                          )}
+                        </motion.div>
+                      )
+                    })}
+                  </AnimatePresence>
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
-      {/* Security Tip */}
-      <div className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-xl flex gap-3 items-center">
-         <Shield className="w-5 h-5 text-amber-500 flex-shrink-0" />
-         <p className="text-xs text-amber-600 dark:text-amber-400 opacity-90">
-             <b>Privacy Warning:</b> Your files are encrypted locally {vaultStatus.is_gdrive_connected ? "before uploading to Google Drive" : "locally"}. If you lose your Master Password, these files cannot be recovered.
-         </p>
+      {/* Encryption security advice */}
+      <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-2xl flex gap-3 items-start card">
+        <Info className="w-4.5 h-4.5 text-amber-500 shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-600 dark:text-amber-400 opacity-90 leading-relaxed">
+          <strong>Security Warning:</strong> Budget Tracker Elite Vault implements local decryption key matrices. We do not store your master key. If you lose your master key or forget it, all files in your database and linked cloud folders become permanently scrambled.
+        </p>
       </div>
 
       <VaultUploadModal 
@@ -712,73 +782,78 @@ export default function SecureVault() {
         masterPassword={masterPassword}
       />
 
-      {previewData.isOpen && createPortal(
-        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center">
-            {/* Backdrop */}
-            <div 
-                className="absolute inset-0 bg-slate-900/98 backdrop-blur-xl cursor-pointer" 
-                onClick={closePreview} 
+      {/* Preview overlays */}
+      <AnimatePresence>
+        {previewData.isOpen && (
+          <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closePreview}
+              className="absolute inset-0 bg-slate-950/95 backdrop-blur-2xl"
             />
             
-            {/* Controls Header */}
-            <div className="relative w-full flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 z-50 bg-slate-900/50 backdrop-blur-md border-b border-white/10">
-                <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-bold text-sm sm:text-lg truncate">{previewData.filename}</h3>
-                    <p className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-widest truncate">{previewData.mimetype}</p>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-5xl h-[85vh] flex flex-col z-10 p-4"
+            >
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-t-3xl border-t border-x border-white/10 backdrop-blur-md">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-white font-extrabold text-sm sm:text-base truncate">{previewData.filename}</h3>
+                  <p className="text-[10px] uppercase font-bold tracking-widest text-white/40 mt-0.5 truncate">{previewData.mimetype}</p>
                 </div>
                 
-                <div className="flex items-center gap-2 sm:gap-3 ml-4">
-                    <button 
-                        onClick={() => {
-                            const a = document.createElement('a')
-                            a.href = previewData.url
-                            a.download = previewData.filename
-                            a.click()
-                        }}
-                        className="p-2 sm:p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
-                        title="Download"
-                    >
-                        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                    <button 
-                        onClick={closePreview}
-                        className="p-2 sm:p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all shadow-lg"
-                        title="Close"
-                    >
-                        <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
+                <div className="flex items-center gap-3 shrink-0 ml-4">
+                  <button 
+                    onClick={() => {
+                      const a = document.createElement('a')
+                      a.href = previewData.url
+                      a.download = previewData.filename
+                      a.click()
+                    }}
+                    className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={closePreview}
+                    className="p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all shadow-lg shadow-red-500/20"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-            </div>
-            
-            {/* Preview Area */}
-            <div className="relative flex-1 w-full p-4 sm:p-8 flex items-center justify-center overflow-hidden">
-                <div className="w-full h-full max-w-6xl bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
-                    {previewData.mimetype.startsWith('image/') ? (
-                        <img src={previewData.url} className="w-full h-full object-contain" alt="Preview" />
-                    ) : previewData.mimetype === 'application/pdf' ? (
-                        <iframe src={`${previewData.url}#toolbar=0`} className="w-full h-full border-0" title="PDF Preview" />
-                    ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-white/60 space-y-4">
-                            <FileText className="w-20 h-20 opacity-20" />
-                            <p>No interactive preview available for this file type.</p>
-                            <button 
-                                onClick={() => {
-                                    const a = document.createElement('a')
-                                    a.href = previewData.url
-                                    a.download = previewData.filename
-                                    a.click()
-                                }}
-                                className="btn-primary"
-                            >
-                                Download to View
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>,
-        document.body
-      )}
+              </div>
+              
+              <div className="flex-1 w-full bg-black/60 rounded-b-3xl border-b border-x border-white/10 flex items-center justify-center overflow-hidden p-6">
+                {previewData.mimetype.startsWith('image/') ? (
+                  <img src={previewData.url} className="max-w-full max-h-full object-contain rounded-xl" alt="Document Quick Look" />
+                ) : previewData.mimetype === 'application/pdf' ? (
+                  <iframe src={`${previewData.url}#toolbar=0`} className="w-full h-full border-0 rounded-xl" title="PDF Document Viewer" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-white/50 space-y-4">
+                    <FileText className="w-16 h-16 opacity-30 animate-pulse text-indigo-500" />
+                    <p className="text-xs font-bold tracking-wide uppercase">Quick Look not supported for this format</p>
+                    <button 
+                      onClick={() => {
+                        const a = document.createElement('a')
+                        a.href = previewData.url
+                        a.download = previewData.filename
+                        a.click()
+                      }}
+                      className="btn-primary py-2.5 px-6 text-xs uppercase bg-indigo-500 border-none"
+                    >
+                      Download to View
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

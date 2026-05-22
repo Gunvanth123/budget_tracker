@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from 'recharts'
 import { formatCurrency } from '../../utils/helpers'
+import MonthYearPicker from '../MonthYearPicker'
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
@@ -65,17 +66,11 @@ export default function ExpensePieChart({ data, selectedMonth, onMonthChange, mo
     return (
       <div className="card p-5 h-80 flex flex-col items-center justify-center relative">
         <div className="absolute top-4 right-4">
-          <select 
+          <MonthYearPicker
             value={selectedMonth}
-            onChange={(e) => onMonthChange(e.target.value)}
-            className="select-pill"
-          >
-            {months?.map(m => (
-              <option key={m} value={m}>
-                {new Date(m).toLocaleString('default', { month: 'short', year: 'numeric' })}
-              </option>
-            ))}
-          </select>
+            onChange={onMonthChange}
+            months={months}
+          />
         </div>
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
@@ -98,17 +93,11 @@ export default function ExpensePieChart({ data, selectedMonth, onMonthChange, mo
           <h3 className="font-bold text-base" style={{ color: 'var(--text)' }}>Expense by Category</h3>
           <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Top spending distribution</p>
         </div>
-        <select 
+        <MonthYearPicker
           value={selectedMonth}
-          onChange={(e) => onMonthChange(e.target.value)}
-          className="select-pill"
-        >
-          {months?.map(m => (
-            <option key={m} value={m}>
-              {new Date(m).toLocaleString('default', { month: 'short', year: 'numeric' })}
-            </option>
-          ))}
-        </select>
+          onChange={onMonthChange}
+          months={months}
+        />
       </div>
       
       <div className="flex-1 min-h-[240px] relative">

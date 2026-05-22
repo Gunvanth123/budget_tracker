@@ -6,7 +6,16 @@ import ExportModal from './ExportModal'
 import { Plus, Pencil, Trash2, Filter, Search, ArrowUpRight, ArrowDownLeft, Download, Loader2, Calendar as CalendarIcon, X, ChevronRight, Tag, ChevronLeft, Wallet, Layers } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, parseISO, isSameDay, addMonths, subMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, isYesterday, parseISO, isSameDay, addMonths, subMonths } from 'date-fns'
+
+const ICON_EMOJI_MAP = {
+  tag: '🏷️', utensils: '🍽️', car: '🚗', 'shopping-bag': '🛍️', zap: '⚡', film: '🎬',
+  heart: '❤️', droplet: '💧', cpu: '💻', book: '📚', gamepad: '🎮', 'map-pin': '📍',
+  'shopping-cart': '🛒', shirt: '👕', home: '🏠', briefcase: '💼', laptop: '💻',
+  building: '🏢', 'trending-up': '📈', gift: '🎁', 'refresh-cw': '🔄', 'plus-circle': '➕',
+  star: '⭐', music: '🎵', coffee: '☕', phone: '📱', globe: '🌍', bus: '🚌',
+  train: '🚂', plane: '✈️',
+}
 
 // Custom Themed Calendar Popover
 function CalendarPopover({ value, onChange, onClose, label }) {
@@ -264,22 +273,42 @@ export default function Transactions() {
     setFilters(p => ({ ...p, startDate: start, endDate: end }))
   }
 
+  // Grouping transactions by date
+  const grouped = {}
+  transactions.forEach(txn => {
+    const dStr = txn.date ? txn.date.split('T')[0] : 'No Date'
+    if (!grouped[dStr]) grouped[dStr] = []
+    grouped[dStr].push(txn)
+  })
+  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a))
+
+  const getDateHeader = (dateStr) => {
+    if (dateStr === 'No Date') return 'No Date'
+    try {
+      const d = parseISO(dateStr)
+      if (isToday(d)) return 'Today'
+      if (isYesterday(d)) return 'Yesterday'
+      return format(d, 'EEEE, d MMMM yyyy')
+    } catch (e) {
+      return dateStr
+    }
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
-      style={{ fontFamily: "'Poppins', sans-serif" }}
     >
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="w-full sm:w-auto">
-          <div className="p-1 bg-[var(--bg)] rounded-xl border border-[var(--border)] flex items-center shadow-sm w-full sm:w-auto">
+          <div className="p-1 bg-[var(--card)] rounded-xl border border-[var(--border)] flex items-center shadow-sm w-full sm:w-auto">
             <button
               onClick={setCurrentMonth}
               className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all ${
                 filters.startDate === defaultStart 
-                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                  ? 'bg-[var(--primary)] text-white shadow-lg shadow-indigo-500/20' 
                   : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5'
               }`}
             >
@@ -289,7 +318,7 @@ export default function Transactions() {
               onClick={setAllTime}
               className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all ${
                 !filters.startDate && !filters.endDate 
-                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                  ? 'bg-[var(--primary)] text-white shadow-lg shadow-indigo-500/20' 
                   : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5'
               }`}
             >
@@ -317,7 +346,7 @@ export default function Transactions() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Transactions', value: summary.count, color: 'var(--text)' },
           { label: 'Income', value: formatCurrency(summary.total_income), color: '#10B981' },
@@ -325,10 +354,10 @@ export default function Transactions() {
           { 
             label: 'Net Balance', 
             value: formatCurrency(summary.net_balance), 
-            color: summary.net_balance >= 0 ? '#6366F1' : '#F59E0B' 
+            color: summary.net_balance >= 0 ? 'var(--primary)' : '#EF4444' 
           }
         ].map((item, idx) => (
-          <div key={idx} className="card p-3 sm:p-5 flex flex-col items-center justify-center gap-0.5 sm:gap-1 group transition-all hover:bg-[var(--bg)]/30 border-[var(--border)] shadow-sm overflow-hidden">
+          <div key={idx} className="card p-4 sm:p-5 flex flex-col items-center justify-center gap-1 group transition-all hover:bg-[var(--bg)]/30 border-[var(--border)] shadow-sm overflow-hidden">
             <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[var(--text-muted)] opacity-60 truncate w-full text-center">{item.label}</p>
             <p 
               className="font-bold text-base sm:text-xl truncate w-full text-center" 
@@ -342,7 +371,7 @@ export default function Transactions() {
       </div>
 
       {/* Unified Filter Section */}
-      <div className="card p-4 shadow-sm border-[var(--border)] overflow-visible">
+      <div className="card p-4 shadow-sm border-[var(--border)] overflow-visible relative z-30">
         <div className="flex flex-col xl:flex-row gap-4">
           {/* Search */}
           <div className="relative flex-1 min-w-0 xl:max-w-md">
@@ -359,7 +388,7 @@ export default function Transactions() {
           {/* Time & Filters Group */}
           <div className="flex flex-col md:flex-row gap-3 flex-1">
             {/* Date Range Picker */}
-            <div className="relative flex items-center p-1 bg-[var(--bg)] rounded-xl border border-[var(--border)] shadow-sm min-w-[280px]">
+            <div className="relative flex items-center p-1 bg-[var(--card)] rounded-xl border border-[var(--border)] shadow-sm min-w-[280px]">
               <button
                 onClick={() => setActivePicker('start')}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5 rounded-lg transition-all"
@@ -434,15 +463,15 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* Transactions Table Card */}
-      <div className="card overflow-hidden shadow-sm border-[var(--border)]">
+      {/* Transactions List */}
+      <div className="space-y-6">
         {loading ? (
-          <div className="p-12 flex flex-col items-center justify-center gap-4 opacity-50">
-            <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-            <p className="text-[10px] font-bold uppercase tracking-widest">Gathering records...</p>
+          <div className="card p-12 flex flex-col items-center justify-center gap-4 opacity-50">
+            <Loader2 className="w-10 h-10 animate-spin text-[var(--primary)]" />
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Gathering records...</p>
           </div>
         ) : transactions.length === 0 ? (
-          <div className="py-24 text-center flex flex-col items-center justify-center gap-4">
+          <div className="card py-20 text-center flex flex-col items-center justify-center gap-4">
             <div className="w-20 h-20 rounded-full bg-[var(--bg)] flex items-center justify-center text-4xl shadow-inner">🔍</div>
             <div className="space-y-1">
               <p className="font-bold text-lg">No matches found</p>
@@ -453,130 +482,102 @@ export default function Transactions() {
             </button>
           </div>
         ) : (
-          <div>
-            {/* Desktop View */}
-            <div className="hidden md:block overflow-x-auto">
-              <div className="min-w-[650px]">
-                <div className="flex items-center px-6 py-4 bg-[var(--bg)]/40 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] border-b border-[var(--border)]">
-                  <div className="w-16 text-center">Type</div>
-                  <div className="flex-1 pl-4">Description</div>
-                  <div className="w-36">Date</div>
-                  <div className="w-44 text-right pr-12">Amount</div>
-                </div>
-
-                <div className="divide-y divide-white/[0.03]">
-                  {transactions.map((txn) => (
-                    <div
-                      key={txn.id}
-                      className="flex items-center px-6 py-4 group hover:bg-[var(--bg)] transition-all cursor-pointer relative"
-                      onClick={() => handleEdit(txn)}
-                    >
-                      {/* Icon */}
-                      <div className="w-16 flex justify-center">
-                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm transition-all group-hover:scale-110 ${
-                          txn.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
-                        }`}>
-                          {txn.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
-                        </div>
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 pl-4 flex flex-col min-w-0">
-                        <p className="font-bold text-sm text-[var(--text)] group-hover:text-indigo-400 transition-colors truncate">
-                          {getTruncatedText(txn.notes || txn.category?.name)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
-                            {txn.category?.name}
-                          </span>
-                          <span className="text-[10px] opacity-20">•</span>
-                          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
-                            {txn.account?.name}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Date */}
-                      <div className="w-36 text-[11px] font-semibold text-[var(--text-muted)]">
-                        {formatDate(txn.date)}
-                      </div>
-
-                      {/* Amount */}
-                      <div className="w-44 flex items-center justify-end gap-4 pr-4">
-                        <span className={`font-bold text-base whitespace-nowrap ${
-                          txn.type === 'income' ? 'text-emerald-500' : 'text-red-500'
-                        }`}>
-                          {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
-                        </span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(txn.id) }}
-                          className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
+          <div className="space-y-6">
+            {sortedDates.map((dateKey) => {
+              const dateTxns = grouped[dateKey]
+              return (
+                <div key={dateKey} className="space-y-2">
+                  <div className="flex items-center justify-between px-2">
+                    <h3 className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] uppercase">
+                      {getDateHeader(dateKey)}
+                    </h3>
+                    <span className="text-[9px] font-medium text-[var(--text-muted)]/70 uppercase tracking-widest">
+                      {dateTxns.length} {dateTxns.length === 1 ? 'entry' : 'entries'}
+                    </span>
+                  </div>
+                  <div className="card overflow-hidden divide-y divide-[var(--border)] shadow-sm border-[var(--border)]">
+                    {dateTxns.map((txn) => {
+                      const categoryColor = txn.category?.color || '#6366f1'
+                      const isIncome = txn.type === 'income'
+                      const emoji = ICON_EMOJI_MAP[txn.category?.icon] || txn.category?.icon || '🏷️'
+                      
+                      return (
+                        <div
+                          key={txn.id}
+                          className="flex items-center px-4 sm:px-6 py-3.5 group hover:bg-[var(--bg)]/40 transition-all cursor-pointer relative"
+                          onClick={() => handleEdit(txn)}
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+                          {/* Left: Category Icon with custom colored background glow */}
+                          <div className="flex-shrink-0 mr-3.5">
+                            <div 
+                              className="w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-transform group-hover:scale-105"
+                              style={{ 
+                                background: `${categoryColor}18`, 
+                                border: `1px solid ${categoryColor}30` 
+                              }}
+                            >
+                              {emoji}
+                            </div>
+                          </div>
 
-            <div className="md:hidden divide-y divide-white/[0.03]">
-              {transactions.map((txn) => (
-                <div
-                  key={`m-${txn.id}`}
-                  className="px-3 py-4 flex items-center gap-2 hover:bg-[var(--bg)] active:bg-[var(--bg)] transition-colors overflow-hidden"
-                  onClick={() => handleEdit(txn)}
-                >
-                  <div className={`w-11 h-11 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-sm ${
-                    txn.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
-                  }`}>
-                    {txn.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
-                  </div>
-                  <div className="flex-1 min-w-0 pr-2">
-                    <p className="font-bold text-[13px] text-[var(--text)] leading-tight">
-                      {getTruncatedText(txn.notes || txn.category?.name)}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider truncate max-w-[70px]">
-                        {txn.category?.name}
-                      </span>
-                      <span className="text-[9px] opacity-20">•</span>
-                      <span className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-wider truncate max-w-[70px]">
-                        {txn.account?.name}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0 flex flex-col items-end gap-1 min-w-[100px]">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-[14px]" style={{ color: txn.type === 'income' ? '#10B981' : '#EF4444' }}>
-                        {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
-                      </p>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(txn.id) }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <p className="text-[9px] text-[var(--text-muted)] font-semibold">
-                      {formatDate(txn.date)}
-                    </p>
+                          {/* Info Column */}
+                          <div className="flex-1 min-w-0 pr-2">
+                            <p className="font-semibold text-sm text-[var(--text)] group-hover:text-[var(--primary)] transition-colors truncate">
+                              {txn.notes || txn.category?.name || 'Untitled'}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                {txn.category?.name || 'Uncategorized'}
+                              </span>
+                              <span className="text-[10px] text-[var(--text-muted)]/40">•</span>
+                              <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                {txn.account?.name || 'Default Account'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Right Column: Amount, Action buttons */}
+                          <div className="text-right flex items-center gap-4 flex-shrink-0">
+                            <span className={`font-bold text-sm sm:text-base whitespace-nowrap ${
+                              isIncome ? 'text-emerald-500' : 'text-red-500'
+                            }`}>
+                              {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
+                            </span>
+                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleEdit(txn) }}
+                                className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--primary)] hover:bg-[var(--bg)] transition-all"
+                                title="Edit"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDelete(txn.id) }}
+                                className="p-2 rounded-xl text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-              ))}
-            </div>
+              )
+            })}
             
             {/* Load More Sensor */}
             {(hasMore || loadingMore) && (
-              <div ref={bottomRef} className="h-20 flex items-center justify-center bg-[var(--bg)]/10">
+              <div ref={bottomRef} className="h-20 flex items-center justify-center bg-[var(--bg)]/10 rounded-2xl border border-dashed border-[var(--border)]">
                 {loadingMore ? (
-                  <div className="flex items-center gap-2 text-indigo-400">
-                    <Loader2 className="animate-spin w-5 h-5" />
+                  <div className="flex items-center gap-2 text-[var(--primary)]">
+                    <Loader2 className="animate-spin w-4 h-4" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Syncing Records...</span>
                   </div>
                 ) : (
-                  <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-10">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-30">
                     Scroll for more
                   </span>
                 )}
