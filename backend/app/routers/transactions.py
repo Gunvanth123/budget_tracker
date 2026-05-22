@@ -34,7 +34,7 @@ def get_transactions(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     search: Optional[str] = None,
-    limit: int = Query(100, le=500),
+    limit: int = Query(100, le=10000),
     offset: int = 0,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

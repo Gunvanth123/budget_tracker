@@ -36,7 +36,7 @@ const getSparklineData = (trends, type) => {
     ]
   }
   return trends.map(t => ({
-    value: type === 'income' ? t.income : type === 'expense' ? t.expense : (t.income - t.expense)
+    value: type === 'income' ? t.income : type === 'expense' ? t.expense : type === 'forecast' ? (t.expense * 0.95 + t.income * 0.05) : (t.income - t.expense)
   }))
 }
 
@@ -151,53 +151,92 @@ export default function Analytics() {
         <div className="space-y-6">
           {/* Monthly overview bar chart container */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="card overflow-hidden">
-              <MonthlyBarChart data={data?.monthly_comparison} />
-            </div>
+            <MonthlyBarChart data={data?.monthly_comparison} />
             
             {/* Daily Trends line chart container */}
-            <div className="card overflow-hidden">
-              <DailyLineChart data={data?.daily_trends} />
-            </div>
+            <DailyLineChart data={data?.daily_trends} />
           </div>
 
           {/* Quick analysis details */}
-          <div className="card p-6">
-            <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-emerald-500" />
-              Quick Monthly Health Summary
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-emerald-500 block">Total Income Flow</span>
-                  <p className="text-lg font-bold mt-1 truncate">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <Calendar className="w-5 h-5 text-emerald-500" />
+              <h3 className="font-extrabold text-sm tracking-wide text-[var(--text)]">
+                Quick Monthly Health Summary
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* Card 1: Total Balance */}
+              <motion.div 
+                whileHover={{ y: -4, scale: 1.01 }}
+                className="card p-5 flex items-center justify-between gap-4 relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300"
+              >
+                <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500 pointer-events-none" />
+                <div className="min-w-0 relative z-10">
+                  <span className="text-[11px] uppercase font-bold tracking-wider text-indigo-500 block">Total Balance</span>
+                  <p className="text-xl font-extrabold mt-1 truncate text-[var(--text)]">
+                    ₹{data?.summary?.total_balance?.toLocaleString() || 0}
+                  </p>
+                  <span className="text-[11px] text-[var(--text-muted)] block mt-1">Available net balance</span>
+                </div>
+                <div className="relative z-10 shrink-0">
+                  <Sparkline data={getSparklineData(data?.daily_trends, 'balance')} color="#6366F1" />
+                </div>
+              </motion.div>
+
+              {/* Card 2: Income */}
+              <motion.div 
+                whileHover={{ y: -4, scale: 1.01 }}
+                className="card p-5 flex items-center justify-between gap-4 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300"
+              >
+                <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500 pointer-events-none" />
+                <div className="min-w-0 relative z-10">
+                  <span className="text-[11px] uppercase font-bold tracking-wider text-emerald-500 block">Total Income Flow</span>
+                  <p className="text-xl font-extrabold mt-1 truncate text-[var(--text)]">
                     ₹{data?.summary?.total_income?.toLocaleString() || 0}
                   </p>
-                  <span className="text-[10px] opacity-40 block mt-0.5">For current billing period</span>
+                  <span className="text-[11px] text-[var(--text-muted)] block mt-1">For current billing period</span>
                 </div>
-                <Sparkline data={getSparklineData(data?.daily_trends, 'income')} color="#10B981" />
-              </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-rose-500 block">Expenses Deducted</span>
-                  <p className="text-lg font-bold mt-1 truncate">
+                <div className="relative z-10 shrink-0">
+                  <Sparkline data={getSparklineData(data?.daily_trends, 'income')} color="#10B981" />
+                </div>
+              </motion.div>
+
+              {/* Card 3: Expense */}
+              <motion.div 
+                whileHover={{ y: -4, scale: 1.01 }}
+                className="card p-5 flex items-center justify-between gap-4 relative overflow-hidden group hover:border-rose-500/30 transition-all duration-300"
+              >
+                <div className="absolute -right-6 -top-6 w-24 h-24 bg-rose-500/10 dark:bg-rose-500/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500 pointer-events-none" />
+                <div className="min-w-0 relative z-10">
+                  <span className="text-[11px] uppercase font-bold tracking-wider text-rose-500 block">Expenses Deducted</span>
+                  <p className="text-xl font-extrabold mt-1 truncate text-[var(--text)]">
                     ₹{data?.summary?.total_expense?.toLocaleString() || 0}
                   </p>
-                  <span className="text-[10px] opacity-40 block mt-0.5">All registered debit accounts</span>
+                  <span className="text-[11px] text-[var(--text-muted)] block mt-1">All registered debit accounts</span>
                 </div>
-                <Sparkline data={getSparklineData(data?.daily_trends, 'expense')} color="#EF4444" />
-              </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-indigo-500 block">Remaining Cushion</span>
-                  <p className="text-lg font-bold mt-1 truncate">
-                    ₹{(data?.summary?.total_income - data?.summary?.total_expense)?.toLocaleString() || 0}
+                <div className="relative z-10 shrink-0">
+                  <Sparkline data={getSparklineData(data?.daily_trends, 'expense')} color="#EF4444" />
+                </div>
+              </motion.div>
+
+              {/* Card 4: Forecast */}
+              <motion.div 
+                whileHover={{ y: -4, scale: 1.01 }}
+                className="card p-5 flex items-center justify-between gap-4 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300"
+              >
+                <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500 pointer-events-none" />
+                <div className="min-w-0 relative z-10">
+                  <span className="text-[11px] uppercase font-bold tracking-wider text-purple-500 block">Forecasted Expense</span>
+                  <p className="text-xl font-extrabold mt-1 truncate text-[var(--text)]">
+                    ₹{data?.summary?.forecasted_expense?.toLocaleString() || 0}
                   </p>
-                  <span className="text-[10px] opacity-40 block mt-0.5">Net cash savings</span>
+                  <span className="text-[11px] text-[var(--text-muted)] block mt-1">Projected month-end spend</span>
                 </div>
-                <Sparkline data={getSparklineData(data?.daily_trends, 'cushion')} color="#8B5CF6" />
-              </div>
+                <div className="relative z-10 shrink-0">
+                  <Sparkline data={getSparklineData(data?.daily_trends, 'forecast')} color="#a855f7" />
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>

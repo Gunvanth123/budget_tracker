@@ -67,13 +67,30 @@
 @layer base {
   * {
     box-sizing: border-box;
-    /* Smooth 0.5s transition for theme switches */
+  }
+
+  body, 
+  .card, 
+  .input, 
+  .select, 
+  .btn-primary, 
+  .btn-secondary, 
+  .select-pill,
+  input,
+  select,
+  textarea,
+  button,
+  header,
+  nav,
+  aside,
+  footer {
+    /* Smooth 0.3s transition for theme switches */
     transition:
-      background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   html {

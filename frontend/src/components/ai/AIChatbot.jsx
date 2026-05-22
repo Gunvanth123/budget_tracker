@@ -4,8 +4,11 @@ import { dashboardApi, budgetsApi, aiApi, categoriesApi, accountsApi, transactio
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import toast from 'react-hot-toast'
+import MonthYearPicker from '../MonthYearPicker'
+import { useAuth } from '../../context/AuthContext'
 
 export default function AIChatbot() {
+  const { user } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -89,13 +92,14 @@ export default function AIChatbot() {
     try {
       const context = await fetchContext()
       const prompt = `You are a friendly AI financial advisor. 
+      The user's name is ${user?.name || 'User'}. Address them by name when appropriate to make the interaction personal and interactive.
       CONTEXT: ${context}
       USER SAYS: "${userMsg.content}"
       
       TASK: Provide a VERY CONCISE response (MAX 2 SENTENCES). 
       Format numbers in Indian Rupees (INR / ₹). Do not use US Dollars. Use markdown.`
 
-      const response = await aiApi.chat(prompt, selectedMonth)
+      const response = await aiApi.chat(prompt, selectedMonth, userMsg.content)
       let aiContent = response.content
 
       const actionMatch = aiContent.match(/\[ACTION\](.*?)\[\/ACTION\]/s)
@@ -151,17 +155,13 @@ export default function AIChatbot() {
                 <Bot className="w-5 h-5" />
                 <h3 className="font-bold">AI Financial Advisor</h3>
               </div>
-              <select 
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-white/10 text-[10px] rounded px-1 mt-1 outline-none border border-white/20"
-              >
-                {months.map(m => (
-                  <option key={m} value={m} style={{ color: '#000' }}>
-                    {new Date(m).toLocaleString('default', { month: 'long', year: 'numeric' })}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-1.5 shrink-0">
+                <MonthYearPicker 
+                  value={selectedMonth}
+                  onChange={setSelectedMonth}
+                  months={months}
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <button onClick={clearChat} className="p-1 hover:bg-white/20 rounded text-xs" title="Clear Chat">
@@ -177,7 +177,7 @@ export default function AIChatbot() {
           <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[var(--bg)]">
             {messages.length === 0 && (
               <div className="text-center text-sm text-gray-500 mt-10">
-                <p>👋 Hi! I'm your AI financial coach for {new Date(selectedMonth).toLocaleString('default', { month: 'long' })}.</p>
+                <p>👋 Hi {user?.name || 'there'}! I'm your AI financial coach for {new Date(selectedMonth).toLocaleString('default', { month: 'long' })}.</p>
                 <p className="mt-2 text-xs">Ask me how to lower your grocery spending, or analyze your budget limits!</p>
               </div>
             )}

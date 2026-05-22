@@ -77,11 +77,11 @@ export default function QuickActions({ onAddTransaction, usage = [] }) {
   }
 
   // Determine which actions to show
-  let displayActionIds = ['transaction']
+  let displayActionIds = ['todo']
 
   if (usage && usage.length > 0) {
     const topUsed = usage
-      .filter(u => u.feature_id !== 'transaction')
+      .filter(u => u.feature_id !== 'todo')
       .map(u => u.feature_id)
       .slice(0, 3)
     displayActionIds = [...displayActionIds, ...topUsed]

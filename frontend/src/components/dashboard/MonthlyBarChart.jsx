@@ -48,6 +48,18 @@ export default function MonthlyBarChart({ data }) {
     )
   }
 
+  const formatXAxis = (value) => {
+    if (value && typeof value === 'string') {
+      const parts = value.split(' ')
+      if (parts.length === 2) {
+        return `${parts[0]} '${parts[1].substring(2)}`
+      }
+    }
+    return value
+  }
+
+  const isDense = data && data.length > 4
+
   return (
     <div className="card p-5 flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
@@ -61,13 +73,20 @@ export default function MonthlyBarChart({ data }) {
       </div>
       <div className="flex-1 min-h-[240px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barGap={6} barCategoryGap="35%">
+          <BarChart data={data} barGap={6} barCategoryGap="35%" margin={{ bottom: isDense ? 10 : 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 11, fill: mutedColor, fontFamily: 'Poppins' }}
+              tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
               axisLine={false}
               tickLine={false}
+              tickFormatter={formatXAxis}
+              interval={0}
+              angle={isDense ? -25 : 0}
+              textAnchor={isDense ? 'end' : 'middle'}
+              height={isDense ? 45 : 30}
+              dx={isDense ? -4 : 0}
+              dy={isDense ? 4 : 0}
             />
             <YAxis
               tickFormatter={formatYAxis}

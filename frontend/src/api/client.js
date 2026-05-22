@@ -114,7 +114,7 @@ export const authApi = {
 }
 
 export const aiApi = {
-  chat: (prompt, month_year) => api.post('/ai/chat', { prompt, month_year }).then(r => r.data),
+  chat: (prompt, month_year, message) => api.post('/ai/chat', { prompt, month_year, message }).then(r => r.data),
   getHistory: (month_year) => api.get(`/ai/history/${month_year}`).then(r => r.data),
   clearHistory: (month_year) => api.delete(`/ai/history/${month_year}`).then(r => r.data),
 }

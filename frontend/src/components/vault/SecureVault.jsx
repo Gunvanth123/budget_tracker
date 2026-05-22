@@ -31,7 +31,7 @@ export default function SecureVault() {
   const [selectedCategory, setSelectedCategory] = useState('all') // 'all', cat_id, or 'uncategorized'
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [previewData, setPreviewData] = useState({ isOpen: false, url: '', filename: '', mimetype: '' })
-  const [collapsedCategories, setCollapsedCategories] = useState({})
+  const [expandedCategories, setExpandedCategories] = useState({})
   
   // Multi-select states
   const [selectionMode, setSelectionMode] = useState(false)
@@ -312,7 +312,7 @@ export default function SecureVault() {
   }
 
   const toggleCategory = (catId) => {
-    setCollapsedCategories(prev => ({
+    setExpandedCategories(prev => ({
       ...prev,
       [catId]: !prev[catId]
     }))
@@ -524,12 +524,12 @@ export default function SecureVault() {
           />
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Custom dropdown for categories */}
           <div className="relative z-30 flex-1 sm:flex-none">
             <button
               onClick={() => setIsCatDropdownOpen(!isCatDropdownOpen)}
-              className="flex items-center justify-between gap-3 w-full sm:w-48 bg-black/5 dark:bg-white/5 border border-[var(--border)] rounded-2xl px-4 py-2.5 text-xs font-bold transition-all hover:bg-black/10 dark:hover:bg-white/10"
+              className="flex items-center justify-between gap-2 sm:gap-3 w-full sm:w-48 bg-black/5 dark:bg-white/5 border border-[var(--border)] rounded-2xl px-3 sm:px-4 py-2.5 text-xs font-bold transition-all hover:bg-black/10 dark:hover:bg-white/10"
             >
               <div className="flex items-center gap-2 truncate">
                 <FolderOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -616,24 +616,16 @@ export default function SecureVault() {
             </button>
             <button 
               onClick={() => setUploadModalOpen(true)} 
-              className="btn-primary py-2.5 text-xs uppercase tracking-wider flex items-center gap-1.5 px-4 bg-gradient-to-r from-indigo-500 to-indigo-600 border-none"
+              className="btn-primary py-2.5 px-3 sm:px-4 text-xs uppercase tracking-wider flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-indigo-600 border-none"
             >
-              <Plus className="w-4 h-4 stroke-[3]" /> Add Files
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span className="hidden sm:inline">Add Files</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Floating Action Button (Mobile) */}
-      {createPortal(
-        <button 
-          onClick={() => setUploadModalOpen(true)}
-          className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-indigo-500 text-white shadow-2xl flex items-center justify-center z-[999] sm:hidden active:scale-95 transition-transform"
-        >
-          <Plus className="w-6 h-6" />
-        </button>,
-        document.body
-      )}
+
 
       {/* Lock Storage Button */}
       <div className="flex justify-end pr-2">
@@ -675,7 +667,7 @@ export default function SecureVault() {
                 className="flex items-center gap-2 group w-full text-left"
               >
                 <div className="p-1 rounded-lg bg-black/5 dark:bg-white/5 border border-[var(--border)] group-hover:bg-indigo-500/20 transition-colors">
-                  {collapsedCategories[group.id] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  {expandedCategories[group.id] ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                 </div>
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] flex items-center gap-1.5">
                   <FolderOpen className="w-3.5 h-3.5 text-indigo-500" />
@@ -687,7 +679,7 @@ export default function SecureVault() {
                 <div className="flex-1 h-[1px] bg-[var(--border)]" />
               </button>
 
-              {!collapsedCategories[group.id] && (
+              {expandedCategories[group.id] && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <AnimatePresence mode="popLayout">
                     {group.files.map(file => {

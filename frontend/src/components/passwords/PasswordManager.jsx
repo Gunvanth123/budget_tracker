@@ -27,7 +27,7 @@ export default function PasswordManager() {
   const [revealedBackups, setRevealedBackups] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [collapsedCategories, setCollapsedCategories] = useState({})
+  const [expandedCategories, setExpandedCategories] = useState({})
   
   // Clipboard copy state mapping for checkmarks
   const [copiedId, setCopiedId] = useState(null)
@@ -239,7 +239,7 @@ export default function PasswordManager() {
   }, [passwords, searchQuery, selectedCategory])
 
   const toggleCategory = (catId) => {
-    setCollapsedCategories(prev => ({ ...prev, [catId]: !prev[catId] }))
+    setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }))
   }
 
   // Calculate statistics for security score
@@ -425,12 +425,12 @@ export default function PasswordManager() {
           />
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Custom dropdown for categories */}
           <div className="relative z-30 flex-1 sm:flex-none">
             <button
               onClick={() => setIsCatDropdownOpen(!isCatDropdownOpen)}
-              className="flex items-center justify-between gap-3 w-full sm:w-48 bg-black/5 dark:bg-white/5 border border-[var(--border)] rounded-2xl px-4 py-2.5 text-xs font-bold transition-all hover:bg-black/10 dark:hover:bg-white/10"
+              className="flex items-center justify-between gap-2 sm:gap-3 w-full sm:w-48 bg-black/5 dark:bg-white/5 border border-[var(--border)] rounded-2xl px-3 sm:px-4 py-2.5 text-xs font-bold transition-all hover:bg-black/10 dark:hover:bg-white/10"
             >
               <div className="flex items-center gap-2 truncate">
                 <FolderOpen className="w-3.5 h-3.5 text-[var(--primary)] shrink-0" />
@@ -509,24 +509,16 @@ export default function PasswordManager() {
             </button>
             <button 
               onClick={() => { setEditData(null); setFormOpen(true) }} 
-              className="btn-primary py-2.5 text-xs uppercase tracking-wider flex items-center gap-1.5 px-4"
+              className="btn-primary py-2.5 px-3 sm:px-4 text-xs uppercase tracking-wider flex items-center gap-1.5"
             >
-              <Plus className="w-4 h-4 stroke-[3]" /> Add Entry
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span className="hidden sm:inline">Add Entry</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Floating Action Button (Mobile) */}
-      {createPortal(
-        <button 
-          onClick={() => { setEditData(null); setFormOpen(true) }}
-          className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-2xl flex items-center justify-center z-[999] sm:hidden active:scale-95 transition-transform"
-        >
-          <Plus className="w-6 h-6" />
-        </button>,
-        document.body
-      )}
+
 
       {/* Locked Trigger Header Option */}
       <div className="flex justify-end pr-2">
@@ -568,7 +560,7 @@ export default function PasswordManager() {
                 className="flex items-center gap-2 group w-full text-left"
               >
                 <div className="p-1 rounded-lg bg-black/5 dark:bg-white/5 border border-[var(--border)] group-hover:bg-[var(--primary)]/20 transition-colors">
-                  {collapsedCategories[group.id] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  {expandedCategories[group.id] ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                 </div>
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] flex items-center gap-1.5">
                   <FolderOpen className="w-3.5 h-3.5 text-[var(--primary)]" />
@@ -580,7 +572,7 @@ export default function PasswordManager() {
                 <div className="flex-1 h-[1px] bg-[var(--border)]" />
               </button>
 
-              {!collapsedCategories[group.id] && (
+              {expandedCategories[group.id] && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <AnimatePresence mode="popLayout">
                     {group.items.map(p => {

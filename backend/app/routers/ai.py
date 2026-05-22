@@ -15,6 +15,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     prompt: str
     month_year: str
+    message: Optional[str] = None
 
 @router.get("/history/{month_year}", response_model=List[ChatMessageOut])
 async def get_chat_history(
@@ -51,23 +52,7 @@ async def ai_chat(
     if not api_key:
         raise HTTPException(status_code=500, detail="AI Service not configured. Please add GROQ_API_KEY to environment variables.")
 
-    # 1. Save User Message
-    user_msg = ChatMessage(
-        user_id=current_user.id,
-        role="user",
-        content=req.prompt,
-        month_year=req.month_year
-    )
-    db.add(user_msg)
-    db.commit()
-
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
-    # Fetch recent history for context (optional, but good for continuity)
+    # Fetch recent history for context (before adding the current turn)
     history = db.query(ChatMessage).filter(
         ChatMessage.user_id == current_user.id,
         ChatMessage.month_year == req.month_year
@@ -95,6 +80,15 @@ async def ai_chat(
     for msg in reversed(history):
         chat_messages.append({"role": msg.role, "content": msg.content})
 
+    # Append current prompt containing full context
+    chat_messages.append({"role": "user", "content": req.prompt})
+
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
     payload = {
         "model": "llama-3.3-70b-versatile",
         "messages": chat_messages,
@@ -112,6 +106,16 @@ async def ai_chat(
         data = response.json()
         ai_content = data["choices"][0]["message"]["content"]
 
+        # 1. Save User Message (save the clean message in database history)
+        db_message_content = req.message if req.message else req.prompt
+        user_msg = ChatMessage(
+            user_id=current_user.id,
+            role="user",
+            content=db_message_content,
+            month_year=req.month_year
+        )
+        db.add(user_msg)
+        
         # 2. Save AI Response
         ai_msg = ChatMessage(
             user_id=current_user.id,
@@ -126,3 +130,4 @@ async def ai_chat(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+

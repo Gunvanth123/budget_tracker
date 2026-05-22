@@ -387,7 +387,7 @@ export default function Layout() {
           {/* Dashboard Tab */}
           <NavLink
             to="/dashboard"
-            className="relative flex flex-col items-center justify-center px-3 sm:px-5 py-1 sm:py-2 h-[46px] sm:h-[50px] rounded-full transition-all duration-300"
+            className="relative flex flex-col items-center justify-center w-full max-w-[72px] sm:max-w-[88px] py-1 sm:py-2 h-[46px] sm:h-[50px] rounded-full transition-all duration-300"
           >
             {({ isActive }) => (
               <>
@@ -416,7 +416,7 @@ export default function Layout() {
           {/* Accounts Tab */}
           <NavLink
             to="/accounts"
-            className="relative flex flex-col items-center justify-center px-3 sm:px-5 py-1 sm:py-2 h-[46px] sm:h-[50px] rounded-full transition-all duration-300"
+            className="relative flex flex-col items-center justify-center w-full max-w-[72px] sm:max-w-[88px] py-1 sm:py-2 h-[46px] sm:h-[50px] rounded-full transition-all duration-300"
           >
             {({ isActive }) => (
               <>
@@ -455,7 +455,7 @@ export default function Layout() {
           {/* Analytics Tab */}
           <NavLink
             to="/analytics"
-            className="relative flex flex-col items-center justify-center px-3 sm:px-5 py-1 sm:py-2 h-[46px] sm:h-[50px] rounded-full transition-all duration-300"
+            className="relative flex flex-col items-center justify-center w-full max-w-[72px] sm:max-w-[88px] py-1 sm:py-2 h-[46px] sm:h-[50px] rounded-full transition-all duration-300"
           >
             {({ isActive }) => (
               <>
@@ -484,7 +484,7 @@ export default function Layout() {
           {/* More Tab (Slides in Drawer) */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="relative flex flex-col items-center justify-center px-3 sm:px-5 py-1 sm:py-2 h-[46px] sm:h-[50px] rounded-full transition-all duration-300"
+            className="relative flex flex-col items-center justify-center w-full max-w-[72px] sm:max-w-[88px] py-1 sm:py-2 h-[46px] sm:h-[50px] rounded-full transition-all duration-300"
           >
             {moreActive && (
               <motion.div
