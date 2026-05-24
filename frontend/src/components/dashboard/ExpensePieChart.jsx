@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from 'recharts'
 import { formatCurrency } from '../../utils/helpers'
 import MonthYearPicker from '../MonthYearPicker'
+import { ChevronDown, ChevronUp, TrendingUp } from 'lucide-react'
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
@@ -55,7 +56,7 @@ const renderActiveShape = (props) => {
   )
 }
 
-export default function ExpensePieChart({ data, selectedMonth, onMonthChange, months }) {
+export default function ExpensePieChart({ data, selectedMonth, onMonthChange, months, isExpanded, onToggleExpand }) {
   const [showAll, setShowAll] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
 
@@ -65,20 +66,22 @@ export default function ExpensePieChart({ data, selectedMonth, onMonthChange, mo
   if (!data || data.length === 0) {
     return (
       <div className="card p-5 h-80 flex flex-col items-center justify-center relative">
-        <div className="absolute top-4 right-4">
-          <MonthYearPicker
-            value={selectedMonth}
-            onChange={onMonthChange}
-            months={months}
-          />
-        </div>
+        {onMonthChange && months && (
+          <div className="absolute top-4 right-4">
+            <MonthYearPicker
+              value={selectedMonth}
+              onChange={onMonthChange}
+              months={months}
+            />
+          </div>
+        )}
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
           style={{ background: 'var(--border)' }}
         >
           <span className="text-2xl">🍕</span>
         </div>
-        <p className="font-medium text-sm" style={{ color: 'var(--text-muted)' }}>No expense data for this month</p>
+        <p className="font-medium text-sm" style={{ color: 'var(--text-muted)' }}>No expense data</p>
       </div>
     )
   }
@@ -93,11 +96,26 @@ export default function ExpensePieChart({ data, selectedMonth, onMonthChange, mo
           <h3 className="font-bold text-base" style={{ color: 'var(--text)' }}>Expense by Category</h3>
           <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Top spending distribution</p>
         </div>
-        <MonthYearPicker
-          value={selectedMonth}
-          onChange={onMonthChange}
-          months={months}
-        />
+        <div className="flex items-center gap-3">
+          {onToggleExpand && (
+            <button
+              onClick={onToggleExpand}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 transition-all border border-indigo-500/20 hover:scale-102"
+              title={isExpanded ? "Collapse trends and charts" : "Expand trends and charts"}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>{isExpanded ? "Show Less" : "Analyze Trends"}</span>
+              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          )}
+          {onMonthChange && months && (
+            <MonthYearPicker
+              value={selectedMonth}
+              onChange={onMonthChange}
+              months={months}
+            />
+          )}
+        </div>
       </div>
       
       <div className="flex-1 min-h-[240px] relative">

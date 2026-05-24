@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
@@ -41,6 +43,7 @@ const getCSSVar = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 export default function DailyLineChart({ data }) {
+  const [isCollapsed, setIsCollapsed] = useState(true)
   const gridColor    = getCSSVar('--chart-grid') || '#334155'
   const mutedColor   = getCSSVar('--text-muted')  || '#94A3B8'
   const incomeColor  = getCSSVar('--chart-4')     || '#22C55E'
@@ -57,9 +60,15 @@ export default function DailyLineChart({ data }) {
   }
 
   return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold" style={{ color: 'var(--text)' }}>Daily Trends</h3>
+    <div className="card p-5 transition-all duration-300">
+      <div 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="flex items-center justify-between cursor-pointer select-none"
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold" style={{ color: 'var(--text)' }}>Daily Trends</h3>
+          {isCollapsed ? <ChevronDown className="w-4 h-4 opacity-50 text-[var(--text-muted)]" /> : <ChevronUp className="w-4 h-4 opacity-50 text-[var(--text-muted)]" />}
+        </div>
         <span
           className="text-xs px-2 py-1 rounded-full"
           style={{ color: 'var(--text-muted)', background: 'var(--border)' }}
@@ -67,62 +76,65 @@ export default function DailyLineChart({ data }) {
           Last {data.length} days
         </span>
       </div>
-      <div className="h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <defs>
-              <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={incomeColor}  stopOpacity={0.12} />
-                <stop offset="95%" stopColor={incomeColor}  stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={expenseColor} stopOpacity={0.12} />
-                <stop offset="95%" stopColor={expenseColor} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-            <XAxis
-              dataKey="date"
-              tickFormatter={formatXAxis}
-              tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
-              axisLine={false}
-              tickLine={false}
-              interval={Math.floor(data.length / 6)}
-            />
-            <YAxis
-              tickFormatter={formatYAxis}
-              tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
-              axisLine={false}
-              tickLine={false}
-              width={52}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: '12px', fontFamily: 'Poppins', paddingTop: '12px', color: 'var(--text-muted)' }}
-            />
-            <Line
-              type="monotone"
-              dataKey="income"
-              name="Income"
-              stroke={incomeColor}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 5, fill: incomeColor }}
-            />
-            <Line
-              type="monotone"
-              dataKey="expense"
-              name="Expense"
-              stroke={expenseColor}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 5, fill: expenseColor }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+
+      {!isCollapsed && (
+        <div className="h-56 mt-4 animate-in fade-in duration-200">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <defs>
+                <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={incomeColor}  stopOpacity={0.12} />
+                  <stop offset="95%" stopColor={incomeColor}  stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={expenseColor} stopOpacity={0.12} />
+                  <stop offset="95%" stopColor={expenseColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+              <XAxis
+                dataKey="date"
+                tickFormatter={formatXAxis}
+                tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
+                axisLine={false}
+                tickLine={false}
+                interval={Math.floor(data.length / 6)}
+              />
+              <YAxis
+                tickFormatter={formatYAxis}
+                tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
+                axisLine={false}
+                tickLine={false}
+                width={52}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                iconType="circle"
+                iconSize={8}
+                wrapperStyle={{ fontSize: '12px', fontFamily: 'Poppins', paddingTop: '12px', color: 'var(--text-muted)' }}
+              />
+              <Line
+                type="monotone"
+                dataKey="income"
+                name="Income"
+                stroke={incomeColor}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 5, fill: incomeColor }}
+              />
+              <Line
+                type="monotone"
+                dataKey="expense"
+                name="Expense"
+                stroke={expenseColor}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 5, fill: expenseColor }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   )
 }

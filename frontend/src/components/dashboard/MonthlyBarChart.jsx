@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
@@ -33,6 +35,7 @@ const getCSSVar = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 export default function MonthlyBarChart({ data }) {
+  const [isCollapsed, setIsCollapsed] = useState(true)
   const gridColor   = getCSSVar('--chart-grid') || '#334155'
   const mutedColor  = getCSSVar('--text-muted')  || '#94A3B8'
   const incomeColor = getCSSVar('--chart-4')     || '#22C55E'
@@ -61,9 +64,15 @@ export default function MonthlyBarChart({ data }) {
   const isDense = data && data.length > 4
 
   return (
-    <div className="card p-5 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold" style={{ color: 'var(--text)' }}>Monthly Overview</h3>
+    <div className="card p-5 flex flex-col h-full transition-all duration-300">
+      <div 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="flex items-center justify-between cursor-pointer select-none"
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold" style={{ color: 'var(--text)' }}>Monthly Overview</h3>
+          {isCollapsed ? <ChevronDown className="w-4 h-4 opacity-50 text-[var(--text-muted)]" /> : <ChevronUp className="w-4 h-4 opacity-50 text-[var(--text-muted)]" />}
+        </div>
         <span
           className="text-xs px-2 py-1 rounded-full"
           style={{ color: 'var(--text-muted)', background: 'var(--border)' }}
@@ -71,41 +80,44 @@ export default function MonthlyBarChart({ data }) {
           Last {data.length} months
         </span>
       </div>
-      <div className="flex-1 min-h-[240px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barGap={6} barCategoryGap="35%" margin={{ bottom: isDense ? 10 : 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={formatXAxis}
-              interval={0}
-              angle={isDense ? -25 : 0}
-              textAnchor={isDense ? 'end' : 'middle'}
-              height={isDense ? 45 : 30}
-              dx={isDense ? -4 : 0}
-              dy={isDense ? 4 : 0}
-            />
-            <YAxis
-              tickFormatter={formatYAxis}
-              tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
-              axisLine={false}
-              tickLine={false}
-              width={52}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--border)', radius: 8, opacity: 0.3 }} />
-            <Legend
-              iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: '12px', fontFamily: 'Poppins', paddingTop: '12px', color: 'var(--text-muted)' }}
-            />
-            <Bar dataKey="income"  name="Income"  fill={incomeColor}  radius={[6, 6, 0, 0]} maxBarSize={54} />
-            <Bar dataKey="expense" name="Expense" fill={expenseColor} radius={[6, 6, 0, 0]} maxBarSize={54} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+
+      {!isCollapsed && (
+        <div className="flex-1 min-h-[240px] mt-4 animate-in fade-in duration-200">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} barGap={6} barCategoryGap="35%" margin={{ bottom: isDense ? 10 : 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={formatXAxis}
+                interval={0}
+                angle={isDense ? -25 : 0}
+                textAnchor={isDense ? 'end' : 'middle'}
+                height={isDense ? 45 : 30}
+                dx={isDense ? -4 : 0}
+                dy={isDense ? 4 : 0}
+              />
+              <YAxis
+                tickFormatter={formatYAxis}
+                tick={{ fontSize: 10, fill: mutedColor, fontFamily: 'Poppins' }}
+                axisLine={false}
+                tickLine={false}
+                width={52}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--border)', radius: 8, opacity: 0.3 }} />
+              <Legend
+                iconType="circle"
+                iconSize={8}
+                wrapperStyle={{ fontSize: '12px', fontFamily: 'Poppins', paddingTop: '12px', color: 'var(--text-muted)' }}
+              />
+              <Bar dataKey="income"  name="Income"  fill={incomeColor}  radius={[6, 6, 0, 0]} maxBarSize={54} />
+              <Bar dataKey="expense" name="Expense" fill={expenseColor} radius={[6, 6, 0, 0]} maxBarSize={54} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   )
 }

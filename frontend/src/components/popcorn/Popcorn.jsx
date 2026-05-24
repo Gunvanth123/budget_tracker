@@ -79,6 +79,12 @@ const PopcornPoster = ({ url, title, category }) => {
 
 export default function Popcorn() {
   const [entries, setEntries] = useState([])
+
+  const getPosterUrl = (posterUrl, width = 400) => {
+    if (!posterUrl) return null
+    if (posterUrl.startsWith('http://') || posterUrl.startsWith('https://')) return posterUrl
+    return `${API_URL}${posterUrl}?token=${token}&width=${width}`
+  }
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
@@ -240,7 +246,7 @@ export default function Popcorn() {
       poster: null,
       posterUrl: ''
     })
-    setPosterPreview(entry.poster_url ? `${API_URL}${entry.poster_url}?token=${token}` : null)
+    setPosterPreview(getPosterUrl(entry.poster_url, 400))
     setShowModal(true)
   }
 
@@ -413,7 +419,7 @@ export default function Popcorn() {
             >
               {/* Left: Poster */}
               <PopcornPoster 
-                url={entry.poster_url ? `${API_URL}${entry.poster_url}?token=${token}&width=400` : null}
+                url={getPosterUrl(entry.poster_url, 400)}
                 title={entry.title}
                 category={entry.category}
               />
@@ -544,7 +550,7 @@ export default function Popcorn() {
               <div className="w-full md:w-2/5 h-64 md:h-auto relative bg-slate-800">
                 {selectedEntry.poster_url ? (
                   <img 
-                    src={`${API_URL}${selectedEntry.poster_url}?token=${token}&width=1000`} 
+                    src={getPosterUrl(selectedEntry.poster_url, 1000)} 
                     className="w-full h-full object-cover" 
                     alt={selectedEntry.title} 
                   />

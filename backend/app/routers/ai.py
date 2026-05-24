@@ -10,7 +10,23 @@ from app.models.models import User, ChatMessage
 from app.database.db import get_db
 from app.schemas.schemas import ChatMessageOut
 
+def clean_user_message(content: str) -> str:
+    if not content:
+        return ""
+    if "USER SAYS:" in content:
+        parts = content.split("USER SAYS:", 1)
+        sub = parts[1].strip()
+        if sub.startswith('"'):
+            next_quote = sub.find('"', 1)
+            if next_quote != -1:
+                return sub[1:next_quote].strip()
+        if "TASK:" in sub:
+            sub = sub.split("TASK:", 1)[0].strip()
+        return sub.strip(' \t\n\r"')
+    return content
+
 router = APIRouter()
+
 
 class ChatRequest(BaseModel):
     prompt: str
@@ -27,6 +43,9 @@ async def get_chat_history(
         ChatMessage.user_id == current_user.id,
         ChatMessage.month_year == month_year
     ).order_by(ChatMessage.created_at.asc()).all()
+    for msg in messages:
+        if msg.role == "user" and msg.content:
+            msg.content = clean_user_message(msg.content)
     return messages
 
 @router.delete("/history/{month_year}")
@@ -107,7 +126,10 @@ async def ai_chat(
         ai_content = data["choices"][0]["message"]["content"]
 
         # 1. Save User Message (save the clean message in database history)
-        db_message_content = req.message if req.message else req.prompt
+        db_message_content = req.message
+        if not db_message_content and req.prompt:
+            db_message_content = clean_user_message(req.prompt)
+                
         user_msg = ChatMessage(
             user_id=current_user.id,
             role="user",

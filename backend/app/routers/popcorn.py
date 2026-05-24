@@ -80,6 +80,11 @@ async def create_popcorn_entry(
                     poster_url = f"/api/popcorn/poster/{gdrive_file_id}"
             except Exception as e:
                 print(f"Popcorn poster upload to GDrive failed: {e}")
+                if remote_poster_url:
+                    poster_url = remote_poster_url
+        else:
+            if remote_poster_url:
+                poster_url = remote_poster_url
 
     new_entry = PopcornEntry(
         user_id=current_user.id,

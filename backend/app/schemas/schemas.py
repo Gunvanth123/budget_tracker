@@ -307,3 +307,19 @@ class MasterKeyChangeReq(BaseModel):
     new_master_password: str
     reencrypted_passwords: list[PasswordReEncrypt]
     reencrypted_files: list[FileReEncrypt]
+
+
+# ─── Recommendation Schemas ──────────────────────────────────────────────────
+
+class RecommendationRequest(BaseModel):
+    query: str
+    media_type: Optional[str] = "movie" # "movie", "tv", "anime", "all"
+
+class RecommendationItem(BaseModel):
+    title: str
+    language: Optional[str] = None
+    imdb_rating: Optional[float] = None
+    genres: Optional[list[str]] = None
+    media_type: str
+    overview: Optional[str] = None
+    poster_path: Optional[str] = None

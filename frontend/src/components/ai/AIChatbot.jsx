@@ -1,11 +1,31 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, X, Send, Bot, Trash2 } from 'lucide-react'
-import { dashboardApi, budgetsApi, aiApi, categoriesApi, accountsApi, transactionsApi, usageApi } from '../../api/client'
+import { MessageSquare, X, Send, Bot, Trash2, Plus, Check, Star, Globe, Film, Tv, Sparkles, Popcorn } from 'lucide-react'
+import { dashboardApi, budgetsApi, aiApi, categoriesApi, accountsApi, transactionsApi, usageApi, recommendationApi, popcornApi } from '../../api/client'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import toast from 'react-hot-toast'
 import MonthYearPicker from '../MonthYearPicker'
 import { useAuth } from '../../context/AuthContext'
+
+const getCleanUserMessage = (content) => {
+  if (!content) return "";
+  const index = content.indexOf("USER SAYS:");
+  if (index !== -1) {
+    let sub = content.substring(index + "USER SAYS:".length).trim();
+    if (sub.startsWith('"')) {
+      const nextQuote = sub.indexOf('"', 1);
+      if (nextQuote !== -1) {
+        return sub.substring(1, nextQuote).trim();
+      }
+    }
+    const taskIndex = sub.indexOf("TASK:");
+    if (taskIndex !== -1) {
+      sub = sub.substring(0, taskIndex).trim();
+    }
+    return sub.replace(/^"|"$/g, '').trim();
+  }
+  return content;
+}
 
 export default function AIChatbot() {
   const { user } = useAuth()
@@ -14,6 +34,7 @@ export default function AIChatbot() {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [addedTitles, setAddedTitles] = useState([])
   
   const endRef = useRef(null)
 
@@ -79,6 +100,40 @@ export default function AIChatbot() {
   }
 
 
+  const handleAddToWatchlist = async (item) => {
+    try {
+      let category = "Movies"
+      if (item.media_type === "tv") {
+        category = "TV show"
+      }
+      const isAnimation = item.genres?.includes("Animation") || item.genres?.includes("Anime")
+      if (isAnimation) {
+        category = item.media_type === "movie" ? "Anime movie" : "Anime series"
+      }
+
+      const scaledRating = Math.round(Math.min(5.0, Math.max(0.0, item.imdb_rating / 2.0)) * 10) / 10
+
+      const data = new FormData()
+      data.append('title', item.title)
+      data.append('category', category)
+      data.append('language', item.language || 'English')
+      data.append('rating', scaledRating)
+      data.append('synopsis', item.overview || '')
+      data.append('reasons_for_liking', 'Recommended by AI Advisor')
+      data.append('genres', (item.genres || []).join(', '))
+      if (item.poster_path) {
+        data.append('remote_poster_url', item.poster_path)
+      }
+
+      await popcornApi.create(data)
+      setAddedTitles(prev => [...prev, item.title])
+      toast.success(`"${item.title}" added to your watchlist!`)
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to add to watchlist")
+    }
+  }
+
   const handleSend = async (e, directInput = null) => {
     if (e) e.preventDefault()
     const content = directInput || input
@@ -91,17 +146,23 @@ export default function AIChatbot() {
 
     try {
       const context = await fetchContext()
-      const prompt = `You are a friendly AI financial advisor. 
-      The user's name is ${user?.name || 'User'}. Address them by name when appropriate to make the interaction personal and interactive.
-      CONTEXT: ${context}
-      USER SAYS: "${userMsg.content}"
+      const prompt = `You are a friendly AI assistant.
+      The user's name is ${user?.name || 'User'}. Address them by name when appropriate.
       
-      TASK: Provide a VERY CONCISE response (MAX 2 SENTENCES). 
-      Format numbers in Indian Rupees (INR / ₹). Do not use US Dollars. Use markdown.`
+      CORE RULES:
+      1. If the user asks for movie, anime, or tv show/web series recommendations:
+         - Provide a very short, friendly response (MAX 2 SENTENCES) saying you are fetching recommendations.
+         - You MUST append an action block at the end of your response.
+         - Format: [ACTION]{"type": "recommend", "query": "clean search keyword/title", "media_type": "movie"|"tv"|"anime"}[/ACTION]
+      2. Otherwise, act as a professional financial advisor. Keep responses extremely short (MAX 2 SENTENCES). Format numbers in Indian Rupees (INR / ₹). Use markdown.
+      
+      CONTEXT: ${context}
+      USER SAYS: "${userMsg.content}"`
 
       const response = await aiApi.chat(prompt, selectedMonth, userMsg.content)
       let aiContent = response.content
 
+      let recommendations = null
       const actionMatch = aiContent.match(/\[ACTION\](.*?)\[\/ACTION\]/s)
       if (actionMatch) {
         try {
@@ -109,13 +170,21 @@ export default function AIChatbot() {
           if (action.type === 'add_transaction') {
             await transactionsApi.create(action.data)
             toast.success(`Transaction Added: ₹${action.data.amount}`)
+          } else if (action.type === 'recommend') {
+            setIsTyping(true)
+            try {
+              recommendations = await recommendationApi.get(action.query, action.media_type)
+            } catch (err) {
+              console.error("Failed to fetch recommendations:", err)
+              toast.error("Failed to load TMDB recommendations")
+            }
           }
         } catch (err) {
           console.error("Action Parsing Failed:", err)
         }
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: aiContent }])
+      setMessages(prev => [...prev, { role: 'assistant', content: aiContent, recommendations }])
     } catch (err) {
       console.error("AI Proxy Error:", err)
       const errorDetail = err.response?.data?.detail || 'AI Advisor is temporarily offline.'
@@ -176,31 +245,153 @@ export default function AIChatbot() {
           {/* Chat Body */}
           <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[var(--bg)]">
             {messages.length === 0 && (
-              <div className="text-center text-sm text-gray-500 mt-10">
-                <p>👋 Hi {user?.name || 'there'}! I'm your AI financial coach for {new Date(selectedMonth).toLocaleString('default', { month: 'long' })}.</p>
-                <p className="mt-2 text-xs">Ask me how to lower your grocery spending, or analyze your budget limits!</p>
+              <div className="text-center text-sm text-gray-500 mt-6 space-y-4">
+                <div>
+                  <p className="font-bold text-[var(--text)]">👋 Hi {user?.name || 'there'}!</p>
+                  <p className="text-xs mt-1">I'm your AI assistant. I can help analyze your budget, track expenses, or recommend movies & anime!</p>
+                </div>
+                
+                <div className="pt-2">
+                  <p className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-2">Popular Quick Actions</p>
+                  <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                    <button 
+                      onClick={() => handleSend(null, "Recommend some popular sci-fi movies")}
+                      className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
+                    >
+                      <Film className="w-4 h-4 text-indigo-400" />
+                      <span>🎬 Recommend some sci-fi movies</span>
+                    </button>
+                    <button 
+                      onClick={() => handleSend(null, "Recommend some good action anime")}
+                      className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
+                    >
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <span>🐉 Recommend some action anime</span>
+                    </button>
+                    <button 
+                      onClick={() => handleSend(null, "Suggest trending TV shows")}
+                      className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
+                    >
+                      <Tv className="w-4 h-4 text-blue-400" />
+                      <span>📺 Recommend trending TV shows</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
             
             {messages.map((m, idx) => (
-              <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm ${
-                  m.role === 'user' 
-                    ? 'bg-[var(--primary)] text-white rounded-br-none' 
-                    : 'rounded-bl-none border border-[var(--border)]'
-                }`}
-                style={m.role === 'assistant' ? { backgroundColor: 'var(--card)', color: 'var(--text)' } : {}}
-                >
-                  {m.role === 'user' ? (
-                    m.content
-                  ) : (
-                    <div className="prose prose-sm prose-p:my-1 prose-ul:my-1 dark:prose-invert" style={{ color: 'inherit' }}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {m.content.replace(/\[ACTION\].*?\[\/ACTION\]/gs, '').trim()}
-                      </ReactMarkdown>
-                    </div>
-                  )}
+              <div key={idx} className="space-y-2">
+                <div className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm ${
+                    m.role === 'user' 
+                      ? 'bg-[var(--primary)] text-white rounded-br-none' 
+                      : 'rounded-bl-none border border-[var(--border)]'
+                  }`}
+                  style={m.role === 'assistant' ? { backgroundColor: 'var(--card)', color: 'var(--text)' } : {}}
+                  >
+                    {m.role === 'user' ? (
+                      getCleanUserMessage(m.content)
+                    ) : (
+                      <div className="prose prose-sm prose-p:my-1 prose-ul:my-1 dark:prose-invert" style={{ color: 'inherit' }}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {m.content.replace(/\[ACTION\].*?\[\/ACTION\]/gs, '').trim()}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {m.role === 'assistant' && m.recommendations && m.recommendations.length > 0 && (
+                  <div className="w-full overflow-hidden py-1">
+                    <div className="flex gap-4 overflow-x-auto pb-4 pt-1 px-1 scrollbar-thin scrollbar-thumb-indigo-500/30 scroll-smooth snap-x snap-mandatory">
+                      {m.recommendations.map((item, recIdx) => {
+                        const isAdded = addedTitles.includes(item.title);
+                        return (
+                          <div 
+                            key={recIdx} 
+                            className="w-[260px] flex-shrink-0 bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden hover:scale-102 hover:border-indigo-500/50 shadow-md hover:shadow-lg transition-all duration-300 snap-start flex flex-col"
+                          >
+                            <div className="h-[140px] bg-slate-800 relative overflow-hidden flex-shrink-0">
+                              {item.poster_path ? (
+                                <img 
+                                  src={item.poster_path} 
+                                  alt={item.title} 
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-indigo-950">
+                                  <Popcorn className="w-8 h-8 opacity-25 text-indigo-400 mb-2" />
+                                  <span className="text-[10px] text-white/40 uppercase font-black tracking-widest text-center px-4 line-clamp-2">
+                                    {item.title}
+                                  </span>
+                                </div>
+                              )}
+                              {item.imdb_rating > 0 && (
+                                <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-yellow-400 flex items-center gap-1 border border-white/10">
+                                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                  <span>{item.imdb_rating.toFixed(1)}</span>
+                                </div>
+                              )}
+                              <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded bg-black/60 backdrop-blur-md text-[9px] font-black uppercase tracking-widest text-white border border-white/10 flex items-center gap-1">
+                                {item.media_type === 'movie' ? <Film className="w-2.5 h-2.5" /> : <Tv className="w-2.5 h-2.5" />}
+                                <span>{item.media_type === 'movie' ? 'Movie' : 'TV Show'}</span>
+                              </div>
+                            </div>
+
+                            <div className="p-3 flex-1 flex flex-col justify-between min-h-0">
+                              <div>
+                                <h4 className="font-extrabold text-sm text-[var(--text)] line-clamp-1 mb-1" title={item.title}>
+                                  {item.title}
+                                </h4>
+                                <div className="flex flex-wrap gap-1.5 items-center mb-2">
+                                  {item.language && (
+                                    <span className="text-[9px] font-semibold opacity-60 uppercase tracking-widest flex items-center gap-0.5 text-[var(--text)]">
+                                      <Globe className="w-2.5 h-2.5 opacity-55" />
+                                      {item.language}
+                                    </span>
+                                  )}
+                                  <div className="flex flex-wrap gap-1">
+                                    {item.genres?.slice(0, 2).map((g, gIdx) => (
+                                      <span key={gIdx} className="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/10">
+                                        {g}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <p className="text-[11px] opacity-60 line-clamp-3 leading-relaxed mb-3 text-[var(--text)]">
+                                  {item.overview || 'No synopsis available.'}
+                                </p>
+                              </div>
+
+                              <button
+                                onClick={() => handleAddToWatchlist(item)}
+                                disabled={isAdded}
+                                className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                  isAdded 
+                                    ? 'bg-green-500/10 text-green-500 border border-green-500/20 cursor-default'
+                                    : 'bg-indigo-500 text-white hover:bg-indigo-600 hover:scale-[1.02] shadow-sm'
+                                }`}
+                              >
+                                {isAdded ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>Added to Watchlist</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>Add to Watchlist</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             

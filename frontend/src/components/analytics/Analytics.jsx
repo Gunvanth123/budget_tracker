@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { dashboardApi, usageApi } from '../../api/client'
 import MonthlyBarChart from '../dashboard/MonthlyBarChart'
 import DailyLineChart from '../dashboard/DailyLineChart'
+import ExpensePieChart from '../dashboard/ExpensePieChart'
 import toast from 'react-hot-toast'
 import { BarChart2, Calendar } from 'lucide-react'
 import MonthYearPicker from '../MonthYearPicker'
@@ -45,10 +46,17 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true)
   const [timeframe, setTimeframe] = useState('30D') // '7D', '30D', '3M', '6M', '1Y'
   const [selectedMonth, setSelectedMonth] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const fetchAnalyticsData = async () => {
     try {
-      const response = await dashboardApi.get(timeframe ? null : selectedMonth, timeframe)
+      let response;
+      if (startDate && endDate) {
+        response = await dashboardApi.get(null, null, startDate, endDate)
+      } else {
+        response = await dashboardApi.get(timeframe ? null : selectedMonth, timeframe)
+      }
       setData(response)
     } catch (err) {
       toast.error('Failed to load analytics data')
@@ -65,7 +73,23 @@ export default function Analytics() {
     const handler = () => fetchAnalyticsData();
     window.addEventListener('transaction-saved', handler);
     return () => window.removeEventListener('transaction-saved', handler);
-  }, [timeframe, selectedMonth])
+  }, [timeframe, selectedMonth, startDate, endDate])
+
+  const handleDateRangeChange = (start, end) => {
+    setStartDate(start)
+    setEndDate(end)
+    if (start && end) {
+      setTimeframe(null)
+      setSelectedMonth('')
+    }
+  }
+
+  const clearCustomDateRange = () => {
+    setStartDate('')
+    setEndDate('')
+    setTimeframe('30D')
+    setSelectedMonth('')
+  }
 
   const TIMEFRAMES = ['7D', '30D', '3M', '6M', '1Y']
 
@@ -86,7 +110,7 @@ export default function Analytics() {
       className="space-y-6 pb-12"
     >
       {/* Timeframe Swapper */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <BarChart2 className="w-5 h-5 text-indigo-500" />
@@ -95,8 +119,8 @@ export default function Analytics() {
           <p className="text-xs opacity-60 mt-0.5">Visualize your earnings, spendings, and budget trends</p>
         </div>
 
-        {/* Filters Group (Timeframe & Month) */}
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        {/* Filters Group (Timeframe, Month & Custom Date Range) */}
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
           {/* Filter Pills */}
           <div 
             className="flex rounded-2xl p-1 gap-1 border justify-between sm:justify-start flex-1 sm:flex-initial"
@@ -108,6 +132,8 @@ export default function Analytics() {
                 onClick={() => {
                   timeframe === tf ? null : setTimeframe(tf)
                   setSelectedMonth('')
+                  setStartDate('')
+                  setEndDate('')
                 }}
                 className="px-4 py-2 rounded-xl text-xs font-bold transition-all relative"
                 style={{
@@ -131,6 +157,8 @@ export default function Analytics() {
             value={selectedMonth}
             onChange={(val) => {
               setSelectedMonth(val)
+              setStartDate('')
+              setEndDate('')
               if (val) {
                 setTimeframe(null)
               } else {
@@ -139,6 +167,37 @@ export default function Analytics() {
             }}
             months={months}
           />
+
+          {/* Custom Date Range Picker */}
+          <div 
+            className="flex items-center gap-2 border rounded-2xl p-1.5 px-3 flex-1 sm:flex-initial"
+            style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+          >
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Range:</span>
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => handleDateRangeChange(e.target.value, endDate)}
+              className="bg-transparent border-0 text-xs text-[var(--text)] focus:outline-none cursor-pointer"
+              style={{ colorScheme: 'dark' }}
+            />
+            <span className="text-xs opacity-50">to</span>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => handleDateRangeChange(startDate, e.target.value)}
+              className="bg-transparent border-0 text-xs text-[var(--text)] focus:outline-none cursor-pointer"
+              style={{ colorScheme: 'dark' }}
+            />
+            {(startDate || endDate) && (
+              <button 
+                onClick={clearCustomDateRange}
+                className="text-[10px] font-bold text-rose-500 hover:text-rose-600 ml-1 px-1.5 py-0.5 rounded-lg hover:bg-rose-500/10 transition-all"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -149,13 +208,14 @@ export default function Analytics() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Monthly overview bar chart container */}
+          {/* Category Expense Pie Chart and Monthly Overview Bar Chart */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ExpensePieChart data={data?.expense_by_category} />
             <MonthlyBarChart data={data?.monthly_comparison} />
-            
-            {/* Daily Trends line chart container */}
-            <DailyLineChart data={data?.daily_trends} />
           </div>
+          
+          {/* Daily Trends line chart container */}
+          <DailyLineChart data={data?.daily_trends} />
 
           {/* Quick analysis details */}
           <div className="space-y-4">

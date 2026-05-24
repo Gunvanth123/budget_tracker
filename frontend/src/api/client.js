@@ -42,7 +42,7 @@ export const transactionsApi = {
 }
 
 export const dashboardApi = {
-  get: (month_year, timeframe) => api.get('/dashboard/', { params: { month_year, timeframe } }).then(r => r.data),
+  get: (month_year, timeframe, start_date = null, end_date = null) => api.get('/dashboard/', { params: { month_year, timeframe, start_date, end_date } }).then(r => r.data),
   getCalendar: () => api.get('/dashboard/calendar').then(r => r.data),
 }
 
@@ -131,6 +131,11 @@ export const popcornApi = {
   getSynopsis: (title, category, language) => api.get('/popcorn/ai-synopsis', { params: { title, category, language } }).then(r => r.data),
   extractPoster: (url) => api.get('/popcorn/extract-poster', { params: { url } }).then(r => r.data),
 }
+
+export const recommendationApi = {
+  get: (query, media_type = 'movie') => api.post('/recommendation/', { query, media_type }).then(r => r.data),
+}
+
 
 export const usageApi = {
   track: (feature_id) => api.post('/usage/track', { feature_id }).then(r => r.data).catch(() => ({})),

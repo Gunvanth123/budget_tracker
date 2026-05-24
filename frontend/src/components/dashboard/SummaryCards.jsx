@@ -106,72 +106,83 @@ export default function SummaryCards({ summary, dailyTrends }) {
         </div>
       </motion.div>
 
-      {/* 2. Overview card replacing the 3 mini-cards */}
-      <motion.div 
-        whileHover={{ y: -2 }}
-        className="card p-5 space-y-4"
-      >
-        <div className="flex justify-between items-center mb-1">
-          <h3 className="font-bold text-sm tracking-wide" style={{ color: 'var(--text)' }}>Overview</h3>
-          <Link 
-            to="/analytics" 
-            className="text-[11px] font-bold flex items-center gap-1 hover:opacity-85 transition-opacity"
-            style={{ color: '#6366f1' }}
-          >
-            See All &gt;
-          </Link>
-        </div>
-
-        <div className="divide-y divide-[var(--border)]">
-          {/* Income Row */}
-          <div className="flex items-center justify-between py-3 first:pt-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+      {/* 2. Grid of 3 sub-cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Income Card */}
+        <motion.div 
+          whileHover={{ y: -4, scale: 1.01 }}
+          className="card p-4 flex flex-col justify-between h-32 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300"
+        >
+          <div className="absolute -right-6 -top-6 w-20 h-20 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500 pointer-events-none" />
+          <div className="flex justify-between items-start relative z-10">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20 shrink-0">
                 <TrendingUp className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Income</span>
-                <p className="font-extrabold text-base text-emerald-500 mt-0.5 truncate">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Income</span>
+                <h3 className="font-black text-lg text-emerald-500 mt-0.5 truncate">
                   {hideBalance ? '₹••••••' : formatCurrency(income)}
-                </p>
+                </h3>
               </div>
             </div>
             <Sparkline data={getSparklineData(dailyTrends, 'income')} color="#10B981" />
           </div>
+          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-2 relative z-10">
+            <span className="text-emerald-500 font-bold">Income flow</span> active this month
+          </div>
+        </motion.div>
 
-          {/* Expense Row */}
-          <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-rose-500/10 border border-rose-500/20 shrink-0">
+        {/* Expense Card */}
+        <motion.div 
+          whileHover={{ y: -4, scale: 1.01 }}
+          className="card p-4 flex flex-col justify-between h-32 relative overflow-hidden group hover:border-rose-500/30 transition-all duration-300"
+        >
+          <div className="absolute -right-6 -top-6 w-20 h-20 bg-rose-500/10 dark:bg-rose-500/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500 pointer-events-none" />
+          <div className="flex justify-between items-start relative z-10">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-rose-500/10 border border-rose-500/20 shrink-0">
                 <TrendingDown className="w-5 h-5 text-rose-500" />
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Expense</span>
-                <p className="font-extrabold text-base text-rose-500 mt-0.5 truncate">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Expense</span>
+                <h3 className="font-black text-lg text-rose-500 mt-0.5 truncate">
                   {hideBalance ? '₹••••••' : formatCurrency(expense)}
-                </p>
+                </h3>
               </div>
             </div>
             <Sparkline data={getSparklineData(dailyTrends, 'expense')} color="#EF4444" />
           </div>
+          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-2 relative z-10">
+            <span className="text-rose-500 font-bold">Expense tracking</span> active this month
+          </div>
+        </motion.div>
 
-          {/* Forecast Row */}
-          <div className="flex items-center justify-between py-3 last:pb-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-purple-500/10 border border-purple-500/20 shrink-0">
+        {/* Forecast Card */}
+        <motion.div 
+          whileHover={{ y: -4, scale: 1.01 }}
+          className="card p-4 flex flex-col justify-between h-32 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300"
+        >
+          <div className="absolute -right-6 -top-6 w-20 h-20 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500 pointer-events-none" />
+          <div className="flex justify-between items-start relative z-10">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-purple-500/10 border border-purple-500/20 shrink-0">
                 <Activity className="w-5 h-5 text-purple-500" />
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Monthly Forecast</span>
-                <p className="font-extrabold text-base text-purple-500 mt-0.5 truncate">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Monthly Forecast</span>
+                <h3 className="font-black text-lg text-purple-500 mt-0.5 truncate">
                   {hideBalance ? '₹••••••' : formatCurrency(forecast)}
-                </p>
+                </h3>
               </div>
             </div>
             <Sparkline data={getSparklineData(dailyTrends, 'forecast')} color="#8B5CF6" />
           </div>
-        </div>
-      </motion.div>
+          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-2 relative z-10">
+            <span className="text-purple-500 font-bold">Predicted projection</span> for month-end
+          </div>
+        </motion.div>
+      </div>
     </div>
   )
 }

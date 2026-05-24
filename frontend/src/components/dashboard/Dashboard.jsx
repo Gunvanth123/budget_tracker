@@ -11,7 +11,7 @@ import { Plus } from 'lucide-react'
 import TransactionForm from '../transactions/TransactionForm'
 import QuickActions from './QuickActions'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const container = {
   hidden: { opacity: 0 },
@@ -36,6 +36,7 @@ export default function Dashboard() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
   const [formOpen, setFormOpen] = useState(false)
+  const [chartsExpanded, setChartsExpanded] = useState(false)
 
   const fetchDashboard = async () => {
     try {
@@ -93,19 +94,45 @@ export default function Dashboard() {
 
       {/* Charts Row — equal width, equal height */}
       <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
-        <ExpensePieChart 
-          data={data?.expense_by_category} 
-          selectedMonth={selectedMonth}
-          onMonthChange={setSelectedMonth}
-          months={months}
-        />
-        <MonthlyBarChart data={data?.monthly_comparison} />
+        <div className={chartsExpanded ? "col-span-1" : "col-span-2"}>
+          <ExpensePieChart 
+            data={data?.expense_by_category} 
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+            months={months}
+            isExpanded={chartsExpanded}
+            onToggleExpand={() => setChartsExpanded(!chartsExpanded)}
+          />
+        </div>
+        <AnimatePresence>
+          {chartsExpanded && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="col-span-1"
+            >
+              <MonthlyBarChart data={data?.monthly_comparison} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Daily Line Chart */}
-      <motion.div variants={item}>
-        <DailyLineChart data={data?.daily_trends} />
-      </motion.div>
+      <AnimatePresence>
+        {chartsExpanded && (
+          <motion.div 
+            variants={item}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <DailyLineChart data={data?.daily_trends} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Recent Transactions */}
       <motion.div variants={item}>
