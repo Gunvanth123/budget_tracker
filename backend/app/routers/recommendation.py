@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.database.db import get_db
-from app.models.models import User, PopcornEntry
+from app.models.models import User
 from app.services.auth import get_current_user
 from app.schemas.schemas import RecommendationRequest, RecommendationItem
 
@@ -163,39 +163,6 @@ async def get_recommendation(
         else:
             category = "Movies" if item_media_type == "movie" else "TV show"
 
-        # Cache in PopcornEntry
-        # Check if already exists for this user
-        existing_entry = db.query(PopcornEntry).filter(
-            PopcornEntry.user_id == current_user.id,
-            PopcornEntry.title == title
-        ).first()
-
-        if existing_entry:
-            # Update fields in the cache
-            existing_entry.category = category
-            existing_entry.language = language_name
-            if not existing_entry.rating:
-                existing_entry.rating = scaled_rating
-            if not existing_entry.synopsis:
-                existing_entry.synopsis = overview
-            existing_entry.genres = genres_str
-            if not existing_entry.poster_url:
-                existing_entry.poster_url = poster_url
-        else:
-            # Create a new cache entry
-            new_entry = PopcornEntry(
-                user_id=current_user.id,
-                title=title,
-                category=category,
-                language=language_name,
-                rating=scaled_rating,
-                synopsis=overview,
-                reasons_for_liking="AI Recommendation",
-                genres=genres_str,
-                poster_url=poster_url
-            )
-            db.add(new_entry)
-
         # Add to the returned response list
         recommendations.append(
             RecommendationItem(
@@ -209,13 +176,5 @@ async def get_recommendation(
             )
         )
         cached_count += 1
-
-    # Commit all cached entries to DB
-    if cached_count > 0:
-        try:
-            db.commit()
-        except Exception as db_err:
-            db.rollback()
-            print(f"Failed to save recommendations to cache: {db_err}")
 
     return recommendations

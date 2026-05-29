@@ -116,6 +116,7 @@ export default function Popcorn() {
   // Filters
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('All')
+  const [reviewedFilter, setReviewedFilter] = useState(false)
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -333,7 +334,8 @@ export default function Popcorn() {
   const filteredEntries = entries.filter(e => {
     const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = categoryFilter === 'All' || e.category === categoryFilter
-    return matchesSearch && matchesCategory
+    const matchesReviewed = !reviewedFilter || (e.reasons_for_liking && e.reasons_for_liking !== "Recommended by AI Advisor" && e.reasons_for_liking !== "AI Recommendation" && e.reasons_for_liking.trim() !== "")
+    return matchesSearch && matchesCategory && matchesReviewed
   })
 
   // Pagination logic
@@ -346,7 +348,7 @@ export default function Popcorn() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, categoryFilter])
+  }, [search, categoryFilter, reviewedFilter])
 
   return (
     <div className="space-y-8 pb-10">
@@ -381,6 +383,18 @@ export default function Popcorn() {
           />
         </div>
         <div className="md:col-span-2 flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+          <button
+            onClick={() => setReviewedFilter(!reviewedFilter)}
+            className={clsx(
+              "px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border flex items-center gap-1.5",
+              reviewedFilter 
+                ? "bg-yellow-500 text-slate-950 border-yellow-500 shadow-md" 
+                : "bg-[var(--card)] text-[var(--text)] border-[var(--border)] hover:bg-white/5"
+            )}
+          >
+            <span>★ Reviewed Only</span>
+          </button>
+          <div className="h-6 w-[1px] bg-[var(--border)] shrink-0 mx-1" />
           {['All', ...CATEGORIES].map(cat => (
             <button
               key={cat}

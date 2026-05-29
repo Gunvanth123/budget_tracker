@@ -35,6 +35,7 @@ export default function AIChatbot() {
   const [isTyping, setIsTyping] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [addedTitles, setAddedTitles] = useState([])
+  const [mode, setMode] = useState('finance')
   
   const endRef = useRef(null)
 
@@ -49,11 +50,12 @@ export default function AIChatbot() {
       fetchHistory()
       usageApi.track('ai')
     }
-  }, [selectedMonth, isOpen])
+  }, [selectedMonth, mode, isOpen])
 
   const fetchHistory = async () => {
     try {
-      const history = await aiApi.getHistory(selectedMonth)
+      const historyId = mode === 'finance' ? selectedMonth : 'movie'
+      const history = await aiApi.getHistory(historyId)
       setMessages(history)
     } catch (err) {
       console.error("Failed to fetch history:", err)
@@ -61,9 +63,11 @@ export default function AIChatbot() {
   }
 
   const clearChat = async () => {
-    if (window.confirm(`Clear chat history for ${selectedMonth}?`)) {
+    const historyId = mode === 'finance' ? selectedMonth : 'movie'
+    const displayName = mode === 'finance' ? selectedMonth : 'Movie Recommender'
+    if (window.confirm(`Clear chat history for ${displayName}?`)) {
       try {
-        await aiApi.clearHistory(selectedMonth)
+        await aiApi.clearHistory(historyId)
         setMessages([])
         toast.success("Chat history cleared")
       } catch (err) {
@@ -92,7 +96,7 @@ export default function AIChatbot() {
         budget_limits: budgets,
         available_categories: categories.map(c => ({ id: c.id, name: c.name, type: c.type })),
         available_accounts: accounts.map(a => ({ id: a.id, name: a.name, type: a.type, is_default: a.is_default })),
-        context: "The user uses this app to track budget. Help them cut costs. You can also add transactions automatically if requested."
+        context: "The user uses this app to track budget. Help them cut costs."
       })
     } catch {
       return "{ error: 'No financial context available right now' }"
@@ -134,6 +138,23 @@ export default function AIChatbot() {
     }
   }
 
+  const parseActionJSON = (jsonStr) => {
+    let cleaned = jsonStr.trim();
+    cleaned = cleaned.replace(/^```json|```$/g, '').trim();
+    try {
+      return JSON.parse(cleaned);
+    } catch (e) {
+      try {
+        let fixed = cleaned.replace(/'/g, '"');
+        fixed = fixed.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+        return JSON.parse(fixed);
+      } catch (e2) {
+        console.error("JSON repair failed:", e2);
+        throw e;
+      }
+    }
+  }
+
   const handleSend = async (e, directInput = null) => {
     if (e) e.preventDefault()
     const content = directInput || input
@@ -145,49 +166,71 @@ export default function AIChatbot() {
     setIsTyping(true)
 
     try {
-      const context = await fetchContext()
-      const prompt = `You are a friendly AI assistant.
-      The user's name is ${user?.name || 'User'}. Address them by name when appropriate.
+      const historyId = mode === 'finance' ? selectedMonth : 'movie'
+      let prompt = ''
       
-      CORE RULES:
-      1. If the user asks for movie, anime, or tv show/web series recommendations:
-         - Provide a very short, friendly response (MAX 2 SENTENCES) saying you are fetching recommendations.
-         - You MUST append an action block at the end of your response.
-         - Format: [ACTION]{"type": "recommend", "query": "clean search keyword/title", "media_type": "movie"|"tv"|"anime"}[/ACTION]
-      2. Otherwise, act as a professional financial advisor. Keep responses extremely short (MAX 2 SENTENCES). Format numbers in Indian Rupees (INR / ₹). Use markdown.
-      
-      CONTEXT: ${context}
-      USER SAYS: "${userMsg.content}"`
+      if (mode === 'finance') {
+        const context = await fetchContext()
+        prompt = `You are Jav, the user's empathetic, responsive, and highly intelligent AI Financial Advisor.
+The user's name is ${user?.name || 'User'}. Address them by name when appropriate.
+Speak naturally, warm, and conversationally with human-like responsiveness. Offer helpful, practical budget analysis and insights based on their data. Keep responses to a friendly, natural length (around 2-3 sentences). Format numbers in Indian Rupees (INR / ₹) with markdown.
 
-      const response = await aiApi.chat(prompt, selectedMonth, userMsg.content)
+CONTEXT: ${context}
+USER SAYS: "${userMsg.content}"`
+      } else {
+        prompt = `You are Jav, the user's movie, anime, and TV show recommender expert.
+The user's name is ${user?.name || 'User'}.
+You MUST return a very short, friendly response (MAX 2 SENTENCES) saying you are fetching recommendations.
+You MUST also append an action block at the end of your response so the tool can load the cards.
+Format: [ACTION]{"type": "recommend", "query": "clean search keyword/title/genre", "media_type": "movie"|"tv"|"anime"}[/ACTION]
+
+USER SAYS: "${userMsg.content}"`
+      }
+
+      const response = await aiApi.chat(prompt, historyId, userMsg.content)
       let aiContent = response.content
 
       let recommendations = null
+      let action = null
+      
       const actionMatch = aiContent.match(/\[ACTION\](.*?)\[\/ACTION\]/s)
       if (actionMatch) {
         try {
-          const action = JSON.parse(actionMatch[1])
-          if (action.type === 'add_transaction') {
-            await transactionsApi.create(action.data)
-            toast.success(`Transaction Added: ₹${action.data.amount}`)
-          } else if (action.type === 'recommend') {
-            setIsTyping(true)
-            try {
-              recommendations = await recommendationApi.get(action.query, action.media_type)
-            } catch (err) {
-              console.error("Failed to fetch recommendations:", err)
-              toast.error("Failed to load TMDB recommendations")
-            }
-          }
+          action = parseActionJSON(actionMatch[1])
         } catch (err) {
           console.error("Action Parsing Failed:", err)
+        }
+      }
+
+      // Fallback: If in movie mode and no action block was generated, fallback to using user input as search query
+      if (!action && mode === 'movie') {
+        action = {
+          type: 'recommend',
+          query: userMsg.content,
+          media_type: 'movie'
+        }
+      }
+
+      if (action && action.type === 'recommend') {
+        setIsTyping(true)
+        try {
+          let mediaType = action.media_type || 'movie'
+          if (userMsg.content.toLowerCase().includes('anime')) {
+            mediaType = 'anime'
+          } else if (userMsg.content.toLowerCase().includes('tv') || userMsg.content.toLowerCase().includes('show') || userMsg.content.toLowerCase().includes('series')) {
+            mediaType = 'tv'
+          }
+          recommendations = await recommendationApi.get(action.query, mediaType)
+        } catch (err) {
+          console.error("Failed to fetch recommendations:", err)
+          toast.error("Failed to load TMDB recommendations")
         }
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: aiContent, recommendations }])
     } catch (err) {
       console.error("AI Proxy Error:", err)
-      const errorDetail = err.response?.data?.detail || 'AI Advisor is temporarily offline.'
+      const errorDetail = err.response?.data?.detail || 'Jav is temporarily offline.'
       toast.error(errorDetail)
     } finally {
       setIsTyping(false)
@@ -219,20 +262,34 @@ export default function AIChatbot() {
         <div className="fixed bottom-24 lg:bottom-6 right-6 left-6 lg:left-auto w-auto lg:w-96 h-[32rem] bg-[var(--card)] rounded-2xl shadow-2xl flex flex-col z-[35] overflow-hidden border border-[var(--border)]">
           {/* Header */}
           <div className="p-4 text-white flex justify-between items-center" style={{ background: 'var(--primary)' }}>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <Bot className="w-5 h-5" />
-                <h3 className="font-bold">AI Financial Advisor</h3>
+            <div className="flex flex-col flex-1 mr-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-5 h-5" />
+                  <h3 className="font-bold">Jav</h3>
+                </div>
+                {/* Mode Selector */}
+                <select
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value)}
+                  className="bg-white/10 text-white border border-white/20 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-white/40 cursor-pointer"
+                >
+                  <option value="finance" className="bg-slate-900 text-white">💼 Finance Advisor</option>
+                  <option value="movie" className="bg-slate-900 text-white">🎬 Movie Recommender</option>
+                </select>
               </div>
-              <div className="mt-1.5 shrink-0">
-                <MonthYearPicker 
-                  value={selectedMonth}
-                  onChange={setSelectedMonth}
-                  months={months}
-                />
-              </div>
+              
+              {mode === 'finance' && (
+                <div className="mt-2 shrink-0 animate-in slide-in-from-top-1 duration-200">
+                  <MonthYearPicker 
+                    value={selectedMonth}
+                    onChange={setSelectedMonth}
+                    months={months}
+                  />
+                </div>
+              )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-start mt-0.5">
               <button onClick={clearChat} className="p-1 hover:bg-white/20 rounded text-xs" title="Clear Chat">
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -245,38 +302,63 @@ export default function AIChatbot() {
           {/* Chat Body */}
           <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[var(--bg)]">
             {messages.length === 0 && (
-              <div className="text-center text-sm text-gray-500 mt-6 space-y-4">
-                <div>
-                  <p className="font-bold text-[var(--text)]">👋 Hi {user?.name || 'there'}!</p>
-                  <p className="text-xs mt-1">I'm your AI assistant. I can help analyze your budget, track expenses, or recommend movies & anime!</p>
-                </div>
-                
-                <div className="pt-2">
-                  <p className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-2">Popular Quick Actions</p>
-                  <div className="flex flex-col gap-2 max-w-xs mx-auto">
-                    <button 
-                      onClick={() => handleSend(null, "Recommend some popular sci-fi movies")}
-                      className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
-                    >
-                      <Film className="w-4 h-4 text-indigo-400" />
-                      <span>🎬 Recommend some sci-fi movies</span>
-                    </button>
-                    <button 
-                      onClick={() => handleSend(null, "Recommend some good action anime")}
-                      className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
-                    >
-                      <Sparkles className="w-4 h-4 text-purple-400" />
-                      <span>🐉 Recommend some action anime</span>
-                    </button>
-                    <button 
-                      onClick={() => handleSend(null, "Suggest trending TV shows")}
-                      className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
-                    >
-                      <Tv className="w-4 h-4 text-blue-400" />
-                      <span>📺 Recommend trending TV shows</span>
-                    </button>
+              <div className="text-center text-sm text-gray-500 mt-6 space-y-4 animate-in fade-in duration-300">
+                {mode === 'finance' ? (
+                  <div>
+                    <p className="font-bold text-[var(--text)]">👋 Hi {user?.name || 'there'}!</p>
+                    <p className="text-xs mt-1">I'm Jav, your financial assistant. Let me help you analyze your budget, track limits, or suggest savings tips!</p>
+                    
+                    <div className="pt-4">
+                      <p className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-2">Quick Actions</p>
+                      <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                        <button 
+                          onClick={() => handleSend(null, "Analyze my spending this month")}
+                          className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
+                        >
+                          <span>💼 Analyze my spending</span>
+                        </button>
+                        <button 
+                          onClick={() => handleSend(null, "Suggest ways to save money")}
+                          className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
+                        >
+                          <span>💡 Suggest ways to save money</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <p className="font-bold text-[var(--text)]">🎬 Movie Time!</p>
+                    <p className="text-xs mt-1">I'm Jav, your recommendation assistant. Tell me what genres or titles you enjoy, and I'll find something great to watch!</p>
+                    
+                    <div className="pt-4">
+                      <p className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-2">Popular Quick Actions</p>
+                      <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                        <button 
+                          onClick={() => handleSend(null, "Recommend some popular sci-fi movies")}
+                          className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
+                        >
+                          <Film className="w-4 h-4 text-indigo-400" />
+                          <span>Recommend some sci-fi movies</span>
+                        </button>
+                        <button 
+                          onClick={() => handleSend(null, "Recommend some good action anime")}
+                          className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
+                        >
+                          <Sparkles className="w-4 h-4 text-purple-400" />
+                          <span>Recommend some action anime</span>
+                        </button>
+                        <button 
+                          onClick={() => handleSend(null, "Suggest trending TV shows")}
+                          className="px-4 py-2 text-xs rounded-xl bg-white/5 border border-[var(--border)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 text-left flex items-center gap-2 text-[var(--text)] transition-all hover:scale-[1.02]"
+                        >
+                          <Tv className="w-4 h-4 text-blue-400" />
+                          <span>Recommend trending TV shows</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             
@@ -352,7 +434,7 @@ export default function AIChatbot() {
                                     </span>
                                   )}
                                   <div className="flex flex-wrap gap-1">
-                                    {item.genres?.slice(0, 2).map((g, gIdx) => (
+                                    {item.genres?.map((g, gIdx) => (
                                       <span key={gIdx} className="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/10">
                                         {g}
                                       </span>
