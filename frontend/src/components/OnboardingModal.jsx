@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { 
   ShieldCheck, Lock, UploadCloud, PlusCircle, 
   Trash2, Edit3, FolderOpen, Key, ListTodo, 
-  Popcorn, ShieldAlert, CheckCircle2, ChevronRight, X 
+  Target, ShieldAlert, CheckCircle2, ChevronRight, X 
 } from 'lucide-react'
 import { usersApi } from '../api/client'
 
@@ -136,9 +136,9 @@ export default function OnboardingModal({ user, onComplete }) {
                   <p className="text-xs opacity-60">Upload files into encrypted categories for perfect organization.</p>
                 </div>
                 <div className="p-5 rounded-2xl bg-[var(--bg)] border border-[var(--border)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-pink-500 text-white flex items-center justify-center shadow-lg shadow-pink-500/20"><Popcorn className="w-5 h-5" /></div>
-                  <h4 className="font-bold text-sm">Popcorn Tracker</h4>
-                  <p className="text-xs opacity-60">Personal watchlist of movies and shows with AI-powered synopses.</p>
+                  <div className="w-10 h-10 rounded-xl bg-pink-500 text-white flex items-center justify-center shadow-lg shadow-pink-500/20"><Target className="w-5 h-5" /></div>
+                  <h4 className="font-bold text-sm">Budget Goals</h4>
+                  <p className="text-xs opacity-60">Set custom monthly spending limits per category to stay on track.</p>
                 </div>
               </div>
             </div>

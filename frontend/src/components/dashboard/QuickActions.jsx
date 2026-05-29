@@ -34,14 +34,6 @@ export default function QuickActions({ onAddTransaction, usage = [] }) {
       action: () => navigate('/vault'),
       desc: 'Secure docs'
     },
-    popcorn: {
-      label: 'Popcorn',
-      icon: Clapperboard,
-      color: 'from-rose-400 to-rose-600',
-      shadow: 'rgba(244, 63, 94, 0.25)',
-      action: () => navigate('/popcorn'),
-      desc: 'Watchlist'
-    },
     todo: {
       label: 'To-Do',
       icon: ListTodo,
@@ -87,7 +79,7 @@ export default function QuickActions({ onAddTransaction, usage = [] }) {
     displayActionIds = [...displayActionIds, ...topUsed]
   }
 
-  const defaults = ['passwords', 'vault', 'popcorn']
+  const defaults = ['passwords', 'vault']
   for (const def of defaults) {
     if (displayActionIds.length >= 4) break
     if (!displayActionIds.includes(def)) {

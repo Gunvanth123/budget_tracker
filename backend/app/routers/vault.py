@@ -6,7 +6,7 @@ import os
 import json
 
 from app.database.db import get_db, SessionLocal
-from app.models.models import User, SecureFile, VaultCategory, PopcornEntry
+from app.models.models import User, SecureFile, VaultCategory
 from app.services.auth import get_current_user
 from app.services.gdrive import GoogleDriveService
 from app.schemas import schemas
@@ -48,11 +48,10 @@ def run_migration(user_id: int, old_token: str, new_token: str, new_root_id: str
         
         # 1. Collect all files to migrate
         all_files = db.query(SecureFile).filter(SecureFile.user_id == user_id).all()
-        popcorn_entries = db.query(PopcornEntry).filter(PopcornEntry.user_id == user_id, PopcornEntry.gdrive_file_id.isnot(None)).all()
         
         has_profile_pic = user.profile_picture and user.profile_picture.startswith("gdrive://")
         
-        total_files = len(all_files) + len(popcorn_entries) + (1 if has_profile_pic else 0)
+        total_files = len(all_files) + (1 if has_profile_pic else 0)
         MIGRATION_STATUS[user_id]["total"] = total_files
         
         current_count = 0
@@ -112,24 +111,7 @@ def run_migration(user_id: int, old_token: str, new_token: str, new_root_id: str
                 current_count += 1
                 MIGRATION_STATUS[user_id]["current"] = current_count
 
-        # --- MIGRATE POPCORN POSTERS ---
-        if popcorn_entries:
-            popcorn_folder_id = gdrive_service.get_or_create_folder(new_service, "Popcorn Posters", new_root_id)
-            for entry in popcorn_entries:
-                try:
-                    poster_content = gdrive_service.download_file(old_service, entry.gdrive_file_id)
-                    poster_meta = old_service.files().get(fileId=entry.gdrive_file_id, fields='mimeType, name').execute()
-                    
-                    new_poster_id = gdrive_service.upload_file(new_service, poster_meta.get('name', f"poster_{entry.id}"), poster_content, poster_meta.get('mimeType', 'image/jpeg'), popcorn_folder_id)
-                    
-                    entry.gdrive_file_id = new_poster_id
-                    entry.poster_url = f"/api/popcorn/poster/{new_poster_id}"
-                    db.commit()
-                    current_count += 1
-                    MIGRATION_STATUS[user_id]["current"] = current_count
-                except:
-                    current_count += 1
-                    MIGRATION_STATUS[user_id]["current"] = current_count
+
 
         # Reset category IDs
         db.query(VaultCategory).filter(VaultCategory.user_id == user_id).update({"gdrive_folder_id": None})

@@ -24,7 +24,6 @@ const NAV_ITEMS = [
   { to: '/passwords', icon: Key, label: 'Passwords' },
   { to: '/vault', icon: Shield, label: 'Secure Vault' },
   { to: '/budgets', icon: Target, label: 'Budget Goals' },
-  { to: '/popcorn', icon: Clapperboard, label: 'Popcorn' },
   { to: '/settings', icon: SettingsIcon, label: 'Settings' },
 ]
 

@@ -105,7 +105,7 @@ async def cors_handler(request: Request, call_next):
     
     return response
 
-from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users, ai, vault, popcorn, usage, recommendation
+from app.routers import accounts, transactions, categories, dashboard, todo, auth, passwords, budgets, users, ai, vault, usage
 
 app.include_router(auth.router,         prefix="/api/auth",         tags=["Auth"])
 app.include_router(users.router,        prefix="/api/users",        tags=["Users"])
@@ -118,9 +118,7 @@ app.include_router(passwords.router,    prefix="/api/passwords",    tags=["Passw
 app.include_router(budgets.router,      prefix="/api/budgets",      tags=["Budgets"])
 app.include_router(vault.router,        prefix="/api/vault",        tags=["Vault"])
 app.include_router(ai.router,           prefix="/api/ai",           tags=["AI"])
-app.include_router(popcorn.router,      prefix="/api/popcorn",      tags=["Popcorn"])
 app.include_router(usage.router,        prefix="/api/usage",        tags=["Usage"])
-app.include_router(recommendation.router, prefix="/api/recommendation", tags=["Recommendation"])
 
 @app.get("/")
 def root():

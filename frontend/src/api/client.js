@@ -119,24 +119,6 @@ export const aiApi = {
   clearHistory: (month_year) => api.delete(`/ai/history/${month_year}`).then(r => r.data),
 }
 
-export const popcornApi = {
-  getAll: () => api.get('/popcorn/').then(r => r.data),
-  create: (formData) => api.post('/popcorn/', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }).then(r => r.data),
-  update: (id, formData) => api.put(`/popcorn/${id}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }).then(r => r.data),
-  delete: (id) => api.delete(`/popcorn/${id}`).then(r => r.data),
-  getSynopsis: (title, category, language) => api.get('/popcorn/ai-synopsis', { params: { title, category, language } }).then(r => r.data),
-  extractPoster: (url) => api.get('/popcorn/extract-poster', { params: { url } }).then(r => r.data),
-}
-
-export const recommendationApi = {
-  get: (query, media_type = 'movie') => api.post('/recommendation/', { query, media_type }).then(r => r.data),
-}
-
-
 export const usageApi = {
   track: (feature_id) => api.post('/usage/track', { feature_id }).then(r => r.data).catch(() => ({})),
   getTop: () => api.get('/usage/top').then(r => r.data),
